@@ -1,0 +1,386 @@
+#!/bin/bash
+
+# SVTGet v0.1.5
+# Updates can be found at http://svtget.se/
+# Support the project with Flattr: https://flattr.com/thing/300374/SVT-Get-a-local-cache-tool-for-SVT-Play
+#
+# Description: The script can download the RTMP streams available from the
+# online streaming service "SVT Play", managed by Sveriges Television
+#
+# Original author: Mikael "MMN-o" Nordfeldth <mmn@hethane.se>
+# Additional authors: sikevux, DomeDan, Erik Modén
+# License: GPLv3
+# http://www.gnu.org/licenses/gpl-3.0.txt
+#
+# URL: http://svtget.se/
+# Flattr: http://flattr.com/thing/300374/SVT-Get-a-local-cache-tool-for-SVT-Play
+
+# Changelog:
+# -- v0.1.5
+#    * Sikevux added svt.se support
+# -- v0.1.4
+#    * Erik Modén Changed filename to use folderStructure and title from json data.
+# -- v0.1.3
+#    * Erik Modén updated script to work with the new svtplay that was launched 2012-06-04
+# -- v0.1.2
+#    * deb package removed (...maintenance...)
+#    * DomeDan added Öppna Arkivet support
+#    * DomeDan added subtitle download support
+#    * script can now choose to play clips directly
+# -- v0.1.1
+#    * deb package created by sikevux, small fixes on other stuff
+# -- v0.1
+#    * Initial functionality. Normal links seem to be working.
+
+# Sample usage:
+# ./svtget http://svtplay.se/v/2440756/k_special/presspauseplay
+
+if [ `uname` == "Darwin" ]; then
+    SED=gsed
+else
+    SED=sed
+fi
+
+svtplay_url="http://www.svtplay.se"
+oppetarkiv_url="http://www.oppetarkiv.se"
+svt_url="http://www.svt.se"
+
+# actions
+play=""
+subtitles=""
+debug=""
+# change these in case you find something working better for you.
+# you can also give them as argument using flag -f "-vcodec copy..."
+ffmpeg_flags="-vcodec copy -strict experimental"
+
+DEPENDENCIES="ffmpeg curl $SED cut bash tr"
+PLAYERS="mplayer vlc"
+for DEP in $DEPENDENCIES; do
+	if [ -z "`which $DEP`" ]; then
+		echo "ERROR: Missing dependency '$DEP'." >&2
+		exit
+	fi
+done
+    
+
+# Available bitrates: 320 850 1400 2400
+BITRATE=""
+function set_bitrate {
+	case $1 in
+	l)	BITRATE=420	;;
+	m)	BITRATE=900	;;
+	n)	BITRATE=1660	;;
+	h)	BITRATE=2760	;;
+        320|420|620|900|1600|2760)
+		BITRATE=$1      ;;
+	850|1400|2400)
+		# bitrate for rtmp (might be depricated)
+		echo "Bitrate used for possibly depricated rtmp streams, will not work for new applehttp streams."
+		BITRATE=$1	;;
+	*)
+		echo "Bad quality setting ($1), keeping setting '$BITRATE'"
+		;;
+	esac
+}
+
+function bitrateToRes {
+    case $1 in
+	320)  echo "320x180" ;;
+	420)  echo "480x270" ;;
+	620)  echo "576x324" ;;
+	900)  echo "704x396" ;;
+	1660) echo "1024x576" ;;
+	2760) echo "1280x720" ;;
+	*)    echo ""
+    esac
+}
+
+function resToBitrate {
+    case $1 in
+	"320x180")  echo "320" ;;
+	"480x270")  echo "420" ;;
+	"576x324")  echo "620" ;;
+	"704x396")  echo "900" ;;
+	"1024x576") echo "1660" ;;
+	"1280x720") echo "2760" ;;
+	*)          echo "-"
+    esac
+}
+
+function get_tcUrlsM3U8 {
+        local m3u8=$1
+	local res=$2
+	unset prevmatch
+	IFS=$'\n'
+	for i in $m3u8; do
+	    if [ $prevmatch ]; then
+		bitr=$(resToBitrate $prevmatch)
+		echo "$bitr|$prevmatch|$i"
+		unset prevmatch
+	    fi
+	    if [ `echo "$i" | grep RESOLUTION=$res` ]; then
+		prevmatch=`echo "$i" | $SED -n 's/.*RESOLUTION=\([0-9]\+x[0-9]\+\).*/\1/p'`
+	    fi
+	done
+}
+
+# kept for backwards compability and for flv streams
+function get_tcUrlsOLD {
+	local html=$1
+	local bitrate=$2
+	expr "$bitrate" + 1 &> /dev/null
+	if [ $? -gt 0 ] || [ -z "$bitrate" ] || [ "$bitrate" -eq 0 ]; then
+		bitrate='[0-9]\+'
+	fi
+	#normal clip
+	tcUrls=`echo $html | $SED 's/},{/}\n{/g' | $SED "s/\(rtmp[e]\?:[^|&]*\)\",\"bitrate\":\($bitrate\)/\\n\2|-|\1\\n/g" | grep -E '^[[:digit:]]+\|' | sort -n | uniq`
+	if [ -z "$tcUrls" ]; then
+	 	#from öppet arkiv
+		tcUrls=`echo $html | $SED "s/\(rtmp[e]\?:[^|&]*\)&amp;/\\n320|-|\1\\n/g" | grep -E '^[[:digit:]]+\|' | sort -n | uniq`
+	fi
+	if [ -z "$tcUrls" ]; then
+		#flv-files
+		tcUrls=$(echo $html | $SED 's/},{/}\n{/g' | $SED "s/\(http[s]\?:[^\"]*\.flv\)\",\"bitrate\":\($bitrate\)/\\n\2|-|\1\\n/g" | grep -E '^[[:digit:]]+\|' | sort -n | uniq)
+	fi
+	echo $tcUrls
+}
+
+function get_sub {
+	local html=$1
+	echo $html | $SED -n 's/.*"subtitleReferences":\[{"url":"\([^"]\+\)".*/\1/p'
+}
+
+function print_alligned {
+    printf '%-4s' "$1"
+    shift
+    while [ "$1" ]; do
+	a="$1"
+	shift
+	if [ "$1" ]; then
+	    printf '%-15s' "$a"
+	else
+	    printf '%s\n' "$a"
+	fi
+    done
+}
+
+function pick_tcUrl {
+        print_alligned "#" "Bitrate" "Resolution" "Stream name"
+	let n=1
+	for STREAM in $@; do
+		local BITRATE=`echo $STREAM | cut -d '|' -f 1 -`
+		local RESOLUTION=`echo $STREAM | cut -d '|' -f 2 -`
+		Streams[$n]=`echo $STREAM | cut -d '|' -f 3 -`
+		local NAME=`basename -- $STREAM | cut -d '?' -f 1 -`
+		print_alligned "$n." "${BITRATE} kbps" "${RESOLUTION}" "$NAME"
+		let n++
+	done
+	
+	stream=0
+	if [ "$#" -eq 1 ]; then
+		stream=1
+	fi
+	while [ -z ${Streams[$stream]} ]; do
+		echo -ne "\nWhich file do you want? [#] "
+		read stream
+		if [ -n "$stream" ] && [ "q" == "$stream" ]; then
+			exit
+		fi
+	done
+	tcUrl=${Streams[$stream]}
+}
+
+function askOverwrite {
+    echo  "The file \"$1\" exists already!"
+    while true; do
+	read -p "Do you want to overwrite? [y/n] " yesno
+	case $yesno in
+	    y* | Y* )
+		break
+		;;
+	    n* | N* | q )
+		exit 1
+		;;
+	    *)
+		;;
+	esac
+    done
+}
+
+function print_help {
+	echo -e "Usage: $0 -q [l|m|n|h|320|420|620|850|900|1400|1600|2400|2760] -s $svtplay_url/..."
+	echo -e " -q\tquality of the stream"
+	echo -e " -p\tplay output"
+	echo -e " -s\tfetch subtitles"
+	echo -e " -f\tffmpeg flags"
+	echo -e " -d\tDebug, print debug messages and cmd line"
+}
+
+
+function debug {
+    if [ $debug ]; then
+	echo -e $1
+    fi
+}
+
+function set_mediaplayer {
+    for i in $PLAYERS; do
+	mediaplayer=`which "$i"`
+	if [ -n "$mediaplayer" ]; then
+	    break;
+	fi
+    done
+    if [ -z "$mediaplayer" ]; then
+	echo "No media player found (tried: $PLAYERS)"
+	exit 1
+    fi
+    debug "mediaplayer:\n$mediaplayer"
+}
+
+
+while getopts "q:f:psdh" opt; do
+	case $opt in
+	q)
+		set_bitrate $OPTARG
+		;;
+	f)
+		ffmpeg_flags=$OPTARG
+		;;
+	p)
+	        set_mediaplayer
+		play="true"
+		;;
+	s)
+		subtitles="true"
+		;;
+	d)
+		debug="true"
+		;;
+	h)
+		print_help
+		exit 0
+		;;
+	\?)
+		echo "invalid option: -$OPTARG" >&2
+		exit 1
+		;;
+	esac
+done
+
+pageUrl=${!#}
+if [ -z "$pageUrl" ] || [ "$pageUrl" == $0 ]; then
+	print_help
+	exit 1
+fi
+
+if [[ "$pageUrl" =~ $svt_url ]]; then
+	HTML=`curl -s "$pageUrl"`
+	pageUrl="$svtplay_url/video/"`echo $HTML | $SED -n 's/.*articleId=\([^"]\+\)&amp.*/\1/p' | $SED 's/&.*//g'`
+fi
+
+if [[ ! "$pageUrl" =~ $svtplay_url ]] && [[ ! "$pageUrl" =~ $oppetarkiv_url ]]; then
+	echo "Bad URL. Not SVT Play or Öppet arkiv?" >&2
+	exit 1
+fi
+
+HTML=`curl -s "$pageUrl?type=embed"`
+JSON=`curl -s "$pageUrl?output=json"`
+debug "JSON:\n$JSON"
+swfUrl="$svtplay_url"`echo $HTML | $SED -n 's/^.*<param name="movie" value="\([^"]\+\)\".*/\1/p'`
+debug "swfUrl:\n$swfUrl"
+
+m3u8Url=`echo $JSON | $SED -n 's/.*{"url":"\([^"]\+\)".*"playerType":"ios".*/\1/p'`
+if [ $m3u8Url ]; then
+    debug "m3u8Url:\n$m3u8Url"
+    M3U8=`curl -s "$m3u8Url"`
+    debug "M3U8:\n$M3U8"
+    resolution=$(bitrateToRes $BITRATE)
+    debug "resolution:\n$resolution"
+    tcUrls=$(get_tcUrlsM3U8 "$M3U8" $resolution)
+    tcUrls=`echo $tcUrls | tr ' ' '\n' | sort -n`
+    is_applehttp="true"
+
+else
+    debug "not applehttp stream, trying rtmp and flv"
+    tcUrls=$(get_tcUrlsOLD "$JSON" "$BITRATE")
+fi
+
+if [ -z "$tcUrls" ]; then
+    echo -e "ERROR: No rtmp streams found. No clip in that quality?\nPlease visit http://svtget.se/ for updates and information.\nIf the website's down, use a search engine to find copies." >&2
+    exit 1
+fi
+
+debug "tcUrls:\n$tcUrls"
+
+pick_tcUrl $tcUrls
+
+if [ $is_applehttp ]; then
+    extension="mp4"
+else
+    extension="${tcUrl##*.}"
+fi
+debug "picked tcUrl:\n$tcUrl"
+
+if [[ "$pageUrl" =~ $oppetarkiv_url ]]; then
+	programName="$(echo $JSON | $SED -n 's/.*"folderStructure":"\([^"]\+\).[^"]\+".*}/\1/p')"
+	episodName="$(echo $JSON | $SED -n 's/.*,"title":"\([^"]\+\)".*/\1/p' | $SED 's/-\+$//')"
+	filename="${programName}-${episodName}.${extension}"
+	debug "filename:\n$filename"
+else
+	programName="$(echo $JSON | $SED -n 's/.*"folderStructure":"\([^\.]\+\).[^"]\+".*}/\1/p')"
+	episodName="$(echo $JSON | $SED -n 's/.*,"title":"\([^"]\+\)".*/\1/p' | $SED 's/-\+$//')"
+	filename="${programName}-${episodName}.${extension}"
+	debug "filename:\n$filename"
+fi
+
+if [ ! $play ] && [ $subtitles ]; then
+	subUrl=$(get_sub "$JSON")
+	debug "subUrl:\n$subUrl"
+	if [ -z "$subUrl" ]; then
+		echo "No subtitle found."
+		subtitles=""
+	else
+		sub_filename="${programName}-${episodName}.srt"
+	fi
+else
+	subUrl=""
+fi
+
+if [ ! $play ] && [ -e "$filename" ] && [ ! $is_applehttp ]; then
+    # ffmpeg will ask if overwrite, so no need if it's an applehttp stream
+    askOverwrite "$filename"
+fi
+
+if [ $play ]; then
+    if [ $is_applehttp ]; then
+	CMD="ffmpeg -i \"$tcUrl\" $ffmpeg_flags - | \"$mediaplayer\" - \"$subUrl\" &>/dev/null" 
+    elif [ $extension == "mp4" ]; then
+	CMD="rtmpdump -r \"$tcUrl\" -W \"$swfUrl\" -o - | \"$mediaplayer\" - \"$subUrl\" &>/dev/null"
+    elif [ $extension == "flv" ]; then
+	CMD="$mediaplayer \"$tcUrl\" \"$subUrl\" &>/dev/null"
+    fi
+else # if [ ! $play ]
+    if [ $subtitles ]; then
+	debug "get subtiles cmd:\ncurl \"$subUrl\" -o \"$sub_filename\""
+	if [ ! $debug ]; then
+	    echo "Downloading subtitles: $sub_filename"
+	    curl "$subUrl" -o "$sub_filename"
+	fi
+    fi
+    if [ $is_applehttp ]; then
+        # in case of any problem with segmentation fault. make sure you have latest possibe ffmpeg. on Mac build ffmpeg from source.
+        # bug ticket: http://ffmpeg.org/trac/ffmpeg/ticket/749
+	CMD="ffmpeg -i \"$tcUrl\" $ffmpeg_flags \"file:$filename\""
+    elif [ "$extension" == "mp4" ]; then
+	CMD="rtmpdump -r \"$tcUrl\" -W \"$swfUrl\" -o \"$filename\""
+    elif [ $extension == "flv" ]; then
+	CMD="curl \"$tcUrl\" -o \"$filename\""
+    fi
+fi
+
+debug "$CMD"
+if [ $debug ]; then
+    exit 0
+fi
+
+eval $CMD

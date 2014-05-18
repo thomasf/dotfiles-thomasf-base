@@ -1,0 +1,16 @@
+#!/bin/sh
+
+# docker run -u user -i -t -v local-dir:dir-inside-container /bin/bash
+set -x
+args="run -i "
+case $1 in
+  h|here)
+    args="$args -v $PWD:/mount"
+    ;;
+  *)
+    echo ""
+    ;;
+esac
+args="$args -t ubuntu /bin/bash"
+
+docker $args

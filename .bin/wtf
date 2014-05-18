@@ -1,0 +1,30 @@
+#!/bin/sh
+
+
+reset="$(tput sgr0)"
+red="$(tput setaf 1)"
+gre="$(tput setaf 2)"
+yel="$(tput setaf 3)"
+
+header() {
+    echo "$yel ---- $red [ $mag $1 $red ] $yel ---- $reset"
+}
+
+
+s() {
+    command git status --short --branch
+}
+
+d() {
+    command git diff
+}
+
+
+header "todo"
+todo
+
+header "git wtf"
+git wtf
+
+header "git status"
+s

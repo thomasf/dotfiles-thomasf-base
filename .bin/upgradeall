@@ -1,0 +1,34 @@
+#!/bin/bash
+#
+#
+
+set -e
+set -x
+
+runCmd() {
+    if [ -n "$DISPLAY" ] && [ `which urxvt` ]; then
+        exec urxvt -title upgradeall -name upgradeall -e bash -c \
+            "termcolors; echo RUN \" $* \";
+$*
+echo ;
+echo \"COMPLETED: $* \";
+echo \">>> ENTER KEY CLOSES TERMINAL!\";
+read any;" &
+
+    else
+        (
+            set +e
+            $*
+        )
+    fi
+}
+
+runCmd "sudo apt-get update ; sudo apt-get dist-upgrade"
+runCmd "xmonadUpdate"
+runCmd "~/.emacs.d/installDeps emacs"
+runCmd "hsadmin pull"
+runCmd "cd ~/.opt/dunst ; git pull upstream master ; make ; sudo make install"
+runCmd "cd ~/.opt/compton ; git pull upstream master ; make ;"
+runCmd "cd ~/.opt/mu ; git pull upstream master ; make ; sudo make install"
+
+# runCmd "virtualenv-burrito upgrade; rvm get stable; (cd ~/.opt/nvm; git pull origin master)"

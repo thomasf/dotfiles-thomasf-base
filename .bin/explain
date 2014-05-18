@@ -1,0 +1,23 @@
+#!/usr/bin/env ruby
+
+require 'open-uri'
+require 'nokogiri'
+require 'erb'
+
+
+if ARGV.size < 1
+  puts "Usage: explain <COMMAND> [OPTIONS]"
+  exit 1
+end
+
+command = ERB::Util.url_encode(ARGV.first)
+args = ERB::Util.url_encode(ARGV.drop(1).join(' '))
+url = URI.parse("http://explainshell.com/explain/#{command}")
+url = URI.parse("http://explainshell.com/explain/#{command}?args=#{args}") if ARGV.size > 1
+result = Nokogiri::HTML(open(url))
+
+puts result.xpath('//title').first.content
+puts
+result.xpath('//pre').each do |node|
+  puts node.content
+end

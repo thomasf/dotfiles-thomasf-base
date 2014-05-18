@@ -1,0 +1,145 @@
+#!/bin/bash
+#
+# Manage directory synchronized repositories repositories stored in a gitolite repository
+#
+# Author: Thomas Frössman  ( thomasf@jossystem.se / http://thomas.jossystem.se )
+# Updates to this file will probably be available at https://github.com/thomasf/dotfiles/
+#
+
+#set -x
+#set -u
+
+set -e
+
+base="${HOME}/.config/dotfiles/"
+
+if [ $(which dotfiles) ]; then
+  dotfiles=$(which dotfiles)
+else
+  # TODO this will fail in osx
+  dotfiles=$(readlink -f $(dirname $0)/dotfiles)
+fi
+
+# Run dotfiles syncrhonization and/or source INSTALLER script if found
+function install_repositories {
+  local all=${base}/*
+  for d in ${all}; do
+    cd ${d}
+    [ -e "PREINSTALLER" ] && source ./PREINSTALLER
+    [ -e .dotfilesrc ] && $dotfiles -s ${force_opt} -R .
+    [ -e "INSTALLER" ] && source ./INSTALLER
+    true
+  done
+}
+
+# colors
+reset="$(tput sgr0)"
+red="$(tput setaf 1)"
+green="$(tput setaf 2)"
+yellow="$(tput setaf 3)"
+magenta="$(tput setaf 5)"
+
+# Should installations be forced?
+force_opt=""
+if [[ ${1} == "-f" ]]; then
+  force_opt="-f"
+  shift 1
+fi
+
+case ${1} in
+  # Git add all changes in all repositories
+  add)
+    for d in ${base}/*; do
+      cd ${d}
+      git add -A
+    done
+    ;;
+  # Git diff all repositories
+  d|diff)
+    for d in ${base}/*; do
+      cd ${d}
+      git diff
+    done
+    ;;
+  # Install/symlink all repositories to ~
+  install)
+    install_repositories
+    ;;
+  # Push all repositories
+  push)
+    for d in ${base}/*; do
+      (
+        cd ${d}
+        remote=$(git config --local --get remote.origin.url) && \
+          echo "${magenta}PUSH${reset} $remote" && \
+          git push -q origin master && \
+          echo "${green}DONE${reset} $remote"
+      ) &
+    done
+    ;;
+  # Publish all repositories
+  publish)
+    for d in ${base}/*; do
+      (
+        cd ${d}
+          remote=$(git config --local --get remote.publish.url) && \
+          echo "${magenta}PUSH${reset} $remote" && \
+          git push -q publish master && \
+          echo "${green}DONE${reset} $remote"
+      ) &
+    done
+    ;;
+  # omg
+  reset-to-origin-master)
+    for d in ${base}/*; do
+      cd ${d}
+      # git fetch origin master
+      git fetch origin
+      git reset --hard origin/master
+    done
+    ;;
+
+  # Pull all repositores
+  pull)
+    for d in ${base}/*; do
+      cd ${d}
+      git fetch origin
+      git merge origin/master
+      install_repositories
+    done
+    ;;
+  # Git status of all repositories
+  s|status)
+    for d in ${base}/*; do
+      cd ${d}
+      if [[ ! $(git status --porcelain) = "" ]]; then
+        echo "${magenta}[- $(basename ${d}) ]"
+        git status --short --branch
+      fi
+    done
+    ;;
+  # Run tig on all unclean repositories
+  tig)
+    for d in ${base}/*; do
+      cd ${d}
+      [[ ! $(git status --porcelain) = "" ]] && tig status
+    done
+    ;;
+  # Run magit-status on all unclean repositories
+  magit)
+    el=""
+    for d in ${base}/*; do
+      cd ${d}
+      [[ ! $(git status --porcelain) = "" ]] && el="${el} (magit-status \"${PWD}/\")"
+    done
+    if [[ -z $el ]]; then
+      echo "no changes"
+    else
+      emacs -eval "(progn ${el} (delete-other-windows) )"
+    fi
+    ;;
+  *)
+    echo "Invalid argument!"
+    exit 1
+    ;;
+esac

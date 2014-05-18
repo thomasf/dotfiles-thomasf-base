@@ -1,0 +1,28 @@
+#!/bin/bash
+
+sadb-uninstall() {
+  local package=$(adb shell pm list packages | cut -c 9- | selectline)
+  [ -n "$package" ] && adb uninstall "$package"
+
+}
+
+# TODO Not implemented
+# sadb-launch() {
+# }
+
+
+set -e
+cmd="$1"
+shift
+
+case $cmd in
+  # l|launch)
+  #   sadb-launch "$@"
+  #   ;;
+  uninstall)
+    sadb-uninstall "$@"
+    ;;
+  *)
+    echo "Nothing to do for $cmd"
+    ;;
+esac

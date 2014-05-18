@@ -1,0 +1,54 @@
+#!/usr/bin/env python
+# -*- coding: utf-8 -*-
+__author__ = 'Thomas Frössman'
+
+from subprocess import Popen, PIPE
+import os
+import json
+import sys
+
+
+def load_gpg_json_dict():
+    data = None
+    try:
+        data = Popen(["gpg",
+                      "--quiet",
+                      "--no-tty",
+                      "--decrypt",
+                      os.path.expanduser("~/.accounts.json.gpg")],
+                     stdout=PIPE).communicate()[0]
+    except Exception:
+        print("error retreiving data")
+    return json.loads(data)
+
+
+def list_accounts():
+    accounts = load_gpg_json_dict()
+    for account in accounts:
+        result = "%s:  " % account
+        for key in accounts[account]:
+            result += "%s:*** " % key
+        print result
+
+
+def get_value(account, key="p"):
+    result = ""
+    try:
+        if key is "p":
+            key = "password"
+        if key is "u":
+            key = "username"
+        result = load_gpg_json_dict()[account][key]
+    except Exception:
+        sys.exit(1)
+    return result
+
+
+if __name__ == '__main__':
+    args = sys.argv
+    if len(args) is 2:
+        print get_value(args[1])
+    elif len(args) is 3:
+        print get_value(args[1], args[2])
+    else:
+        list_accounts()

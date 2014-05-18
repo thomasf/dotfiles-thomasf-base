@@ -1,0 +1,54 @@
+#!/bin/sh
+#
+# Run when leaving a console or similar.
+# Might lock the desktop and turn off the screen
+#
+# Author: Thomas Frössman  ( thomasf@jossystem.se / http://thomas.jossystem.se )
+# Updates to this file will probably be available at https://github.com/thomasf/dotfiles/
+#
+#
+# references:
+# - /usr/share/acpi-support/screenblank
+# - /etc/acpi/sleep.sh
+# - /etc/acpi/hibernate.sh
+
+
+
+for arg in $*; do
+  case $arg in
+    silence)
+      mpc pause
+      ;;
+    deauth)
+      # Unload any loaded agent keys
+      [ -n "$GPG_AGENT_INFO" ] \
+        && kill -HUP $(echo $GPG_AGENT_INFO | awk -F: '{print $2}')
+      # Drop sudo authentications
+      [ -x "$(which sudo)" ] \
+        && sudo -K
+      ;;
+    lock)
+      # If running an xsession
+      if [ -n "${DISPLAY}" ]; then
+        [ `which gnome-screensaver-command` ] \
+          && gnome-screensaver-command --lock
+        [ `which xset` ] \
+          && sleep 5 \
+          && xset dpms force off
+      fi
+      ;;
+    hibernate)
+      gksudo /usr/sbin/pm-hibernate
+      ;;
+    suspend)
+      gksudo /usr/sbin/pm-suspend
+      ;;
+    reboot)
+      gksudo reboot
+      ;;
+    shutdown)
+      gksudo "shutdown now -h"
+      ;;
+
+  esac
+done

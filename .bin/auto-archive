@@ -1,0 +1,124 @@
+#!/usr/bin/python
+# -*- coding: utf-8 -*-
+__author__ = 'Thomas Frössman'
+""" Automatically clean up and store away files that are not where they belong  """
+from datetime import datetime
+import shutil
+import logging
+import os
+import os.path as p
+import fnmatch
+
+APP_NAME = "auto-archive"
+
+
+def setup_logger(level=logging.INFO):
+    log = logging.getLogger(APP_NAME)
+    log.setLevel(level)
+    ch = logging.StreamHandler()
+    ch.setLevel(level)
+    formatter = logging.Formatter("%(levelname)s : %(message)s")
+    ch.setFormatter(formatter)
+    log.addHandler(ch)
+    return log
+
+
+class AutoArchiver:
+
+    def __init__(self, src, exclude=[], exclude_dot=True, dry_run=False,
+                 archive_path='~/auto-archive', archive_dir_fmt='%Y-%m'):
+        self.__src = p.expanduser(src)
+        self.__ex = exclude
+        self.__ex_dot = exclude_dot
+        self.__archive_path = p.expanduser(archive_path)
+        self.__dry_run = dry_run
+        self.__archive_dir_fmt = archive_dir_fmt.strip()
+        if not os.name == "posix":
+            raise Exception("only tested under posix")
+        if not p.isdir(self.__src):
+            raise ValueError(
+                "The source '" + self.__src + "' is not a writable directory")
+        if not p.isdir(self.__archive_path):
+            raise ValueError(
+                "The destination '" + self.__archive_path
+                + "' is not a writeable directory")
+
+    def run(self):
+        log.info("Archiving archiving '" + self.__src + "'")
+        if self.__dry_run:
+            log.info("Dry run: " + str(self.__dry_run))
+        else:
+            log.debug("Run: " + str(self.__dry_run))
+        log.debug("into: " + self.__archive_path)
+        log.debug("excluding: " + str(self.__ex))
+        files = self.get_filtered_file_list()
+        self.archive_files(files)
+
+    def archive_files(self, files):
+        dst = self.get_archive_dir()
+        log.debug("preparing to archive into")
+        if not os.path.exists(dst):
+            os.makedirs(dst)
+
+        for f in files:
+            src = self.__src + "/" + f
+            if self.__dry_run:
+                log.debug("NOT moving '" + src + "' -> '" + dst + "'")
+            else:
+                if not os.path.exists(dst + "/" + f):
+                    shutil.move(src, dst)
+                else:
+                    log.info(
+                        "'" + f + "' already exists in archive directory"
+                        ", skipping")
+
+    def get_filtered_file_list(self):
+        all_files = os.listdir(self.__src)
+        log.debug("full directory listing: " + str(all_files))
+        archive_path = p.realpath(self.__archive_path)
+
+        def file_filter(filename):
+            file_path = p.realpath(self.__src + "/" + filename)
+            if file_path.startswith(archive_path):
+                log.warn("removing '" + file_path +
+                         "' which is or is inside of the archive directory '"
+                         + archive_path + "'")
+                return False
+            for pattern in self.__ex:
+                if fnmatch.fnmatchcase(filename, pattern):
+                    log.debug(
+                        "removed file: '" + filename
+                        + "' was match against pattern '" + pattern + "'")
+                    return False
+            return True
+        filtered_files = filter(file_filter, all_files)
+        log.debug("filtered directory listing: " + str(filtered_files))
+        return filtered_files
+
+    def get_archive_dir(self):
+        date = datetime.now()
+        archive_path_str = p.realpath(
+            (self.__archive_path + "/"
+                + date.strftime(self.__archive_dir_fmt)) + "/")
+        log.debug('Generated destination archive dir:' + archive_path_str)
+        return archive_path_str
+
+
+log = setup_logger(logging.INFO)
+
+
+home = AutoArchiver("~",
+                    exclude=[".*", "programming", "auto-archive", "Projects",
+                             "Desktop", "Documents", "Downloads", "Dropbox",
+                             "Music", "Pictures", "Programming", "repos",
+                             "temp", "test", "tmp", "Ubuntu One", "Videos",
+                             "notes", "media", "Media", "public_html",
+                             "VirtualBox VMs", "repos", "mnt", "books"])
+home.run()
+
+# browser_downloads = AutoArchiver("~/Downloads/browser")
+# browser_downloads.run()
+
+downloads = AutoArchiver(
+    "~/Downloads", exclude=["sorted", "bittorrent", "browser"])
+downloads.run()

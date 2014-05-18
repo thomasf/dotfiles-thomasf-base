@@ -1,0 +1,18 @@
+#!/bin/sh
+
+cmd=${1}
+case $cmd in
+    l|light)
+        dynamic-colors s l
+        ;;
+    d|dark)
+        dynamic-colors s d
+        ;;
+    *)
+        if [ -e ~/.config/darkmode ]; then
+            dynamic-colors s d
+        else
+            dynamic-colors s l
+        fi
+        ;;
+esac

@@ -1,0 +1,20 @@
+#!/bin/sh
+#
+# Convert last commit to the current unstaged changeset
+# TODO: maybe only allow on an clean repository?
+
+set -e
+
+VERSION="1"
+
+SUBDIRECTORY_OK=Yes
+OPTIONS_KEEPDASHDASH=""
+OPTIONS_SPEC="\
+git rewip"
+
+version_print() {
+  echo "git rewip version ${VERSION}"
+}
+
+git reset --soft HEAD^
+git reset

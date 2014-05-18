@@ -1,0 +1,125 @@
+#!/bin/bash
+#
+run=""
+run_background=''
+window_argument=''
+editor_argument=''
+server_argument=''
+emacs_bin=''
+emacsclient_bin=''
+cmd=$(basename ${0})
+
+if [ "${OSTYPE:0:6}" = "darwin" ] \
+   && [ -x /Applications/Emacs.app/Contents/MacOS/bin/emacsclient ]; then
+  emacsclient_bin=/Applications/Emacs.app/Contents/MacOS/bin/emacsclient
+elif [ -x ~/.opt/emacs/lib-src/emacsclient ]; then
+  emacsclient_bin=~/.opt/emacs/lib-src/emacsclient
+elif [ -x /usr/bin/emacsclient ]; then
+  emacsclient_bin=/usr/bin/emacsclient
+else
+  case $cmd in
+    e|ee|editor)
+      cmd=emacs
+      ;;
+  esac
+fi
+
+if [ "${OSTYPE:0:6}" = "darwin" ] \
+   && [ -x /Applications/Emacs.app/Contents/MacOS/Emacs ]; then
+  emacs_bin=/Applications/Emacs.app/Contents/MacOS/Emacs
+elif [ -x ~/.opt/emacs/src/emacs ]; then
+  emacs_bin=~/.opt/emacs/src/emacs
+elif [ -x /usr/bin/emacs ]; then
+  emacs_bin=/usr/bin/emacs
+else
+  echo 'cannot find emacs'
+  exit 1
+fi
+
+case $cmd in
+  emacsclient|e|ee|editor|o)
+    if [ -x "$emacsclient_bin" ]; then
+      run="${emacsclient_bin} -q"
+    else
+      echo 'cannot find emacsclient'
+      exit 1
+    fi
+
+    # editor argument
+    case $cmd in
+      editor|e|o)
+        editor_argument='-a emacs'
+        ;;
+      ee)
+        editor_argument='-a false'
+        ;;
+    esac
+    
+    # window argument
+    if [ -n "$DISPLAY" ]; then
+      case $cmd in
+        editor)
+          window_argument='-c'
+          ;;
+        o)
+          window_argument='-n'
+          ;;
+        e)
+          run_background='yes'
+          if [ -n "$DISPLAY" ]; then
+            window_argument='-c -n'
+          else
+            window_argument='-nw'
+          fi
+          ;;
+      esac
+    else
+      window_argument="-nw"
+    fi 
+
+    # server argument
+    if [ -n "$DISPLAY" ] && [ $(wsname -p) ]; then
+         server_argument="-s $(wsname -p)"
+    fi
+    ;;
+  emacs|sumacs)
+    run=$emacs_bin
+    case $cmd in
+      sumacs)
+        run="gksudo ${run}"        
+        ;;
+    esac
+    ;;
+  *)
+    exit 1
+    ;;
+esac
+
+case $cmd in
+  ee)
+    window_argument="-nw"
+    ;;
+esac      
+
+if [ -n "$DISPLAY" ]; then
+  if [ -e ~/.config/darkmode ]; then
+    mode=dark
+  else
+    mode=light
+  fi
+  export GTK2_RC_FILES=${HOME}/.config-xmonad/gtk/gtk-2.0/${mode}
+fi
+
+case $TERM in
+  rxvt-unicode-256color|screen-256color)
+    export TERM="rxvt-16color"
+    ;;
+esac
+
+if [ -n "$run_background" ]; then
+  exec ${run} ${server_argument} ${window_argument} ${editor_argument} "$@" &
+  sleep 1
+  echo ""
+else
+  exec ${run} ${server_argument} ${window_argument} ${editor_argument} "$@"
+fi

@@ -1,0 +1,36 @@
+#!/bin/bash
+# rgit - recursive git
+#
+
+# TODO: does not work in osx.
+
+in_git_dir() {
+  local ncolors=$(tput colors)
+  if test -n "$ncolors" && test $ncolors -ge 8; then
+    local reset="$(tput sgr0)"
+    local red="$(tput setaf 1)"
+    local gre="$(tput setaf 2)"
+    local yel="$(tput setaf 3)"
+    local mag="$(tput setaf 5)"
+  fi
+  local dir="${1%%.git}"
+  [[ -d ${dir} ]] || return 0
+  shift
+  local args="${*}"
+  (
+    cd "${dir}"
+    command git rev-parse 2> /dev/null || return 0
+    echo ''
+    echo "$red [ $mag $PWD $red ] $yel ---- $reset"
+    eval git ${args}
+    echo ''
+  )
+}
+export -f in_git_dir
+
+[[ -n $* ]] \
+  && find \
+  -L . \
+  -name .git \
+  -execdir bash -e -c \
+  "in_git_dir '{}' ${*}" \;

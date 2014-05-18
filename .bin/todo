@@ -1,0 +1,11 @@
+#!/bin/sh
+
+if [ `which ag` ]; then
+    agargs="--context=0 --no-numbers --color --group"
+    ag $agargs --color-match="33" TODO[:]? | tr \\t ' ' | tr -s [:blank:]
+    ag $agargs --color-match="35" FIXME[:]? | tr \\t ' ' | tr -s [:blank:]
+else
+    ackargs="--color --group"
+    ack $ackargs --color-match="yellow" TODO | tr \\t ' ' | tr -s [:blank:]
+    ack $ackargs --color-match="magenta" FIXME | tr \\t ' ' | tr -s [:blank:]
+fi

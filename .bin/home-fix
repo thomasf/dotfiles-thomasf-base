@@ -1,0 +1,45 @@
+#!/bin/sh
+#
+# Ensures some things about files and folders
+#
+# Author: Thomas Frössman  ( thomasf@jossystem.se / http://thomas.jossystem.se )
+# Updates to this file will probably be available at https://github.com/thomasf/dotfiles/
+#
+
+set -e
+
+# Ensure sane file modes for some important files and directories
+if [ -d "${HOME}/.ssh" ]; then
+  chmod 700 ~/.ssh
+  chmod 600 ~/.ssh/*
+fi
+if [ -d "${HOME}/.gnupg" ]; then
+  chmod 700 -R ~/.gnupg
+fi
+
+[ -d "${HOME}/.subversion" ] && chmod 700 "${HOME}/.subversion"
+
+# Create default directories
+for dir in $HOMEDIRS; do
+  mkdir -p "${HOME}/${dir}"
+done
+
+
+
+# If option o is given, take ownership of some directories
+# that might have files accidently owned by root while sudoing.
+if  [ "${1}" = "o" ]; then
+  # Python virtualenv burrito and virtualenvwrapper
+  [ -d "${HOME}/.venvburrito" ] && sudo chown -R ${USER} "${HOME}/.venvburrito"
+  [ -d "${HOME}/.virtualenvs" ] && sudo chown -R ${USER} "${HOME}/.virtualenvs"
+  # Node version manager
+  [ -d "${HOME}/.nvm" ] && sudo chown -R ${USER} "${HOME}/.nvm"
+  # Ruby version manager
+  [ -d "${HOME}/.rvm" ] && sudo chown -R ${USER} "${HOME}/.rvm"
+  # Haskell/Cabal
+  [ -d "${HOME}/.cabal" ] && sudo chown -R ${USER} "${HOME}/.cabal"
+  [ -d "${HOME}/.ghc" ] && sudo chown -R ${USER} "${HOME}/.ghc"
+  # emacs
+  [ -d "${HOME}/.emacs.d" ] && sudo chown -R ${USER} "${HOME}/.emacs.d"
+
+fi

@@ -1,0 +1,19 @@
+#!/bin/sh
+#
+# Open magit in current directory
+#
+
+set -e
+
+VERSION="1"
+
+SUBDIRECTORY_OK=Yes
+OPTIONS_KEEPDASHDASH=""
+OPTIONS_SPEC="\
+git magit"
+
+version_print() {
+  echo "git magit version ${VERSION}"
+}
+
+magit

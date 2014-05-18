@@ -1,0 +1,22 @@
+#!/bin/bash
+#
+#  Cleans home and system cache directories
+#
+# Author: Thomas Frössman  ( thomasf@jossystem.se / http://thomas.jossystem.se )
+# Updates to this file will probably be available at https://github.com/thomasf/dotfiles/
+#
+
+set -e
+
+function dF() {
+  if [ -w ${1} ]; then rm ${1}; fi
+}
+function dD() {
+  if [ -w ${1} ]; then rm -rf ${1}; fi
+}
+
+dF ~/.recently-used.xbel
+dF ~/.recently-used
+dD ~/.thumbnails
+
+sudo apt-get clean
