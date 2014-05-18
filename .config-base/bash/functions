@@ -1,0 +1,566 @@
+#!/bin/bash
+# ------------------------------------------------------------------------------
+# ALIASES AND FUNCTIONS
+#
+export FZF_DEFAULT_OPTS="--extended --no-black --no-256"
+fzf() {
+  ruby --disable-gems ~/.bin/fzf  "$@"
+}
+export -f fzf
+
+selectline() {
+  fzf --no-sort "$@"
+}
+export -f selectline
+
+# if [ -n "$DISPLAY" ] && [ $(which dmenu) ] ; then
+#   alias selectline="dmenu -l 50"
+# else
+#   alias selectline="fzf --no-sort"
+# fi
+
+# The use_env call below is a reusable command to activate/create a new Python
+# virtualenv, requiring only a single declarative line of code in your .env files.
+# It only performs an action if the requested virtualenv is not the current one.
+use_env() {
+  typeset venv
+  venv="$1"
+  if [[ "${VIRTUAL_ENV:t}" != "$venv" ]]; then
+    if workon | grep -q "$venv"; then
+      workon "$venv"
+    else
+      echo -n "Create virtualenv $venv now? (Yn) "
+      read answer
+      if [[ "$answer" == "Y" ]]; then
+        mkvirtualenv "$venv"
+      fi
+    fi
+  fi
+}
+
+dl() {
+  curl -O "$@"
+}
+
+alias historyreload='history -r'
+h() {
+  local line=''
+  line="$(history | selectline)"
+  line=$(echo $line | python -c "import sys;[sys.stdout.write(' '.join(line.split(' ')[:1])) for line in sys.stdin]")
+  line=$(history -p !$line)
+  if [[ "$line" !=  "!" ]]; then
+    if [ -n "$DISPLAY" ] && [ $(which xdotool) ] && [ $(which xsel) ] ; then
+      echo $line | xsel --clipboard
+      ( # this subshell silences job info output
+        ( # this subshell is the background job
+          sleep 0.4
+          xdotool keydown ctrl key v keyup ctrl 2>/dev/null
+        ) &
+      )
+    else
+      echo $line
+    fi
+  fi
+}
+
+alias df='df -h'
+# alias reset="echo -ne '\033c'"
+
+__exec_in_dir() {
+  local ncolors=$(tput colors)
+  if test -n "$ncolors" && test $ncolors -ge 8; then
+    local reset="$(tput sgr0)"
+    local red="$(tput setaf 1)"
+    local gre="$(tput setaf 2)"
+    local yel="$(tput setaf 3)"
+    local mag="$(tput setaf 5)"
+  fi
+
+  local dir="${1}"
+  [[ -d ${dir} ]] || return 0
+  shift
+  local args="${*}"
+  (
+    cd "${dir}"
+    local d=$(basename "${PWD}")
+    echo ''
+    echo "$yel ---- $red [ $mag $d $red ] $yel ---- $reset"
+    ${args}
+    echo ''
+  )
+}
+export -f __exec_in_dir
+
+indirs() {
+  [[ -n $* ]] \
+    && find \
+    -L . \
+    -mindepth 1 \
+    -maxdepth 1 \
+    -type d \
+    -execdir bash -e -c \
+    "__exec_in_dir '{}' ${*}" \;
+}
+
+__exec_in_git_dir() {
+  local ncolors=$(tput colors)
+  if test -n "$ncolors" && test $ncolors -ge 8; then
+    local reset="$(tput sgr0)"
+    local red="$(tput setaf 1)"
+    local gre="$(tput setaf 2)"
+    local yel="$(tput setaf 3)"
+    local mag="$(tput setaf 5)"
+  fi
+  local dir="${1%%.git}"
+  [[ -d ${dir} ]] || return 0
+  shift
+  local args="${*}"
+  (
+    cd "${dir}"
+    command git rev-parse 2> /dev/null || return 0
+    echo ''
+    echo "$red [ $mag $PWD $red ] $yel ---- $reset"
+    ${args}
+    echo ''
+  )
+}
+export -f __exec_in_git_dir
+
+ingitdirs() {
+  [[ -n $* ]] \
+    && find \
+    -L . \
+    -name .git \
+    -execdir bash -e -c \
+    "__exec_in_git_dir '{}' ${*}" \;
+}
+
+mgall() {
+  local dirs=""
+  for dir in $(find -L . -name .git -execdir dirname {} \;); do
+    dirs=$dirs$(builtin cd $dir && command git rev-parse 2>/dev/null && [[ ! $(command git status --porcelain) = "" ]] && echo -n " $dir" )
+  done
+  if [ -n "$dirs" ]; then
+    magit ${dirs}
+  else
+    echo "no uncommited"
+  fi
+
+}
+
+rmosx() {
+  echo -n "recursivley delete all __MACOSX, .DS_Store files?"
+  read -n 1 yorn;
+  if test "$yorn" = "y"; then
+    echo
+    find . \
+      -name __MACOSX -type d -execdir rm -r {} \; -prune  \
+      -o \( -name .DS_Store -type f -execdir rm {} \; -prune \)
+  else
+    echo
+    return 1
+  fi
+}
+
+rmclean() {
+  echo -n "Really clean $(pwd)?"
+  read -n 1 yorn;
+  if test "$yorn" = "y"; then
+    echo
+    rm -f \#* *~ .*~ *.bak .*.bak  *.tmp .*.tmp core a.out;
+  else
+    echo
+    return 1
+  fi
+}
+
+rmpyc() {
+  echo -n "recursivley delete all .pyc files?"
+  read -n 1 yorn;
+  if test "$yorn" = "y"; then
+    echo
+    find -name \*.pyc -execdir rm '{}' \;
+  else
+    echo
+    return 1
+  fi
+}
+
+bak() {
+  if [[ -e $1 ]]; then
+    cp "$1" "$1.backup-$(date +"%m-%d-%Y_%H%M%S")"
+  else
+    return 1
+  fi
+}
+
+bakdir() {
+  if [[ -d $1 ]]; then
+    cp -R "$1" "$1.backup-$(date +"%m-%d-%Y_%H%M%S")"
+  else
+    return 1
+  fi
+}
+
+wsdir-set() {
+  if [ $(wsname -p) ]; then
+    mkdir -p ~/.config/wsdirs/
+    echo -ne $PWD > ~/.config/wsdirs/$(wsname -p)
+  fi 
+}
+
+wsdir-unset() {
+    if [ $(wsname -p) ]; then
+    rm -f ~/.config/wsdirs/$(wsname -p)
+  fi 
+}
+
+wsdir-cd() {
+  local wsnamep=$(wsname -p)
+  if [ -f ~/.config/wsdirs/$wsnamep ]; then
+    cd $(cat ~/.config/wsdirs/$wsnamep)
+  else
+    return 1
+  fi
+}
+
+
+awscredentials() {
+  local account="aws-$1"
+  local access_key=$(acc ${account} access-key-id)
+  local access_key_secret=$(acc ${account} secret-access-key)
+  local url=$(acc ${account} ec2-url)
+  export AWS_ACCESS_KEY_ID=$access_key
+  export AWS_SECRET_ACCESS_KEY=$access_key_secret
+  export AWS_ACCESS_KEY=$access_key
+  export AWS_SECRET_KEY=$access_key_secret
+  export EC2_URL=$url
+  echo " $access_key : $access_key_secret : $url"
+}
+
+eless() {
+  zless $(which ${1})
+}
+
+alias j="jobs -l"
+if [ ${OSTYPE:0:6} = darwin ]; then
+  alias ls="ls -G"
+else
+  alias ls="ls --group-directories-first --color"
+fi
+
+l() {
+  if [ $(which pls) ]; then
+    pls "$@"
+  else
+    ls -l "$@"
+  fi
+
+}
+alias la='ls -A'
+alias ll="ls -l"
+alias lsg="git ls-dir"
+alias lsnew="find . -mindepth 1 -maxdepth 1 -mtime 0"
+alias lslistenports="sudo netstat -plunt"
+alias adblogcat="adb logcat | adb-logcat-pp"
+
+__select_subdir() {
+  local query="$@"
+  local result=$(find . -mindepth 1 -maxdepth 10 -type d \
+    -not \( -name ".?*" -prune \) \
+    -not \( -name "node_modules" -prune \) \
+    | cut -c 3- | selectline --query="$query")
+  [[ -z $result ]] && return 1
+  echo -n "./${result}"
+}
+
+
+function findupcased {
+  find . -name '*[A-Z]*'
+}
+
+function findext {
+  [[ -z $1 ]] && return 1
+  find . -iname \*.${1}
+}
+
+alias fe='findext'
+
+function findname {
+  [[ -z $1 ]] && return 1
+  find . -iname \*${1}\*
+}
+alias fn='findname'
+
+function cdup {
+
+  # TODO: Allow an integer parameter to define the number of levels to jump up; allow it to be used with a named arg
+
+  if [ $# == 0 ]; then
+    cd ..
+    return 0
+  fi
+
+  local dir="$1"
+  local old=`pwd`
+
+  # Try matching the full segment in path name
+  local new=`perl -pe "s{(.*/\Q$dir\E)(?=/|$).*?$}{\1};" <<< $old`
+
+  # If failed, try partial match of segment
+  if [ "$old" == "$new" ]; then
+    new=`perl -pe "s{(.*/[^/]*?\Q$dir\E[^/]*?)(?=/|$).*?$}{\1}" <<< $old`
+  fi
+
+  # No replacements done, so we failed
+  if [ "$old" == "$new" ]; then
+    echo "Can't find '$dir' among ancestor directories ($old == $new)." 1>&2
+    return 1
+  fi
+
+  cd $new
+}
+
+function cdl {
+  local target
+  target=`readlink -f $PWD`
+  [[ -z $target ]] && return 1
+  cd $target
+}
+
+alias c="cd"
+alias u="cdup"
+
+alias t2='tree -d -L 2'
+alias t3='tree -d -L 3'
+
+alias p='python'
+
+alias agent='eval $(ssh-agent); ssh-add;'
+
+agentunset() {
+  unset SSH_AUTH_SOCK
+  unset SSH_AGENT_PID
+}
+
+alias apt-update-upgrade='sudo apt-get update && sudo apt-get dist-upgrade'
+
+# ffmpeg - for - phone
+ffmpeg-for-phone() {
+  for A in $@; do ffmpeg -i ${A} -s qvga -vcodec mpeg4 -acodec libfaac ${A}.mp4 ;done
+}
+
+# Extract wrapper for a number of archive formats
+ex () {
+  if [[ -f $1 ]]; then
+    case $1 in
+      *.tar.bz2)           tar xjf $1     ;;
+      *.tar.gz)            tar xzf $1     ;;
+      *.tar)               tar xf $1      ;;
+      *.tgz)               tar xf $1      ;;
+      *.bz2)               bunzip2 $1     ;;
+      *.rar)               unrar x $1     ;;
+      *.gz)                gunzip $1      ;;
+      *.lzma)              unxz $1        ;;
+      *.rpm)               bsdtar xf $1   ;;
+      *.zip)               unzip $1       ;;
+      *.Z)                 uncompress $1  ;;
+      *.7z)                7z x $1        ;;
+      *.exe)               cabextract $1  ;;
+      *)                   echo "'$1': unrecognized file compression" ;;
+    esac
+  else
+    echo "'$1' is not a valid file"
+  fi
+}
+
+# Make directory and change to it
+mkcd() {
+  [[ $1 ]] || return 0
+  [[ ! -d $1 ]] && mkdir -vp "$1"
+  [[ -d $1 ]] && builtin cd "$1"
+}
+
+# Change directory to homesync directory
+[[ -d ~/.config/dotfiles ]] && alias cdhs='builtin cd ~/.config/dotfiles'
+
+# Disk usage - recursive for each child folder
+dudir() {
+  du -sk ./* | sort -n | awk 'BEGIN{ pref[1]="K"; pref[2]="M"; pref[3]="G";} { total = total + $1; x = $1; y = 1; while( x > 1024 ) { x = (x + 1023)/1024; y++; } printf("%g%s\t%s\n",int(x*10)/10,pref[y],$2); } END { y = 1; while( total > 1024 ) { total = (total + 1023)/1024; y++; } printf("Total: %g%s\n",int(total*10)/10,pref[y]); }'
+}
+
+# z workspace prefix name
+cdd() {
+  if [ -n "$DISPLAY" ] && [ $(which wsname) ]; then
+    local name
+    name="$(wsname -p)" || return 1
+    case $name in
+      home|temp|chat|nodes|mail|dash|NSP)
+        return 0
+        ;;
+      emacs)
+        cd ~/.emacs.d
+        ;;
+      www|share)
+        cd ~/Downloads
+        ;;
+      *)
+        _z "${HOME}" "${name//-/ }"
+        # TODO: maybe modify CDPATH variable
+        ;;
+    esac
+  fi
+}
+
+# cd to subdirectory with selection
+jd() {
+  local query="$@"
+  local root=$(command git rev-parse --show-toplevel 2>/dev/null)
+  local dir=""
+  dir=$(cd "$root" >/dev/null; __select_subdir "$query") || return 1
+  cd "${root}${dir}" >/dev/null
+}
+
+# Jump to repository
+jr() {
+  local dir=""
+  local query="$@"
+  dir=$(cd ~/repos && find -L . -maxdepth 5  -name '.git'  | xargs -n 1 dirname | cut -c3- | sort | selectline --query="$query") || return 1
+  dir="${HOME}/repos/${dir}"
+  dir=`readlink -f $dir`
+  cd "$dir"
+}
+
+# fkill - kill process
+fkill() {
+  ps -ef | sed 1d | fzf -m | awk '{print $2}' | xargs kill -${1:-9}
+}
+
+# ftags - search ctags
+ftags() {
+  local line
+  [ -e tags ] &&
+  line=$(
+    awk 'BEGIN { FS="\t" } !/^!/ {print toupper($4)"\t"$1"\t"$2"\t"$3}' tags |
+    cut -c1-80 | fzf --nth=1,2
+  ) && $EDITOR $(cut -f3 <<< "$line") -c "set nocst" \
+                                      -c "silent tag $(cut -f2 <<< "$line")"
+}
+
+# fco - checkout git commit
+fco() {
+  local commits commit
+  commits=$(git log --pretty=oneline --abbrev-commit --reverse) &&
+  commit=$(echo "$commits" | fzf +s +m -e) &&
+  git checkout $(echo "$commit" | sed "s/ .*//")
+}
+
+# ftags - search ctags
+ftags() {
+  local line
+  [ -e tags ] &&
+  line=$(
+    awk 'BEGIN { FS="\t" } !/^!/ {print toupper($4)"\t"$1"\t"$2"\t"$3}' tags |
+    cut -c1-80 | fzf --nth=1,2
+  ) && $EDITOR $(cut -f3 <<< "$line") -c "set nocst" \
+                                      -c "silent tag $(cut -f2 <<< "$line")"
+}
+
+# cd to repository root
+cdr() {
+  local dir=$(command git rev-parse --show-toplevel) && builtin cd $dir
+}
+alias ur="cdr"
+
+z() {
+  if [[ -z "$*" ]]; then
+    cd $(_z -l 2>&1 | sed -n 's/^[ 0-9.]*//p' | fzf)
+  else
+    local reporoot=$(command git rev-parse --show-toplevel 2> /dev/null)
+    _z $reporoot "$@"
+  fi
+}
+alias j=z
+alias g="git"
+
+s() {
+  command git status --short --branch
+}
+
+d() {
+  command git diff
+}
+
+lg() {
+  command git log --stat --ignore-space-change --pretty=format:'%C(yellow)%h%Creset %C(green)%ad%Creset %C(cyan)%ae%Creset %C(blue)%s%Creset'  
+}
+
+lgv() {
+  command git log -p --pretty=format:'%C(yellow)%h%Creset %C(cyan)%an <%ae>%Creset %Cgreen%cr%Creset %C(magenta)%s%Creset%C(yellow)%d%Creset'  
+}
+
+lgt() {
+  command git log --graph --all --pretty=format:'%C(yellow)%h%Creset %C(cyan)%ae%Creset %Cgreen%cr%Creset %s%C(yellow)%d%Creset' --abbrev-commit  
+}
+
+
+man() {
+  local init=""
+  command man "$@" >/dev/null || return $?
+  [ -e ~/.emacs.d/init-low.el ] && init="-l ~/.emacs.d/init-low"
+  emacs -q $init -nw -eval "(man \"$@\")"
+}
+
+octopresscreate () {
+  local name="${1}"
+  mkdir $name &&
+  cd $name &&
+  git init . &&
+  git remote add octopress https://github.com/imathis/octopress &&
+  git pull octopress master
+}
+
+# Go to currently active buffer directory in Emacs
+cdb() {
+  local EMACS_CWP=$(emacsclient -a false -e "
+  (let ((current-buffer
+         (nth 1 (assoc 'buffer-list
+                       (nth 1 (nth 1 (current-frame-configuration)))))))
+        (with-current-buffer current-buffer
+          (let ((filename (buffer-file-name)))
+            (if filename
+                (file-name-directory filename)
+              default-directory))))
+    " | sed 's/^"\(.*\)"$/\1/')
+  if [ -d "$EMACS_CWP" ]; then
+    cd "$EMACS_CWP"
+  else
+    return 1
+  fi
+}
+
+pwdclip() {
+  pwd | xsel --clipboard
+}
+
+
+# TODO WIP
+fontadjust() {
+  local cw="$(tput cols)"
+  local newsize=${__afs_fs}
+  [[ ${cw} != ${__afs_cw} ]] || return 0
+  if [[ ${cw} -lt 60  ]] ; then
+    newsize="9.8"
+  elif  [[ ${cw} -gt 77  ]] ; then
+    newsize="11.8"
+  fi
+
+  if [[ ${__afs_fs} == ${newsize} ]]; then
+    export __afs_cw="${cw}"
+    return 0
+  fi
+  local font="xft:PragmataPro:size=${newsize}"
+  echo -en "\033]50;$font\007"
+  export __afs_fs="${newsize}"
+  export __afs_cw="${cw}"
+}

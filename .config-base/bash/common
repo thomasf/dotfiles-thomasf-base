@@ -1,0 +1,9 @@
+# -*- mode: sh -*-
+# Common functionality..
+
+#[ -n "$__common" ] && return 0
+
+__BASH="${HOME}/.config-base/bash"
+export __BASH
+
+#__common="loaded"; export __common

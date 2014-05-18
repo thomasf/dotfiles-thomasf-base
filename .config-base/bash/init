@@ -1,0 +1,361 @@
+# -*- mode: sh -*-
+source ~/.config-base/bash/common
+
+# ------------------------------------------------------------------------------
+# HOME DIR LOCAL ENVIRONMENTS
+#
+bash_start_time=$(date +%s)
+bash_uptime() {
+  echo "$(($(date +%s)-${bash_start_time})) seconds"
+}
+
+log() {
+  # [ ! -z "$PS1" ] \
+  #   && [ ! "${TERM}" == "dumb" ] \
+  #   && [ ! "${TERM}" == "eterm" ] \
+  #   && [ ! "${TERM}" == "eterm-color" ] \
+  #   && echo -n "■"
+  return 0
+}
+
+# Solarized dark for console terminal
+if [ "$TERM" = "linux" ]; then
+  echo -en "\e]P0073642"
+  echo -en "\e]P8002b36"
+  echo -en "\e]P1dc322f"
+  echo -en "\e]P9cb4b16"
+  echo -en "\e]P2859900"
+  echo -en "\e]PA586e75"
+  echo -en "\e]P3b58900"
+  echo -en "\e]PB657b83"
+  echo -en "\e]P4268bd2"
+  echo -en "\e]PC839496"
+  echo -en "\e]P5d33682"
+  echo -en "\e]PD6c71c4"
+  echo -en "\e]P62aa198"
+  echo -en "\e]PE93a1a1"
+  echo -en "\e]P7eee8d5"
+  echo -en "\e]PFfdf6e3"
+  clear
+fi
+
+# Don't let virtualenv change the prompt
+export VIRTUAL_ENV_DISABLE_PROMPT=1
+export VIRTUALENV_DISTRIBUTE=1
+
+
+
+# -------------------------------------------------------------------------------
+# Connect to gpg agent if possible
+# TODO maybe not always do this
+log "gpg-agent"
+agent_file="$HOME/.gnupg/gpg-agent-info-$(hostname)"
+if [ -r "$agent_file" ] && kill -0 $(grep GPG_AGENT_INFO "$agent_file" | cut -d: -f 2) 2>/dev/null; then
+  source "$agent_file"
+  export GPG_AGENT_INFO;
+  export SSH_AUTH_SOCK;
+  export SSH_AGENT_PID
+fi
+GPG_TTY=$(tty)
+export GPG_TTY
+
+# ------------------------------------------------------------------------------
+# NON INTERACTIVE RETURN POINT
+#
+[ -z "$PS1" ] \
+  && return
+
+# Only do this automatically if not root
+if [ $UID != 0 ]; then
+
+  # Pip download cache
+  # mkdir -p "${HOME}/.cache/pip_download" \
+  #   && export PIP_DOWNLOAD_CACHE="${HOME}/.cache/pip_download"
+  mkdir -p "${HOME}/.cache/pip_download"
+
+  # Maybe load Node version manager
+  [ ! "$(type -t nvm)" = "function" ] \
+    && [ -f "${HOME}/.opt/nvm/nvm.sh" ] \
+    && log "nvm" \
+    && source "${HOME}/.opt/nvm/nvm.sh"
+
+  # Maybe load Ruby version manager
+  # NOTE Bash from ubuntu 14.04 seems to be rvm incompatible
+  # [ -f "${HOME}/.rvm/scripts/rvm" ] \
+  #   && log "rvm" \
+  #   && source "${HOME}/.rvm/scripts/rvm"
+
+  # Maybe load rbenv
+  [ -f "${HOME}/.rbenv/bin/rbenv" ] \
+    && log "rbenv" \
+    && eval "$($HOME/.rbenv/bin/rbenv init -)"
+
+  # Set virtualenvwrapper hooks dir
+  [ -e "${HOME}/.virtualenvwrapper-hooks" ] \
+    && VIRTUALENVWRAPPER_HOOK_DIR="${HOME}/.virtualenvwrapper-hooks" \
+    && export VIRTUALENVWRAPPER_HOOK_DIR
+
+  # Maybe load virtualenvburruto or else pythonbrew
+  if [ -f "${HOME}/.venvburrito/startup.sh" ]; then
+    log "virtualenvburrito" \
+      && source "${HOME}/.venvburrito/startup.sh"
+  fi
+
+  # disabled due to problems w. ubuntu 14.04
+  # [[ -s $HOME/opt/pythonz/etc/bashrc ]] && log "pythonz" && source $HOME/opt/pythonz/etc/bashrc
+
+  # load autoenv
+  [ -f "${__BASH}/autoenv" ] \
+    && . "${__BASH}/autoenv"
+
+  # Set flexsdk home
+  [ -d "${HOME}/.opt/flex_sdk" ] \
+    && export FLEX_HOME="${HOME}/.opt/flex_sdk"
+
+  # Set android sdk home
+  [ -d "${HOME}/.opt/android-sdks" ] \
+    && export ANDROID_SDK="${HOME}/.opt/android-sdks" \
+    && export ANDROID_HOME="${ANDROID_SDK}"
+
+  # Set android ndk home
+  [ -d "${HOME}/.opt/android-ndk" ] \
+    && export ANDROID_NDK="${HOME}/.opt/android-ndk"
+
+fi
+
+# ------------------------------------------------------------------------------
+# BASH
+#
+log "bash config"
+shopt -s checkwinsize
+
+if [ ! ${OSTYPE:0:6} = darwin ]; then
+  shopt -s checkjobs
+  shopt -s cdspell
+  shopt -s dirspell
+fi
+if [ $UID != 0 ]; then
+  export HISTFILE=~/.bash_history
+else
+  export HISTFILE=~/.bash_history_root
+fi
+shopt -s histappend
+export HISTCONTROL=ignoredups
+export HISTSIZE=20000
+export HISTTIMEFORMAT='%F %T '
+export HISTIGNORE="&:ls:cd*:[bf]g:exit:pwd:clear:mount:umount:?"
+
+#
+# ------------------------------------------------------------------------------
+#
+#   emacs ansiterm
+#
+if [ "$TERM" = "eterm-color" ]; then
+  function __eterm_set_cwd {
+    echo -e "\033AnSiTc" "$(pwd)"
+  }
+  function eterm-reset() {
+    echo -e "\033AnSiTu" "$LOGNAME"
+    __eterm_set_cwd
+    if [ $(uname) = "SunOS" ]; then
+      hostname_options="";
+    else
+      hostname_options="-f";
+    fi
+    echo -e "\033AnSiTh" "$(hostname $hostname_options)"
+  }
+  eterm-reset
+fi
+
+# Add faked cd with full paths to log whenever pwd changes
+export __last_logged_pwd="$PWD"
+__pwd_logger() {
+  if [[ ! "$PWD" == "$__last_logged_pwd" ]]; then
+    local HISTIGNORE=""
+    history -s "cd $PWD"
+    __last_logged_pwd="$PWD"
+    declare -f __eterm_set_cwd >/dev/null && __eterm_set_cwd
+  fi
+}
+
+case $TERM in
+  dumb)
+    # do nothing
+    ;;
+  *)
+    PROMPT_COMMAND="__pwd_logger; history -a; echo -ne '\a'"
+    ;;
+esac
+
+# ------------------------------------------------------------------------------
+#
+# TERMINAL COLOR THEME
+
+__darkmode_switcher() {
+  if [ -e ~/.config/darkmode ]; then
+    [ ! $DARKMODE = dark ] && export DARKMODE=dark && termcolors
+  else
+    [ $DARKMODE = dark ] && export DARKMODE=light && termcolors
+  fi
+}
+
+if [ $(which termcolors) ] && [ -z $SSH_TTY ] && [ -z $TMUX ]; then
+  case $TERM in
+    rxvt*|xterm*)
+      [ -e ~/.config/darkmode ] && export DARKMODE=dark || export DARKMODE=light
+      termcolors
+      PROMPT_COMMAND="${PROMPT_COMMAND}; __darkmode_switcher"
+      ;;
+  esac
+fi
+
+
+
+
+#
+# ------------------------------------------------------------------------------
+#
+# TERMINAL OPTIONS
+#
+# enable xon/xoff flow control
+[ $(which stty) ] \
+  && stty -ixon
+# set bell frequency to 0
+[ $(which setterm) ] \
+  && setterm -bfreq 0
+
+# ------------------------------------------------------------------------------
+# COMPLETION
+#
+
+log "bash completion"
+[ -f "/etc/bash_completion" ] \
+  && ! shopt -oq posix \
+  && . "/etc/bash_completion"
+
+for file in $(find $HOME/.config-base/bash/completion.d/ -not -type d); do
+  source $file # 2>/dev/null
+done
+
+# ------------------------------------------------------------------------------
+# DIRCOLORS
+#
+log "dircolors"
+if [ -x /usr/bin/dircolors ]; then
+  test -r ~/.config-base/dircolors/default && eval "$(dircolors -b ~/.config-base/dircolors/default 2>/dev/null)" || eval "$(dircolors -b)"
+  alias ls='ls --color=auto'
+  alias grep='grep --color=auto'
+  alias fgrep='fgrep --color=auto'
+  alias egrep='egrep --color=auto'
+fi
+
+# ------------------------------------------------------------------------------
+# Misc
+#
+
+[ -f "${__BASH}/z" ] \
+  && log "z" \
+  && export _Z_CMD=zz \
+  && . "${__BASH}/z"
+
+if [ -x /usr/bin/lesspipe ]; then
+  eval "$(SHELL=/bin/sh lesspipe)"
+  if [ -f /usr/share/source-highlight/src-hilite-lesspipe.sh ]; then
+    export LESSOPEN="| /usr/share/source-highlight/src-hilite-lesspipe.sh %s"
+    export LESS=' -R '
+  fi
+fi
+
+if [ ! -z "${BASH}" ]; then
+  [ -f "${__BASH}/functions" ] \
+    && log "functions" \
+    && . "${__BASH}/functions"
+fi
+
+
+# clipboard paste
+if [ -n "$DISPLAY" ] && [ -x /usr/bin/xsel ] ; then
+  # Work around a bash bug: \C-@ does not work in a key binding
+  bind '"\C-x\C-m": set-mark'
+  # The '#' characters ensure that kill commands have text to work on; if
+  # not, this binding would malfunction at the start or end of a line.
+  bind 'Control-v: "#\C-b\C-k#\C-x\C-?\"$(xsel -ob --clipboard)\"\e\C-e\C-x\C-m\C-a\C-y\C-?\C-e\C-y\ey\C-x\C-x\C-d"'
+fi
+
+
+# ------------------------------------------------------------------------------
+# HUB
+#
+
+[ $(which /usr/bin/ruby) ] && \
+  /usr/bin/ruby --disable-gems -e'#' >/dev/null 2>/dev/null  \
+  [ $(which hub) ] && \
+  alias git=hub
+
+# ------------------------------------------------------------------------------
+# PRIVATE AND LOCAL
+#
+[ -e "${HOME}/.bashrc-private" ] \
+  && . "${HOME}/.bashrc-private" \
+  && log "loaded .bashrc-private"
+
+[ -e "${HOME}/.bashrc-local" ] \
+  && . "${HOME}/.bashrc-local" \
+  && log "loaded .bashrc-local"
+
+# Activate the prompt
+log "activate prompt"
+
+if [ ! -z "${BASH}" ]; then
+  [ -f "${__BASH}/prompt" ] \
+    && log "prompt" \
+    && . "${__BASH}/prompt"
+
+
+  case $TERM in
+    dumb)
+      # do nothing
+      ;;
+    *)
+      __prompt_activate
+      ;;
+  esac
+fi
+
+# replace logger with empty stub
+function log() {
+  return 0
+}
+
+[ $(which manpath) ] && \
+  unset MANPATH && \
+  export MANPATH=$(manpath -q)
+
+case $TERM in
+  dumb)
+    # do nothing
+    ;;
+  *)
+    echo -e -n '\r'
+    ;;
+esac
+
+if [ ! "${TERM}" == "dumb" ] && [ "${PWD}" == "${HOME}" ]; then
+  if wsdir-cd || cdd; then
+    [ $(which wsname) ] && [ $(wsname -p) ] && workon $(wsname -p) 2>/dev/null || true
+    git status --short --branch 2>/dev/null || true
+  fi
+fi
+
+[ ! -z $SSH_TTY ] \
+  && [ -z $TMUX ] \
+  && [ $(which tmux) ] \
+  && tmux list-sessions 2>/dev/null \
+  || true
+
+[ $UID == 0 ] \
+  && export TMOUT=3600 \
+  || true
+
+
+# end of init
