@@ -1,0 +1,11 @@
+complete -F _django_completion -o default django
+complete -F _django_completion -o default dj
+
+complete -o bashdefault -o default -F _fzf_dir_completion c
+
+complete -F _filedir_xspec emacs
+complete -F _filedir_xspec e
+complete -F _filedir_xspec ee
+
+complete -o bashdefault -o default -o nospace -F __git_wrap__git_main rgit
+complete -o bashdefault -o default -o nospace -F __git_wrap__git_main g

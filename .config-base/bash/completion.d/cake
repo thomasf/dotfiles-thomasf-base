@@ -1,0 +1,15 @@
+# -*- mode: bash -*-
+# Task name completion for cake files.
+function _cake() {
+    local cur tasks
+    cur="${COMP_WORDS[COMP_CWORD]}"
+    tasks=$(cake 2>/dev/null | awk '{print $2}') 
+    if [ $COMP_CWORD -eq 1 ]; then
+        # Task name completion for first argument.
+        COMPREPLY=( $(compgen -W "$tasks" $cur) )
+    else
+        # File name completion for other arguments.
+        COMPREPLY=( $(compgen -f $cur) )
+    fi
+}
+complete -o default -F _cake cake
