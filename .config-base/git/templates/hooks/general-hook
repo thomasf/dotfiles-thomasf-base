@@ -1,0 +1,9 @@
+#!/bin/sh
+# this script just forwards the hook
+set -e
+hook=`basename ${0}`
+hooksdir=`dirname ${0}`
+defaulthook=~/.config-base/git/hooks/$hook
+localhook=$hooksdir/$hook-local
+[ ! -x ${localhook} ] || eval $localhook $*
+[ ! -x ${defaulthook} ] || eval $defaulthook $*

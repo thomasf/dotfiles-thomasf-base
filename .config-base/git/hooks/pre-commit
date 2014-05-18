@@ -1,0 +1,5 @@
+#!/bin/sh
+
+# TODO: implement deny committing obvious non-commit stuff
+# * python debug: ipdb / pdb
+# * lines containing DO NOT COMMIT or something similar
