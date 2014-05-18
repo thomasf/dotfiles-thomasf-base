@@ -1,0 +1,22 @@
+# -*- mode: conf -*-
+[general]
+metadata = ~/.config/offlineimap
+accounts = myGmail
+pythonfile = ~/.offlineimap.py
+
+[Account myGmail]
+localrepository = Local
+remoterepository = Remote
+
+[Repository Local]
+type = Maildir
+localfolders = ~/.config/myGmail-maildir
+
+[Repository Remote]
+type = Gmail
+remoteusereval = get_username("myGmail")
+remotepasseval = get_password("myGmail")
+ssl = yes
+sslcacertfile = /etc/ssl/certs/ca-certificates.crt
+maxconnections = 5
+#folderfilter = lambda foldername: foldername not in '[Gmail]/All Mail'

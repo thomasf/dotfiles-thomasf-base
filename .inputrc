@@ -1,0 +1,51 @@
+# -*- mode: conf -*-
+$include /etc/inputrc
+
+set editing-mode emacs
+
+# Adds punctuation as word delimiters
+set bind-tty-special-chars off
+
+# Completion
+set completion-ignore-case on
+set completion-query-items 200
+set show-all-if-ambiguous on
+set show-all-if-unmodified on
+set page-completions on
+set visible-stats on
+
+# Useful stuff for UTF-8
+set meta-flag on
+set input-meta on
+set output-meta on
+set convert-meta off
+
+# Bell
+set bell-style none
+
+"\e[1~": beginning-of-line
+"\e[4~": end-of-line
+"\e[5~": beginning-of-history
+"\e[6~": end-of-history
+"\e[3~": delete-char
+"\e[2~": quoted-insert
+"\e[5C": forward-word
+"\e[5D": backward-word
+"\e\e[C": forward-word
+"\e\e[D": backward-word
+
+"\e[B": history-search-forward
+"\e[A": history-search-backward
+
+$if Python
+    Tab: complete
+$endif
+
+$if Bash
+  # F10 toggles mc on and off
+  # Note Ctrl-o toggles panes on and off in mc
+  "\e[21~": "mc\C-M"
+
+  # do history expansion when space entered
+  Space: magic-space
+$endif

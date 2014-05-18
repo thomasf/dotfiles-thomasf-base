@@ -1,0 +1,52 @@
+##### Misc
+*.log
+.tern-port
+.vagrant/
+
+### *tags
+TAGS
+
+#### Python
+*.pot
+*.py[co]
+
+#### Java
+*.class
+
+#### Gradle
+.gradle/
+
+#### Haskell
+dist
+cabal-dev
+*.o
+*.hi
+*.chi
+*.chs.h
+
+#### Ruby
+.rake_t_cache
+
+#### Emacs
+.\#*
+*.elc
+\#*\#
+.\#*
+.emacs.desktop
+.emacs.desktop.lock
+.emacs.bm
+.ropeproject/
+*_flymake*
+flycheck_*
+projectile-bookmarks.eld
+.cask/
+
+#### Idea - Intellij/Pycharm...
+.idea/
+
+#### osx
+.DS_Store
+
+#### other ??
+*~
+

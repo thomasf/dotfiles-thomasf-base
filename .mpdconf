@@ -1,0 +1,46 @@
+bind_to_address       "0.0.0.0"
+port                  "6205"
+music_directory       "~/Music"
+playlist_directory    "~/.mpd/playlists"
+db_file               "~/.mpd/mpd.db"
+log_file              "~/.mpd/mpd.log"
+pid_file              "~/.mpd/mpd.pid"
+state_file            "~/.mpd/mpd.state"
+sticker_file          "~/.mpd/stickerfile.sql"
+max_connections       "30"
+
+audio_output {
+type                  "pulse"
+name                  "MPD"
+#server               "localhost"   # optional
+#sink                 "ssre"
+#sink                 "alsa_output" # optional
+}
+
+audio_output {
+type                  "httpd"
+name                  "My HTTP Stream"
+encoder               "vorbis"      # optional, vorbis or lame
+port                  "8000"
+#quality              "5.0"         # do not define if bitrate is defined
+bitrate               "128"         # do not define if quality is defined
+format                "44100:16:1"
+enabled               "no"
+}
+
+#
+#audio_output {
+#  type               "fifo"
+#  name               "My FIFO"
+#  path               "/tmp/mpd.fifo"
+#  format             "44100:16:1"
+#}
+
+gapless_mp3_playback  "yes"
+max_command_list_size "16384"
+# auto_update           "yes"
+# auto_update_depth     "1"
+
+# Local Variables:
+# mode: conf-space
+# End:

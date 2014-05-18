@@ -1,0 +1,17 @@
+#!bash
+#
+# This file might be sourced during installation with hsadmin
+#
+
+[ -e "${HOME}/.config/pep8" ] \
+    || ln -fs "$(pwd)/.config-base/pep8" "${HOME}/.config/"
+
+[ -e "${HOME}/.config/flake8" ] \
+    || ln -fs "$(pwd)/.config-base/flake8" "${HOME}/.config/"
+
+[ -e "${HOME}/.pulse/default.pa" ] \
+    || (mkdir -p "${HOME}/.pulse" \
+    && ln -fs "$(pwd)/.config-base/pulse/default.pa" "${HOME}/.pulse/" )
+
+[ -e "${HOME}/.config/pudb" ] \
+    || ln -fs "$(pwd)/.config-base/pudb" "${HOME}/.config/pudb"
