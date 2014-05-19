@@ -117,9 +117,7 @@ case $TERM in
 esac
 
 if [ -n "$run_background" ]; then
-  exec ${run} ${server_argument} ${window_argument} ${editor_argument} "$@" &
-  sleep 1
-  echo ""
+  exec ${run} ${server_argument} ${window_argument} ${editor_argument} "$@" 2>/dev/null &
 else
   exec ${run} ${server_argument} ${window_argument} ${editor_argument} "$@"
 fi
