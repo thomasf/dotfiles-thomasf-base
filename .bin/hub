@@ -8,7 +8,7 @@
 
 Encoding.default_external = 'UTF-8' if defined?(Encoding)
 module Hub
-  Version = VERSION = '1.10.6-213-gfc4f4e8'
+  Version = VERSION = '1.10.6-214-ge807a38'
 end
 
 prevent_require = lambda do |name|
