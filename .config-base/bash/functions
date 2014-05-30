@@ -255,8 +255,8 @@ l() {
   else
     ls -l "$@"
   fi
-
 }
+
 alias la='ls -A'
 alias ll="ls -l"
 alias lsg="git ls-dir"
@@ -503,13 +503,22 @@ lgt() {
   command git log --graph --all --pretty=format:'%C(yellow)%h%Creset %C(cyan)%ae%Creset %Cgreen%cr%Creset %s%C(yellow)%d%Creset' --abbrev-commit  
 }
 
+case $HOST_TAGS in
+  *:minimalshell:*)
+  # nothing
+  ;;
+  *)
+    man() {
+      local init=""
+      command man "$@" >/dev/null || return $?
+      [ -e ~/.emacs.d/init-low.el ] && init="-l ~/.emacs.d/init-low"
+      emacs -q $init -nw -eval "(man \"$@\")"
+    }
+    
+    ;;
+esac
 
-man() {
-  local init=""
-  command man "$@" >/dev/null || return $?
-  [ -e ~/.emacs.d/init-low.el ] && init="-l ~/.emacs.d/init-low"
-  emacs -q $init -nw -eval "(man \"$@\")"
-}
+
 
 octopresscreate () {
   local name="${1}"

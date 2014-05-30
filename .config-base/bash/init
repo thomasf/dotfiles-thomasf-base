@@ -18,32 +18,9 @@ log() {
   return 0
 }
 
-# Solarized dark for console terminal
-if [ "$TERM" = "linux" ]; then
-  echo -en "\e]P0073642"
-  echo -en "\e]P8002b36"
-  echo -en "\e]P1dc322f"
-  echo -en "\e]P9cb4b16"
-  echo -en "\e]P2859900"
-  echo -en "\e]PA586e75"
-  echo -en "\e]P3b58900"
-  echo -en "\e]PB657b83"
-  echo -en "\e]P4268bd2"
-  echo -en "\e]PC839496"
-  echo -en "\e]P5d33682"
-  echo -en "\e]PD6c71c4"
-  echo -en "\e]P62aa198"
-  echo -en "\e]PE93a1a1"
-  echo -en "\e]P7eee8d5"
-  echo -en "\e]PFfdf6e3"
-  clear
-fi
-
 # Don't let virtualenv change the prompt
 export VIRTUAL_ENV_DISABLE_PROMPT=1
 export VIRTUALENV_DISTRIBUTE=1
-
-
 
 # -------------------------------------------------------------------------------
 # Connect to gpg agent if possible
@@ -64,6 +41,38 @@ export GPG_TTY
 #
 [ -z "$PS1" ] \
   && return
+
+# ------------------------------------------------------------------------------
+# PRIVATE AND LOCAL
+#
+[ -e "${HOME}/.bashrc-private" ] \
+  && . "${HOME}/.bashrc-private" \
+  && log "loaded .bashrc-private"
+
+[ -e "${HOME}/.bashrc-local" ] \
+  && . "${HOME}/.bashrc-local" \
+  && log "loaded .bashrc-local"
+
+# Solarized dark for console terminal
+if [ "$TERM" = "linux" ]; then
+  echo -en "\e]P0073642"
+  echo -en "\e]P8002b36"
+  echo -en "\e]P1dc322f"
+  echo -en "\e]P9cb4b16"
+  echo -en "\e]P2859900"
+  echo -en "\e]PA586e75"
+  echo -en "\e]P3b58900"
+  echo -en "\e]PB657b83"
+  echo -en "\e]P4268bd2"
+  echo -en "\e]PC839496"
+  echo -en "\e]P5d33682"
+  echo -en "\e]PD6c71c4"
+  echo -en "\e]P62aa198"
+  echo -en "\e]PE93a1a1"
+  echo -en "\e]P7eee8d5"
+  echo -en "\e]PFfdf6e3"
+  clear
+fi
 
 # Only do this automatically if not root
 if [ $UID != 0 ]; then
@@ -104,9 +113,17 @@ if [ $UID != 0 ]; then
   # disabled due to problems w. ubuntu 14.04
   # [[ -s $HOME/opt/pythonz/etc/bashrc ]] && log "pythonz" && source $HOME/opt/pythonz/etc/bashrc
 
-  # load autoenv
-  [ -f "${__BASH}/autoenv" ] \
-    && . "${__BASH}/autoenv"
+  case $HOST_TAGS in
+    *:minimalshell:*)
+    # nothing
+    ;;
+    *)
+      # load autoenv
+      [ -f "${__BASH}/autoenv" ] \
+        && . "${__BASH}/autoenv"
+      ;;
+  esac
+
 
   # Set flexsdk home
   [ -d "${HOME}/.opt/flex_sdk" ] \
@@ -199,15 +216,23 @@ __darkmode_switcher() {
   fi
 }
 
-if [ $(which termcolors) ] && [ -z $SSH_TTY ] && [ -z $TMUX ]; then
-  case $TERM in
-    rxvt*|xterm*)
-      [ -e ~/.config/darkmode ] && export DARKMODE=dark || export DARKMODE=light
-      termcolors
-      PROMPT_COMMAND="${PROMPT_COMMAND}; __darkmode_switcher"
-      ;;
-  esac
-fi
+case $HOST_TAGS in
+  *:minimalshell:*)
+  # nothing
+  ;;
+  *)
+    if [ $(which termcolors) ] && [ -z $SSH_TTY ] && [ -z $TMUX ]; then
+      case $TERM in
+        rxvt*|xterm*)
+          [ -e ~/.config/darkmode ] && export DARKMODE=dark || export DARKMODE=light
+          termcolors
+          PROMPT_COMMAND="${PROMPT_COMMAND}; __darkmode_switcher"
+          ;;
+      esac
+    fi
+    ;;
+esac
+
 
 
 
@@ -287,21 +312,19 @@ fi
 # HUB
 #
 
-[ $(which /usr/bin/ruby) ] && \
-  /usr/bin/ruby --disable-gems -e'#' >/dev/null 2>/dev/null  \
-  [ $(which hub) ] && \
-  alias git=hub
+case $HOST_TAGS in
+  *:minimalshell:*)
+  # nothing
+  ;;
+  *)
+    [ $(which /usr/bin/ruby) ] && \
+    /usr/bin/ruby --disable-gems -e'#' >/dev/null 2>/dev/null  \
+                  [ $(which hub) ] && \
+    alias git=hub
+    ;;
+esac
 
-# ------------------------------------------------------------------------------
-# PRIVATE AND LOCAL
-#
-[ -e "${HOME}/.bashrc-private" ] \
-  && . "${HOME}/.bashrc-private" \
-  && log "loaded .bashrc-private"
 
-[ -e "${HOME}/.bashrc-local" ] \
-  && . "${HOME}/.bashrc-local" \
-  && log "loaded .bashrc-local"
 
 # Activate the prompt
 log "activate prompt"
