@@ -105,11 +105,14 @@ if [ $UID != 0 ]; then
     && export VIRTUALENVWRAPPER_HOOK_DIR
 
   # Maybe load virtualenvburruto or else pythonbrew
-  if [ -f "${HOME}/.venvburrito/startup.sh" ]; then
+  if [ -f "/usr/local/bin/virtualenvwrapper.sh" ]; then
+    log "virtualenvwrapper" \
+      && source "/usr/local/bin/virtualenvwrapper.sh"
+  elif [ -f "${HOME}/.venvburrito/startup.sh" ]; then
     log "virtualenvburrito" \
       && source "${HOME}/.venvburrito/startup.sh"
   fi
-
+ 
   # disabled due to problems w. ubuntu 14.04
   # [[ -s $HOME/opt/pythonz/etc/bashrc ]] && log "pythonz" && source $HOME/opt/pythonz/etc/bashrc
 
