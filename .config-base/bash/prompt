@@ -205,6 +205,7 @@ function __prompt_activate {
       PS1="${TITLEBAR}\
 ${cyan}\$(__prompt_username)${yellowH}@${HOST_COLOR}\$(__prompt_hostname)${black}${cyanB}\$(__prompt_ssh)\
 ${blue}\$(__prompt_pwd) \
+${yellowH}\$(__prompt_venv) \
 ${yellowH}\$(__prompt_last) \
 ${resetFormating}"
       ;;
