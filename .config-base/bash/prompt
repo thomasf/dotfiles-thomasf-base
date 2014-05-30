@@ -204,8 +204,8 @@ function __prompt_activate {
     *:minimalshell:*)
       PS1="${TITLEBAR}\
 ${cyan}\$(__prompt_username)${yellowH}@${HOST_COLOR}\$(__prompt_hostname)${black}${cyanB}\$(__prompt_ssh)\
-${yellowH}\$(__prompt_last) \
 ${blue}\$(__prompt_pwd) \
+${yellowH}\$(__prompt_last) \
 ${resetFormating}"
       ;;
     *)
