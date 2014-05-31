@@ -8,11 +8,18 @@ Author: Thomas Frössman
 from subprocess import PIPE, Popen
 import re
 from sys import argv
+from platform import platform
 
 p = re.compile("^([^\s]+)\s+([^\s]+)\s+([^\s]+)\s+([^\s]+)\s+([^\s]+)\s+([^\s]+\s+[^\s]+\s+[^\s]+) (.*)")  # noqa
-process = Popen(
-    ['ls',  '-lhtr', '--color', '--group-directories-first'] + argv[1:],
-    stdout=PIPE)
+
+command = ['ls',  '-lhtr']
+if platform(terse=True).startswith("Darwin"):
+    command += ['-G']
+else:
+    command += ['--color', '--group-directories-first']
+command += argv[1:]
+
+process = Popen(command, stdout=PIPE)
 
 while True:
     line = process.stdout.readline().decode('utf8')
