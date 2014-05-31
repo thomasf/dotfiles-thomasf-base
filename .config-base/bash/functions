@@ -250,7 +250,7 @@ else
 fi
 
 l() {
-  if [ $(which pls) ]; then
+  if [ $(which pls) ] && [ ! ${OSTYPE:0:6} = darwin ]; then
     pls "$@"
   else
     ls -l "$@"
