@@ -33,11 +33,11 @@ function install_repositories {
 }
 
 # colors
-reset="$(tput sgr0)"
-red="$(tput setaf 1)"
-green="$(tput setaf 2)"
-yellow="$(tput setaf 3)"
-magenta="$(tput setaf 5)"
+reset="$(tput sgr0 2>/dev/null||echo -n)"
+red="$(tput setaf 1 2>/dev/null||echo -n)"
+green="$(tput setaf 2  2>/dev/null||echo -n)"
+yellow="$(tput setaf 3  2>/dev/null||echo -n)"
+magenta="$(tput setaf 5  2>/dev/null||echo -n)"
 
 # Should installations be forced?
 force_opt=""
