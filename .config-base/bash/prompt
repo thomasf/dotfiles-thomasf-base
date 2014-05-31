@@ -18,20 +18,20 @@ export -f __prompt_m
 
 function __prompt_venv {
   # [[ -n ${VIRTUAL_ENV} ]] && [ "${VIRTUAL_ENV##*/}" != "default" ] && echo -n " p:${VIRTUAL_ENV##*/} "
-  local w=$(tput cols)
+  local w=$(tputl cols 2>/dev/null||echo -n 100)
   [ "$w" -gt 45 ] &&
   [[ -n ${VIRTUAL_ENV} ]] && echo -n "p:${VIRTUAL_ENV##*/} "
 }
 export -f __prompt_venv
 
 function __prompt_rvm {
-  local w=$(tput cols)
+  local w=$(tput cols 2>/dev/null||echo -n 100)
   [ "$w" -gt 60 ] &&
  which rvm-prompt >/dev/null 2>/dev/null && echo -n "r:$(rvm-prompt v g 2>/dev/null) "
 }
 
 function __prompt_nvm {
-  local w=$(tput cols)
+  local w=$(tput cols 2>/dev/null||echo -n 100)
   [ "$w" -gt 70 ] &&
   if [ "$(type -t nvm_version)" == "function" ]; then
     echo -n "n:$(nvm_version) "
@@ -106,7 +106,7 @@ export -f  __dir_chomp
 
 # Compact version of current working directory
 function __prompt_pwd {
-  local w=$(($(tput cols)-50))
+  local w=$(($(tput cols 2>/dev/null||echo -n 100)-50))
   echo -n $(__dir_chomp  "$(pwd)" $w)
 }
 export -f  __prompt_pwd
