@@ -262,7 +262,9 @@ log "bash completion"
   && . "/etc/bash_completion"
 
 for file in $(find $HOME/.config-base/bash/completion.d/ -not -type d); do
-  source $file # 2>/dev/null
+  if [ ! ${file} = ag ] && [ ! ${OSTYPE:0:6} = darwin ]; then
+    source $file
+  fi
 done
 
 # ------------------------------------------------------------------------------
