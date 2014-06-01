@@ -1,3 +1,4 @@
 .bin/youtube-dl
 .bin/ag
 .bin/pt
+.bin/packer*
