@@ -10,24 +10,42 @@
 ppath() {
  [ -d "${1}" ] && PATH="${1}:${PATH}"
 }
+
+# general global path prepends
 ppath /sbin
 ppath /bin
 ppath /usr/sbin
 ppath /usr/bin
-ppath ~/.opt/depot_tools
+
+# debian(?) global path prepends
 ppath /var/lib/gems/1.8/bin
 ppath /var/lib/gems/1.9/bin
+
+# osx (homebrew) global path prepends
+ppath /usr/local/opt/ruby/bin
+ppath /usr/local/opt/python/bin
 ppath /usr/local/git/bin
+
+# User home path prepends
+ppath ~/.opt/depot_tools
 ppath ~/.cabal/bin
+
+# Misc User home path prepends
+ppath ~/.virtualenvs/default/bin
+ppath ~/.rvm/bin
+ppath ~/.cask/bin
+ppath ~/.rbenv/bin
+
+# osx User home path prepends
+ppath ~/Library/Haskell/bin
+
+# ~/.opt User home path prepends
 ppath ~/.opt/go/bin \
     && GOROOT=~/.opt/go/ \
     && export GOROOT
 ppath ~/.opt/ec2-api-tools/bin \
     && EC2_HOME=~/.opt/ec2-api-tools \
     && export EC2_HOME
-# ppath ~/.opt/plan9port/bin \
-#   && PLAN9=~/.opt/plan9port \
-#   && export PLAN9
 ppath ~/.opt/groovy/bin
 ppath ~/.opt/gradle/bin
 ppath ~/.opt/apache-maven/bin
@@ -35,13 +53,7 @@ ppath ~/.opt/android-sdks/build-tools/19.0.3
 ppath ~/.opt/android-sdks/tools
 ppath ~/.opt/android-sdks/platform-tools
 ppath ~/.opt/AdobeAIRSDK/bin
-ppath ~/Library/Haskell/bin
-ppath ~/.rvm/bin
-ppath ~/.virtualenvs/default/bin
-ppath ~/.cask/bin
-ppath ~/.rbenv/bin
-ppath /usr/local/opt/ruby/bin
-ppath /usr/local/opt/python/bin
+
 
 # Perl local
 export PERL_LOCAL_LIB_ROOT="${HOME}/.config/perl5";
