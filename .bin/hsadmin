@@ -15,6 +15,8 @@ base="${HOME}/.config/dotfiles/"
 
 if [ $(which dotfiles) ]; then
   dotfiles=$(which dotfiles)
+elif [ -e ${base}base/.bin/dotfiles ]; then
+    dotfiles=${base}base/.bin/dotfiles
 else
   # TODO this will fail in osx
   dotfiles=$(readlink -f $(dirname $0)/dotfiles)
