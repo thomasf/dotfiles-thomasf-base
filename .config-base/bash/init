@@ -106,6 +106,9 @@ if [ $UID != 0 ]; then
 
   # Maybe load virtualenvburruto or else pythonbrew
   if [ -f "/usr/local/bin/virtualenvwrapper.sh" ]; then
+    if [ ${OSTYPE:0:6} = darwin ]; then
+      export VIRTUALENVWRAPPER_PYTHON=/usr/local/bin/python
+    fi
     log "virtualenvwrapper" \
       && source "/usr/local/bin/virtualenvwrapper.sh"
   elif [ -f "${HOME}/.venvburrito/startup.sh" ]; then
