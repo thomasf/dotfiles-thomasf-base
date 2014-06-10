@@ -40,6 +40,8 @@ ppath ~/.rvm/bin
 ppath ~/.virtualenvs/default/bin
 ppath ~/.cask/bin
 ppath ~/.rbenv/bin
+ppath /usr/local/opt/ruby/bin
+ppath /usr/local/opt/python/bin
 
 # Perl local
 export PERL_LOCAL_LIB_ROOT="${HOME}/.config/perl5";
