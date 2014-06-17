@@ -46,6 +46,20 @@ __ltrim_colon_completions()
 	fi
 }
 
+function_exists __find_mvn_projects ||
+__find_mvn_projects()
+{
+    find . -name 'pom.xml' -not -path '*/target/*' -prune | while read LINE ; do
+        local withoutPom=${LINE%/pom.xml}
+        local module=${withoutPom#./}
+        if [[ -z ${module} ]]; then
+            echo "."
+        else
+            echo ${module}
+        fi
+    done
+}
+
 _mvn()
 {
     local cur prev
@@ -85,6 +99,7 @@ _mvn()
     local plugin_goals_hibernate3="hibernate3:hbm2ddl|hibernate3:help"
     local plugin_goals_idea="idea:clean|idea:idea"
     local plugin_goals_install="install:install-file"
+    local plugin_goals_jacoco="jacoco:check|jacoco:dump|jacoco:help|jacoco:instrument|jacoco:merge|jacoco:prepare-agent|jacoco:prepare-agent-integration|jacoco:report|jacoco:report-integration|jacoco:restore-instrumented-classes"
     local plugin_goals_javadoc="javadoc:javadoc|javadoc:jar|javadoc:aggregate"
     local plugin_goals_jboss="jboss:start|jboss:stop|jboss:deploy|jboss:undeploy|jboss:redeploy"
     local plugin_goals_jboss_as="jboss-as:add-resource|jboss-as:deploy|jboss-as:deploy-only|jboss-as:deploy-artifact|jboss-as:redeploy|jboss-as:redeploy-only|jboss-as:undeploy|jboss-as:run|jboss-as:start|jboss-as:shutdown|jboss-as:execute-commands"
@@ -136,9 +151,9 @@ _mvn()
 
     elif [[ ${prev} == -pl ]] ; then
         if [[ ${cur} == *,* ]] ; then
-            COMPREPLY=( $(compgen -d -S ',' -P "${cur%,*}," -- ${cur##*,}) )
+            COMPREPLY=( $(compgen -W "$(__find_mvn_projects)" -S ',' -P "${cur%,*}," -- ${cur##*,}) )
         else
-            COMPREPLY=( $(compgen -d -S ',' -- ${cur}) )
+            COMPREPLY=( $(compgen -W "$(__find_mvn_projects)" -S ',' -- ${cur}) )
         fi
 
     elif [[ ${prev} == -rf || ${prev} == --resume-from ]] ; then
