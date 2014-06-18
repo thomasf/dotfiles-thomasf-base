@@ -98,12 +98,12 @@ export -f __exec_in_dir
 indirs() {
   [[ -n $* ]] \
     && find \
-    -L . \
-    -mindepth 1 \
-    -maxdepth 1 \
-    -type d \
-    -execdir bash -e -c \
-    "__exec_in_dir '{}' ${*}" \;
+         -L . \
+         -mindepth 1 \
+         -maxdepth 1 \
+         -type d \
+         -execdir bash -e -c \
+         "__exec_in_dir '{}' ${*}" \;
 }
 
 __exec_in_git_dir() {
@@ -133,10 +133,10 @@ export -f __exec_in_git_dir
 ingitdirs() {
   [[ -n $* ]] \
     && find \
-    -L . \
-    -name .git \
-    -execdir bash -e -c \
-    "__exec_in_git_dir '{}' ${*}" \;
+         -L . \
+         -name .git \
+         -execdir bash -e -c \
+         "__exec_in_git_dir '{}' ${*}" \;
 }
 
 mgall() {
@@ -158,8 +158,8 @@ rmosx() {
   if test "$yorn" = "y"; then
     echo
     find . \
-      -name __MACOSX -type d -execdir rm -r {} \; -prune  \
-      -o \( -name .DS_Store -type f -execdir rm {} \; -prune \)
+         -name __MACOSX -type d -execdir rm -r {} \; -prune  \
+                                                       -o \( -name .DS_Store -type f -execdir rm {} \; -prune \)
   else
     echo
     return 1
@@ -214,7 +214,7 @@ wsdir-set() {
 }
 
 wsdir-unset() {
-    if [ $(wsname -p) ]; then
+  if [ $(wsname -p) ]; then
     rm -f ~/.config/wsdirs/$(wsname -p)
   fi 
 }
@@ -271,9 +271,9 @@ alias adblogcat="adb logcat | adb-logcat-pp"
 __select_subdir() {
   local query="$@"
   local result=$(find . -mindepth 1 -maxdepth 10 -type d \
-    -not \( -name ".?*" -prune \) \
-    -not \( -name "node_modules" -prune \) \
-    | cut -c 3- | selectline --query="$query")
+                      -not \( -name ".?*" -prune \) \
+                      -not \( -name "node_modules" -prune \) \
+                 | cut -c 3- | selectline --query="$query")
   [[ -z $result ]] && return 1
   echo -n "./${result}"
 }
@@ -448,9 +448,9 @@ ftags() {
   [ -e tags ] &&
   line=$(
     awk 'BEGIN { FS="\t" } !/^!/ {print toupper($4)"\t"$1"\t"$2"\t"$3}' tags |
-    cut -c1-80 | fzf --nth=1,2
-  ) && $EDITOR $(cut -f3 <<< "$line") -c "set nocst" \
-                                      -c "silent tag $(cut -f2 <<< "$line")"
+        cut -c1-80 | fzf --nth=1,2
+      ) && $EDITOR $(cut -f3 <<< "$line") -c "set nocst" \
+                   -c "silent tag $(cut -f2 <<< "$line")"
 }
 
 # fco - checkout git commit
@@ -467,9 +467,9 @@ ftags() {
   [ -e tags ] &&
   line=$(
     awk 'BEGIN { FS="\t" } !/^!/ {print toupper($4)"\t"$1"\t"$2"\t"$3}' tags |
-    cut -c1-80 | fzf --nth=1,2
-  ) && $EDITOR $(cut -f3 <<< "$line") -c "set nocst" \
-                                      -c "silent tag $(cut -f2 <<< "$line")"
+        cut -c1-80 | fzf --nth=1,2
+      ) && $EDITOR $(cut -f3 <<< "$line") -c "set nocst" \
+                   -c "silent tag $(cut -f2 <<< "$line")"
 }
 
 # cd to repository root
