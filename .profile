@@ -16,6 +16,7 @@ ppath /sbin
 ppath /bin
 ppath /usr/sbin
 ppath /usr/bin
+ppath /usr/local/bin
 
 # debian(?) global path prepends
 ppath /var/lib/gems/1.8/bin
