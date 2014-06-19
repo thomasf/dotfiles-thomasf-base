@@ -90,38 +90,64 @@ esac
 PERL_BADLANG=0 && export PERL_BADLANG
 # Locale settings (man page: locale)
 if [ $(which locale) ]; then
+    if $(locale -a 2>/dev/null | grep -q -x en_US.utf8); then
+      unset LC_ALL
+      LANGUAGE="en_US:en" && export LANGUAGE
+      LANG="en_US.utf8" && export LANG
+      LC_CTYPE="en_US.utf8" && export LC_CTYPE
+      LC_NUMERIC="en_US.utf8" && export LC_NUMERIC
+      LC_TIME="en_US.utf8" && export LC_TIME
+      LC_COLLATE="en_US.utf8" && export LC_COLLATE
+      LC_MONETARY="en_US.utf8" && export LC_MONETARY
+      LC_MESSAGES="en_US.utf8" && export LC_MESSAGES
+      LC_PAPER="en_US.utf8" && export LC_PAPER
+      LC_NAME="en_US.utf8" && export LC_NAME
+      LC_ADDRESS="en_US.utf8" && export LC_ADDRESS
+      LC_TELEPHONE="en_US.utf8" && export LC_TELEPHONE
+      LC_MEASUREMENT="en_US.utf8" && export LC_MEASUREMENT
+      LC_IDENTIFICATION="en_US.utf8" && export LC_IDENTIFICATION
+    elif $(locale -a 2>/dev/null | grep -q -x en_US.UTF-8); then
+      unset LC_ALL
+      LANGUAGE="en_US:en" && export LANGUAGE
+      LANG="en_US.UTF-8" && export LANG
+      LC_CTYPE="en_US.UTF-8" && export LC_CTYPE
+      LC_NUMERIC="en_US.UTF-8" && export LC_NUMERIC
+      LC_TIME="en_US.UTF-8" && export LC_TIME
+      LC_COLLATE="en_US.UTF-8" && export LC_COLLATE
+      LC_MONETARY="en_US.UTF-8" && export LC_MONETARY
+      LC_MESSAGES="en_US.UTF-8" && export LC_MESSAGES
+      LC_PAPER="en_US.UTF-8" && export LC_PAPER
+      LC_NAME="en_US.UTF-8" && export LC_NAME
+      LC_ADDRESS="en_US.UTF-8" && export LC_ADDRESS
+      LC_TELEPHONE="en_US.UTF-8" && export LC_TELEPHONE
+      LC_MEASUREMENT="en_US.UTF-8" && export LC_MEASUREMENT
+      LC_IDENTIFICATION="en_US.UTF-8" && export LC_IDENTIFICATION
+    fi
+
     if $(locale -a 2>/dev/null | grep -q -x sv_SE.utf8); then
-        unset LC_ALL
-        LANGUAGE="en_US:en" && export LANGUAGE
-        LANG="en_US.UTF-8" && export LANG
         LC_CTYPE="sv_SE.utf8" && export LC_CTYPE
         LC_NUMERIC="sv_SE.utf8" && export LC_NUMERIC
         LC_TIME="sv_SE.utf8" && export LC_TIME
         LC_COLLATE="sv_SE.utf8" && export LC_COLLATE
         LC_MONETARY="sv_SE.utf8" && export LC_MONETARY
-        LC_MESSAGES="en_US.UTF-8" && export LC_MESSAGES
         LC_PAPER="sv_SE.utf8" && export LC_PAPER
         LC_NAME="sv_SE.utf8" && export LC_NAME
         LC_ADDRESS="sv_SE.utf8" && export LC_ADDRESS
         LC_TELEPHONE="sv_SE.utf8" && export LC_TELEPHONE
         LC_MEASUREMENT="sv_SE.utf8" && export LC_MEASUREMENT
         LC_IDENTIFICATION="sv_SE.utf8" && export LC_IDENTIFICATION
-    elif $(locale -a 2>/dev/null | grep -q -x en_US.utf8); then
-        unset LC_ALL
-        LANGUAGE="en_US:en" && export LANGUAGE
-        LANG="en_US.UTF-8" && export LANG
-        LC_CTYPE="en_US.utf8" && export LC_CTYPE
-        LC_NUMERIC="en_US.utf8" && export LC_NUMERIC
-        LC_TIME="en_US.utf8" && export LC_TIME
-        LC_COLLATE="en_US.utf8" && export LC_COLLATE
-        LC_MONETARY="en_US.utf8" && export LC_MONETARY
-        LC_MESSAGES="en_US.UTF-8" && export LC_MESSAGES
-        LC_PAPER="en_US.utf8" && export LC_PAPER
-        LC_NAME="en_US.utf8" && export LC_NAME
-        LC_ADDRESS="en_US.utf8" && export LC_ADDRESS
-        LC_TELEPHONE="en_US.utf8" && export LC_TELEPHONE
-        LC_MEASUREMENT="en_US.utf8" && export LC_MEASUREMENT
-        LC_IDENTIFICATION="en_US.utf8" && export LC_IDENTIFICATION
+    elif $(locale -a 2>/dev/null | grep -q -x sv_SE.UTF-8); then
+        LC_CTYPE="sv_SE.UTF-8" && export LC_CTYPE
+        LC_NUMERIC="sv_SE.UTF-8" && export LC_NUMERIC
+        LC_TIME="sv_SE.UTF-8" && export LC_TIME
+        LC_COLLATE="sv_SE.UTF-8" && export LC_COLLATE
+        LC_MONETARY="sv_SE.UTF-8" && export LC_MONETARY
+        LC_PAPER="sv_SE.UTF-8" && export LC_PAPER
+        LC_NAME="sv_SE.UTF-8" && export LC_NAME
+        LC_ADDRESS="sv_SE.UTF-8" && export LC_ADDRESS
+        LC_TELEPHONE="sv_SE.UTF-8" && export LC_TELEPHONE
+        LC_MEASUREMENT="sv_SE.UTF-8" && export LC_MEASUREMENT
+        LC_IDENTIFICATION="sv_SE.UTF-8" && export LC_IDENTIFICATION
     fi
 fi
 
