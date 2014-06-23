@@ -442,6 +442,13 @@ fkill() {
   ps -ef | sed 1d | fzf -m | awk '{print $2}' | xargs kill -${1:-9}
 }
 
+fpip() {
+  local pipfile
+  pipfile=$(find -type f -iname requirements\* -o -type f -iwholename \*requirements/\*.txt | fzf)
+  [[ -z $pipfile ]] && return 1
+  pip install -r $pipfile
+}
+
 # ftags - search ctags
 ftags() {
   local line
