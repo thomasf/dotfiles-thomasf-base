@@ -4,11 +4,7 @@
 #
 export FZF_DEFAULT_OPTS="--extended --no-black --no-256"
 fzf() {
-  if [ ${OSTYPE:0:6} = darwin ]; then
-    ruby ~/.bin/fzf  "$@"
-  else
-    ruby --disable-gems ~/.bin/fzf  "$@"
-  fi
+  ruby ~/.bin/fzf  "$@"
 }
 export -f fzf
 
