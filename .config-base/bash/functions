@@ -47,6 +47,7 @@ dl() {
 }
 
 alias historyreload='history -r'
+
 h() {
   local line=''
   line="$(history | selectline)"
@@ -54,13 +55,15 @@ h() {
   line=$(history -p !$line)
   if [[ "$line" !=  "!" ]]; then
     if [ -n "$DISPLAY" ] && [ $(which xdotool) ] && [ $(which xsel) ] ; then
-      echo $line | xsel --clipboard
+      echo -n $line | xsel --clipboard
       ( # this subshell silences job info output
         ( # this subshell is the background job
           sleep 0.4
           xdotool keydown ctrl key v keyup ctrl 2>/dev/null
         ) &
       )
+    elif [ $(which pbcopy) ]; then
+      echo -n $line | pbcopy
     else
       echo $line
     fi
@@ -481,15 +484,15 @@ ftags() {
 
 # cd to repository root
 cdr() {
-  local dir=$(command git rev-parse --show-toplevel) && builtin cd $dir
+  local dir="$(command git rev-parse --show-toplevel) && builtin cd $dir"
 }
 alias ur="cdr"
 
 z() {
   if [[ -z "$*" ]]; then
-    cd $(_z -l 2>&1 | sed -n 's/^[ 0-9.]*//p' | fzf)
+    cd "$(_z -l 2>&1 | sed -n 's/^[ 0-9.,]*//p' | fzf)"
   else
-    local reporoot=$(command git rev-parse --show-toplevel 2> /dev/null)
+    local reporoot="$(command git rev-parse --show-toplevel 2> /dev/null)"
     _z $reporoot "$@"
   fi
 }
