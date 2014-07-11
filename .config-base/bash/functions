@@ -488,8 +488,9 @@ z() {
   if [[ -z "$*" ]]; then
     cd "$(_z -l 2>&1 | sed -n 's/^[ 0-9.,]*//p' | fzf)"
   else
-    local reporoot="$(command git rev-parse --show-toplevel 2> /dev/null)"
-    _z $reporoot "$@"
+    # local reporoot="$(command git rev-parse --show-toplevel 2> /dev/null)"
+    # _z $reporoot "$@"
+    _z "$@"
   fi
 }
 alias j=z
