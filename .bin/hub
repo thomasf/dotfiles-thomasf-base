@@ -8,7 +8,7 @@
 
 Encoding.default_external = 'UTF-8' if defined?(Encoding)
 module Hub
-  Version = VERSION = '1.10.6-219-g62c4d83'
+  Version = VERSION = '1.10.6-225-g9016a39'
 end
 
 prevent_require = lambda do |name|
@@ -1942,15 +1942,19 @@ module Hub
     end
 
     def am(args)
-      if url = args.find { |a| a =~ %r{^https?://(gist\.)?github\.com/} }
-        idx = args.index(url)
-        if $1 == 'gist.'
-          path_parts = $'.sub(/#.*/, '').split('/')
-          gist_id = path_parts.last
+      gh_url = nil
+      idx = args.index { |arg|
+        gh_url = if arg =~ %r{^https?://gist\.github\.com/} then URI(arg)
+        else resolve_github_url(arg)
+        end
+      }
+
+      if gh_url
+        if "gist.github.com" == gh_url.host
+          gist_id = gh_url.path.split('/').last
           patch_name = "gist-#{gist_id}.txt"
           patch = api_client.gist_raw(gist_id)
         else
-          gh_url = resolve_github_url(url)
           case gh_url.project_path
           when /^pull\/(\d+)/
             pull_id = $1.to_i
@@ -2136,7 +2140,7 @@ module Hub
           end
         end
 
-        path = '/compare/%s' % range.tr('/', ';')
+        path = '/compare/%s' % range
         project.web_url(path, api_client.config.method(:protocol))
       end
     end
