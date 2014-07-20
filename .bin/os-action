@@ -12,6 +12,11 @@
 # - /etc/acpi/sleep.sh
 # - /etc/acpi/hibernate.sh
 
+if [ -n "$DISPLAY" ]; then
+  sudocmd="gksudo"
+else
+  sudocmd="sudo"
+fi
 
 
 for arg in $*; do
@@ -38,17 +43,16 @@ for arg in $*; do
       fi
       ;;
     hibernate)
-      gksudo /usr/sbin/pm-hibernate
+      $sudocmd /usr/sbin/pm-hibernate
       ;;
     suspend)
-      gksudo /usr/sbin/pm-suspend
+      $sudocmd /usr/sbin/pm-suspend
       ;;
     reboot)
-      gksudo reboot
+      $sudocmd "reboot -f"
       ;;
     shutdown)
-      gksudo "shutdown now -h"
+      $sudocmd "shutdown now -P"
       ;;
-
   esac
 done
