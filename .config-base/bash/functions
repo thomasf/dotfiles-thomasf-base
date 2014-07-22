@@ -4,7 +4,7 @@
 #
 export FZF_DEFAULT_OPTS="--extended --no-black --no-256"
 fzf() {
-  ruby ~/.bin/fzf  "$@"
+  ruby ~/.bin/fzf "$@"
 }
 export -f fzf
 
