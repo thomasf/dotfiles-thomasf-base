@@ -264,6 +264,10 @@ log "bash completion"
   && ! shopt -oq posix \
   && . "/etc/bash_completion"
 
+[ -f "/usr/local/etc/bash_completion" ] \
+  && ! shopt -oq posix \
+  && . "/usr/local/etc/bash_completion"
+
 for file in $(find $HOME/.config-base/bash/completion.d/ -not -type d); do
   if [ ! ${file} = ag ] && [ ! ${OSTYPE:0:6} = darwin ]; then
     source $file
