@@ -16,7 +16,7 @@ base="${HOME}/.config/dotfiles/"
 if [ $(which dotfiles) ]; then
   dotfiles=$(which dotfiles)
 elif [ -e ${base}base/.bin/dotfiles ]; then
-    dotfiles=${base}base/.bin/dotfiles
+  dotfiles=${base}base/.bin/dotfiles
 else
   # TODO this will fail in osx
   dotfiles=$(readlink -f $(dirname $0)/dotfiles)
@@ -84,7 +84,7 @@ case ${1} in
     for d in ${base}/*; do
       (
         cd ${d}
-          remote=$(git config --local --get remote.publish.url) && \
+        remote=$(git config --local --get remote.publish.url) && \
           echo "${magenta}PUSH${reset} $remote" && \
           git push -q publish master && \
           echo "${green}DONE${reset} $remote"
