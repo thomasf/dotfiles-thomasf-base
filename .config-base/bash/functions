@@ -496,6 +496,10 @@ z() {
 alias j=z
 alias g="git"
 
+gu() {
+  command git up "$@"
+}
+
 s() {
   command git status --short --branch
 }
