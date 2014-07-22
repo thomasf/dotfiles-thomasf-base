@@ -3,7 +3,7 @@
 # See the Solarized homepage for details:
 # http://ethanschoonover.com/solarized
 #
-                   # SOLARIZED HEX     16/8 TERMCOL   L*A*B     
+                   # SOLARIZED HEX     16/8 TERMCOL   L*A*B
                    # --------- ------- ---- --------- ----------
  base03="#002b36"  # base03    #002b36  8/4 brblack   15 -12 -12
  base02="#073642"  # base02    #073642  0/4 black     20 -12 -12
@@ -22,6 +22,8 @@ magenta="#d33682"  # magenta   #d33682  5/5 magenta   50  65 -05
    cyan="#2aa198"  # cyan      #2aa198  6/6 cyan      60 -35 -05
   green="#859900"  # green     #859900  2/2 green     60 -20  65
 
+  brblack="#46646D"
+
 background="$base3"
 foreground="$base00"
 cursor="$base01"
@@ -31,7 +33,8 @@ highlight="$base2"
 border="$base3"
 
  color0="$base2"   # black
- color8="$base3"   # brblack
+ # color8="$base02"  # brblack
+ color8="$brblack"  # brblack
 
  color1="$red"     # red
  color9="$orange"  # brred
