@@ -1,5 +1,7 @@
 #!/usr/bin/env python
-# vim: set fileencoding=utf-8 ts=2 sw=2 expandtab :
+# FIXME this is just copied form somewhere, needs to be rewritten.
+# here is another one that is better implemented but lacks some stuff I needed:
+#  https://github.com/multani/rsync-inotify-from/blob/master/rsync-inotify-from
 
 import os
 import sys
