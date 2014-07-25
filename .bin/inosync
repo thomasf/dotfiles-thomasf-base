@@ -15,7 +15,7 @@ __version__ = 0, 2, 3
 OPTION_LIST = [
     make_option(
         "-c", dest="config",
-        default="/etc/inosync/default.py",
+        default="inosync.py",
         metavar="FILE",
         help="load configuration from FILE"),
     make_option(
