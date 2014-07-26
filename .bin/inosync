@@ -1,8 +1,8 @@
 #!/usr/bin/env python
+# -*- coding: utf-8 -*-
 # FIXME this is just copied form somewhere, needs to be rewritten.
 # here is another one that is better implemented but lacks some stuff I needed:
 #  https://github.com/multani/rsync-inotify-from/blob/master/rsync-inotify-from
-
 import os
 import sys
 from optparse import OptionParser, make_option
