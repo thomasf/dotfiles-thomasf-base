@@ -209,13 +209,13 @@ wsdir-set() {
   if [ $(wsname -p) ]; then
     mkdir -p ~/.config/wsdirs/
     echo -ne $PWD > ~/.config/wsdirs/$(wsname -p)
-  fi 
+  fi
 }
 
 wsdir-unset() {
   if [ $(wsname -p) ]; then
     rm -f ~/.config/wsdirs/$(wsname -p)
-  fi 
+  fi
 }
 
 wsdir-cd() {
