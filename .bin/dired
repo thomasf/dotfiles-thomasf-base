@@ -1,0 +1,3 @@
+#!/bin/sh
+
+e -eval '(dired "./")' >/dev/null
