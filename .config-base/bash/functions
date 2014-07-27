@@ -517,7 +517,7 @@ ftags() {
 
 # cd to repository root
 cdr() {
-  local dir="$(command git rev-parse --show-toplevel) && builtin cd $dir"
+  local dir="$(command git rev-parse --show-toplevel)" && builtin cd "$dir"
 }
 alias ur="cdr"
 
