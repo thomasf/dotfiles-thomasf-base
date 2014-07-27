@@ -227,6 +227,43 @@ wsdir-cd() {
   fi
 }
 
+wsdir-get() {
+  local wsnamep=$(wsname -p)
+  if [ -f ~/.config/wsdirs/$wsnamep ]; then
+    echo -ne $(cat ~/.config/wsdirs/$wsnamep)
+  else
+    return 1
+  fi
+}
+
+wsenv-edit() {
+  local wsnamep=""
+  if [ $(wsname -p) ]; then
+    if [ $(wsdir-get) ]; then
+      wsnamep=$(basename $(wsdir-get))
+    else
+      wsnamep=$(wsname -p)
+    fi
+    mkdir -p ~/.config/wsenv/
+    e "~/.config/wsenv/$wsnamep"
+  fi
+}
+
+wsenv-source() {
+  local wsnamep=""
+  if [ $(wsname -p) ]; then
+    if [ $(wsdir-get) ]; then
+      wsnamep=$(basename $(wsdir-get))
+    else
+      wsnamep=$(wsname -p)
+    fi
+    if [ -f ~/.config/wsenv/$wsnamep ]; then
+      . "${HOME}/.config/wsenv/$wsnamep"
+    else
+      return 1
+    fi
+  fi
+}
 
 awscredentials() {
   local account="aws-$1"

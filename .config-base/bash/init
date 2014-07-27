@@ -377,9 +377,14 @@ case $TERM in
     ;;
 esac
 
-if [ ! "${TERM}" == "dumb" ] && [ "${PWD}" == "${HOME}" ]; then
+if [ ! "${TERM}" == "dumb" ] &&
+     [ "${PWD}" == "${HOME}" ]; then
   if wsdir-cd || cdd; then
-    [ $(which wsname) ] && [ $(wsname -p) ] && workon $(wsname -p) 2>/dev/null || true
+    wsenv-source || true
+    [ -z $VIRTUAL_ENV ] &&
+      [ $(which wsname) ] &&
+      [ $(wsname -p) ] &&
+      workon $(wsname -p) 2>/dev/null || true
     git status --short --branch 2>/dev/null || true
   fi
 fi
