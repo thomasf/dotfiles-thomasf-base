@@ -526,11 +526,17 @@ z() {
     cd "$(_z -l 2>&1 | sed -n 's/^[ 0-9.,]*//p' | fzf)"
   else
     # local reporoot="$(command git rev-parse --show-toplevel 2> /dev/null)"
-    # _z $reporoot "$@"
+    _last_z_args="$@"
     _z "$@"
   fi
 }
+
+zz() {
+  cd "$(_z -l 2>&1 | sed -n 's/^[ 0-9.,]*//p' | fzf -q $_last_z_args)"
+}
+
 alias j=z
+alias jj=zz
 alias g="git"
 
 gu() {

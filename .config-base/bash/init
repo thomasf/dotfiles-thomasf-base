@@ -294,7 +294,7 @@ export LSCOLORS=gxfxbEaEBxxEhEhBaDaCaD
 
 [ -f "${__BASH}/z" ] \
   && log "z" \
-  && export _Z_CMD=zz \
+  && export _Z_CMD='__z' \
   && . "${__BASH}/z"
 
 if [ -x /usr/bin/lesspipe ]; then
