@@ -43,11 +43,12 @@ ppath ~/Library/Haskell/bin
 # ~/.opt User home path prepends
 ppath ~/.opt/go/bin \
     && GOROOT=~/.opt/go/ \
-    && export GOROOT \
-    && mkdir -p ~/.opt/go-lib/ \
-    && GOPATH=~/.opt/go-lib/ \
-    && export GOPATH \
-    && ppath $GOPATH/bin
+    && export GOROOT
+
+mkdir -p ~/.opt/go-lib/bin/ &&
+      GOPATH=~/.opt/go-lib/ &&
+      export GOPATH &&
+      ppath $GOPATH/bin
 
 ppath ~/.opt/ec2-api-tools/bin \
     && EC2_HOME=~/.opt/ec2-api-tools \
