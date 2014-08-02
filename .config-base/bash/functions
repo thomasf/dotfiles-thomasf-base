@@ -465,7 +465,14 @@ jd() {
 jr() {
   local dir=""
   local query="$@"
-  dir=$(cd ~/repos && find -L . -maxdepth 5  -name '.git'  | xargs -n 1 dirname | cut -c3- | sort | selectline --query="$query") || return 1
+  dir=$(cd ~/repos &&
+           find -L . -maxdepth 5 \
+                -type d -name '.git' -o \
+                -type d -name '.hg' |
+             xargs -n 1 dirname |
+             cut -c3- |
+             sort |
+             selectline --query="$query") || return 1
   dir="${HOME}/repos/${dir}"
   if [ ! ${OSTYPE:0:6} = darwin ]; then
     dir=`readlink -f $dir`
