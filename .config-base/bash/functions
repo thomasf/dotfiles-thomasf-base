@@ -536,6 +536,11 @@ s() {
   command git status --short --branch
 }
 
+r() {
+  command git rev-parse 2> /dev/null || return 1
+  command git remote -v
+}
+
 d() {
   command git diff
 }
