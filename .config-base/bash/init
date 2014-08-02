@@ -115,7 +115,7 @@ if [ $UID != 0 ]; then
     log "virtualenvburrito" \
       && source "${HOME}/.venvburrito/startup.sh"
   fi
- 
+
   # disabled due to problems w. ubuntu 14.04
   # [[ -s $HOME/opt/pythonz/etc/bashrc ]] && log "pythonz" && source $HOME/opt/pythonz/etc/bashrc
 
@@ -203,8 +203,8 @@ __pwd_logger() {
 
 case $TERM in
   dumb)
-    # do nothing
-    ;;
+  # do nothing
+  ;;
   *)
     PROMPT_COMMAND="__pwd_logger; history -a; echo -ne '\a'"
     ;;
@@ -332,9 +332,9 @@ case $HOST_TAGS in
   ;;
   *)
     [ $(which /usr/bin/ruby) ] && \
-    /usr/bin/ruby --disable-gems -e'#' >/dev/null 2>/dev/null  \
-                  [ $(which hub) ] && \
-    alias git=hub
+      /usr/bin/ruby --disable-gems -e'#' >/dev/null 2>/dev/null  \
+                    [ $(which hub) ] && \
+      alias git=hub
     ;;
 esac
 
@@ -351,8 +351,8 @@ if [ ! -z "${BASH}" ]; then
 
   case $TERM in
     dumb)
-      # do nothing
-      ;;
+    # do nothing
+    ;;
     *)
       __prompt_activate
       ;;
@@ -370,8 +370,8 @@ function log() {
 
 case $TERM in
   dumb)
-    # do nothing
-    ;;
+  # do nothing
+  ;;
   *)
     echo -e -n '\r'
     ;;
@@ -393,11 +393,11 @@ fi
   && [ -z $TMUX ] \
   && [ $(which tmux) ] \
   && tmux list-sessions 2>/dev/null \
-  || true
+    || true
 
 [ $UID == 0 ] \
   && export TMOUT=3600 \
-  || true
+    || true
 
 
 # end of init

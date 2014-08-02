@@ -158,7 +158,7 @@ rmosx() {
     echo
     find . \
          -name __MACOSX -type d -execdir rm -r {} \; -prune  \
-                                                       -o \( -name .DS_Store -type f -execdir rm {} \; -prune \)
+         -o \( -name .DS_Store -type f -execdir rm {} \; -prune \)
   else
     echo
     return 1
@@ -309,7 +309,7 @@ __select_subdir() {
   local result=$(find . -mindepth 1 -maxdepth 10 -type d \
                       -not \( -name ".?*" -prune \) \
                       -not \( -name "node_modules" -prune \) \
-                 | cut -c 3- | selectline --query="$query")
+                    | cut -c 3- | selectline --query="$query")
   [[ -z $result ]] && return 1
   echo -n "./${result}"
 }
@@ -487,7 +487,10 @@ fkill() {
 
 fpip() {
   local pipfile
-  pipfile=$(find -type f -iname requirements\* -o -type f -iwholename \*requirements/\*.txt | fzf)
+  pipfile=$(find \
+              -type f -iname requirements\* -o \
+              -type f -iwholename \*requirements/\*.txt |
+               fzf)
   [[ -z $pipfile ]] && return 1
   pip install -r $pipfile
 }
@@ -496,19 +499,19 @@ fpip() {
 ftags() {
   local line
   [ -e tags ] &&
-  line=$(
-    awk 'BEGIN { FS="\t" } !/^!/ {print toupper($4)"\t"$1"\t"$2"\t"$3}' tags |
+    line=$(
+      awk 'BEGIN { FS="\t" } !/^!/ {print toupper($4)"\t"$1"\t"$2"\t"$3}' tags |
         cut -c1-80 | fzf --nth=1,2
-      ) && $EDITOR $(cut -f3 <<< "$line") -c "set nocst" \
-                   -c "silent tag $(cut -f2 <<< "$line")"
+        ) && $EDITOR $(cut -f3 <<< "$line") -c "set nocst" \
+                     -c "silent tag $(cut -f2 <<< "$line")"
 }
 
 # fco - checkout git commit
 fco() {
   local commits commit
   commits=$(git log --pretty=oneline --abbrev-commit --reverse) &&
-  commit=$(echo "$commits" | fzf +s +m -e) &&
-  git checkout $(echo "$commit" | sed "s/ .*//")
+    commit=$(echo "$commits" | fzf +s +m -e) &&
+    git checkout $(echo "$commit" | sed "s/ .*//")
 }
 
 # cd to repository root
@@ -590,10 +593,10 @@ esac
 octopresscreate () {
   local name="${1}"
   mkdir $name &&
-  cd $name &&
-  git init . &&
-  git remote add octopress https://github.com/imathis/octopress &&
-  git pull octopress master
+    cd $name &&
+    git init . &&
+    git remote add octopress https://github.com/imathis/octopress &&
+    git pull octopress master
 }
 
 # Go to currently active buffer directory in Emacs
