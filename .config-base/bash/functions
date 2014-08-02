@@ -529,10 +529,12 @@ alias jj=zz
 alias g="git"
 
 gu() {
+  command git rev-parse 2> /dev/null || return 1
   command git up "$@"
 }
 
 s() {
+  command git rev-parse 2> /dev/null || return 1
   command git status --short --branch
 }
 
@@ -542,18 +544,22 @@ r() {
 }
 
 d() {
-  command git diff
+  command git rev-parse 2> /dev/null || return 1
+  command git diff "$@"
 }
 
 lg() {
-  command git log --stat --ignore-space-change --pretty=format:'%C(yellow)%h%Creset %C(green)%ad%Creset %C(cyan)%ae%Creset %C(blue)%s%Creset'  
+  command git rev-parse 2> /dev/null || return 1
+  command git log --stat --ignore-space-change --pretty=format:'%C(yellow)%h%Creset %C(green)%ad%Creset %C(cyan)%ae%Creset %C(blue)%s%Creset'
 }
 
 lgv() {
-  command git log -p --pretty=format:'%C(yellow)%h%Creset %C(cyan)%an <%ae>%Creset %Cgreen%cr%Creset %C(magenta)%s%Creset%C(yellow)%d%Creset'  
+  command git rev-parse 2> /dev/null || return 1
+  command git log -p --pretty=format:'%C(yellow)%h%Creset %C(cyan)%an <%ae>%Creset %Cgreen%cr%Creset %C(magenta)%s%Creset%C(yellow)%d%Creset'
 }
 
 lgt() {
+  command git rev-parse 2> /dev/null || return 1
   command git log --graph --all --pretty=format:'%C(yellow)%h%Creset %C(cyan)%ae%Creset %Cgreen%cr%Creset %s%C(yellow)%d%Creset' --abbrev-commit  
 }
 
