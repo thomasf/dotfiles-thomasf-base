@@ -25,7 +25,7 @@ ppath /var/lib/gems/1.9/bin
 # osx (homebrew) global path prepends
 ppath /usr/local/opt/ruby/bin
 ppath /usr/local/opt/python/bin
-ppath /usr/local/git/bin
+ppath /usr/local/opt/git/bin
 
 # User home path prepends
 ppath ~/.opt/depot_tools
