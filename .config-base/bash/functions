@@ -304,6 +304,28 @@ alias lsnew="find . -mindepth 1 -maxdepth 1 -mtime 0"
 alias lslistenports="sudo netstat -plunt"
 alias adblogcat="adb logcat | adb-logcat-pp"
 
+fadb-uninstall() {
+  local selected=$(adb shell 'pm list packages -f' | sed -e 's/.*=//' | sort | fzf)
+  [[ -z $selected ]] && return 1
+  adb shell pm uninstall $selected
+}
+
+fadb-install() {
+  local selected
+  selected=$(find -type f -iname '*.apk' | fzf)
+  [[ -z $selected ]] && return 1
+  adb install -r $selected
+}
+
+fadb-start-apk() {
+  local selected;
+  selected=$(find -type f -iname '*.apk' | fzf)
+  [[ -z $selected ]] && return 1
+  local pkg=$(aapt dump badging $selected|awk -F" " '/package/ {print $2}'|awk -F"'" '/name=/ {print $2}')
+  local act=$(aapt dump badging $selected|awk -F" " '/launchable-activity/ {print $2}'|awk -F"'" '/name=/ {print $2}')
+  adb shell am start -n $pkg/$act
+}
+
 __select_subdir() {
   local query="$@"
   local result=$(find . -mindepth 1 -maxdepth 10 -type d \
