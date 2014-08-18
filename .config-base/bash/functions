@@ -511,7 +511,8 @@ fpip() {
   local pipfile
   pipfile=$(find \
               -type f -iname requirements\* -o \
-              -type f -iwholename \*requirements/\*.txt |
+              -type f -iwholename \*requirements/\*.txt -o \
+              -type f -iwholename \*requirements/\*.pip |
                fzf)
   [[ -z $pipfile ]] && return 1
   pip install -r $pipfile
