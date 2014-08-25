@@ -72,6 +72,13 @@ if [ "$TERM" = "linux" ]; then
   echo -en "\e]P7eee8d5"
   echo -en "\e]PFfdf6e3"
   clear
+  (
+    [ -e /tmp/.X11-unix ] &&
+      cd /tmp/.X11-unix
+    for x in X*; do
+      echo "found local x11 session: :${x#X}";
+    done
+  )
 fi
 
 # Only do this automatically if not root
@@ -200,15 +207,7 @@ __pwd_logger() {
     declare -f __eterm_set_cwd >/dev/null && __eterm_set_cwd
   fi
 }
-
-case $TERM in
-  dumb)
-  # do nothing
-  ;;
-  *)
-    PROMPT_COMMAND="__pwd_logger; history -a; echo -ne '\a'"
-    ;;
-esac
+export -f __pwd_logger
 
 # ------------------------------------------------------------------------------
 #
@@ -221,6 +220,7 @@ __darkmode_switcher() {
     [ $DARKMODE = dark ] && export DARKMODE=light && termcolors
   fi
 }
+export -f __darkmode_switcher
 
 case $HOST_TAGS in
   *:minimalshell:*)
@@ -232,7 +232,6 @@ case $HOST_TAGS in
         rxvt*|xterm*)
           [ -e ~/.config/darkmode ] && export DARKMODE=dark || export DARKMODE=light
           termcolors
-          PROMPT_COMMAND="${PROMPT_COMMAND}; __darkmode_switcher"
           ;;
       esac
     fi

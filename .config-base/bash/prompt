@@ -6,137 +6,14 @@
 # ref: http://www.reddit.com/r/programming/comments/697cu/bash_users_what_do_you_have_for_your_ps1/
 #
 
-function __prompt_h {
-  echo -n `date +%H`
-}
-export -f __prompt_h
-
-function __prompt_m {
-  echo -n `date +%M`
-}
-export -f __prompt_m
-
-function __prompt_venv {
-  # [[ -n ${VIRTUAL_ENV} ]] && [ "${VIRTUAL_ENV##*/}" != "default" ] && echo -n " p:${VIRTUAL_ENV##*/} "
-  local w=$(tputl cols 2>/dev/null||echo -n 100)
-  [ "$w" -gt 45 ] &&
-  [[ -n ${VIRTUAL_ENV} ]] && echo -n "p:${VIRTUAL_ENV##*/} "
-}
-export -f __prompt_venv
-
-function __prompt_rvm {
-  local w=$(tput cols 2>/dev/null||echo -n 100)
-  [ "$w" -gt 60 ] &&
- which rvm-prompt >/dev/null 2>/dev/null && echo -n "r:$(rvm-prompt v g 2>/dev/null) "
-}
-
-function __prompt_nvm {
-  local w=$(tput cols 2>/dev/null||echo -n 100)
-  [ "$w" -gt 70 ] &&
-  if [ "$(type -t nvm_version)" == "function" ]; then
-    echo -n "n:$(nvm_version) "
-  fi
-}
-
-# Username or alias
-function __prompt_username {
-  if [ "$(type -t __user_alias)" == "function" ]; then
-    __user_alias
-  else
-    echo -n "$(whoami | cut -c1-4)"
-  fi
-}
-export -f  __prompt_username
-
-# Hostname or alias
-function __prompt_hostname {
-  if [[ -n ${HOST_ALIAS} ]]; then
-    echo -n ${HOST_ALIAS}
-  else
-    echo -n "$(hostname | cut -c1-4)"
-  fi
-}
-export -f  __prompt_hostname
-
-# SSH session session indicator
-function __prompt_ssh {
-  if [ -n "$SSH_CLIENT" ]; then
-    echo -n '/\'
-  fi
-}
-export -f  __prompt_ssh
-
 # Show version controlled repository status.
 # vcprompt is used if installed, otherwise __git_ps1 will be tried as well.
 # Install vcsprompt -> hg clone https://bitbucket.org/mitsuhiko/vcprompt
 export GIT_PS1_SHOWDIRTYSTATE="yes"
 export GIT_PS1_SHOWUPSTREAM="no"
 export GIT_PS1_SHOWUNTRACKEDFILES="yes"
-function __prompt_vcs {
-  if [[ $(which vcprompt) ]]; then
-    vcprompt -f "%n:%b%u%a%m "
-  elif [[ $(type -t __git_ps1) == "function" ]]; then
-    __git_ps1 "(%s) "
-  fi
-}
-export -f  __prompt_vcs
 
-# Support function to compactify a path
-# copied: http://stackoverflow.com/questions/3497885/code-challenge-bash-prompt-path-shortener
-function __dir_chomp {
-  local p=${1/#$HOME/\~} b s
-  # Remove [ and ] from strings
-  p=${p//[/ }
-  p=${p//]/ }
-  # Remove multiple spaces, don't need them
-  p=${p//  / }
-  s=${#p}
-  while [[ $p != "${p//\/}" ]]&&(($s>$2))
-  do
-    p=${p#/}
-    [[ $p =~ \.?. ]]
-    b=$b/${BASH_REMATCH[0]}
-    p=${p#*/}
-    ((s=${#b}+${#p}))
-  done
-  echo ${b/\/~/\~}${b+/}$p
-}
-export -f  __dir_chomp
-
-# Compact version of current working directory
-function __prompt_pwd {
-  local w=$(($(tput cols 2>/dev/null||echo -n 100)-50))
-  echo -n $(__dir_chomp  "$(pwd)" $w)
-}
-export -f  __prompt_pwd
-
-# Compact version of current working directory
-function __title_pwd {
-  echo -n $(__dir_chomp  "$(pwd)" 40)
-}
-export -f  __title_pwd
-
-#
-function __prompt_last {
-  if [[ $EUID -eq 0 ]]; then
-    if [[ ${RET} = "0" ]]; then
-      echo -n "#"
-    else
-      echo -n '!!! #'
-    fi
-  else
-    if [[ ${RET} = "0" ]]; then
-      echo -n "\$"
-    else
-      echo -n '¤%&!'
-    fi
-  fi
-}
-export -f  __prompt_last
-
-
-# Set up prompt
-function __prompt_activate {
+__prompt_fn() {
 
   local resetFormating="\[\033[0m\]"     # reset text format
 
@@ -170,6 +47,74 @@ function __prompt_activate {
   local cyanB="\[\033[46m\]"
   local whiteB="\[\033[47m\]"
 
+  local w=100
+  if [[ $(which tput) ]]; then
+    w=$(tput cols)
+  fi
+
+  local HH=`date +%H`
+  local MM=`date +%M`
+
+  local UCOLOR="${cyan}"
+  local UNAME
+  if [ "$(type -t __user_alias)" == "function" ]; then
+    UNAME=$(__user_alias)
+  else
+    UNAME="$(whoami | cut -c1-4)"
+  fi
+
+  local HNAME
+  if [[ -n ${HOST_ALIAS} ]]; then
+    HNAME=${HOST_ALIAS}
+  else
+    HNAME="$(hostname | cut -c1-4)"
+  fi
+
+  local SSH
+  if [ -n "$SSH_CLIENT" ]; then
+    # SSH='/\'
+    SSH='/\\'
+  fi
+
+  local LASTCOLOR="${yellowH}"
+  local LAST
+  if [[ $EUID -eq 0 ]]; then
+    LASTCOLOR="${redH}"
+    if [[ ${RET} = "0" ]]; then
+      LAST="#"
+    else
+      LAST='!!! #'
+    fi
+  else
+    if [[ ${RET} = "0" ]]; then
+      LAST="\$"
+    else
+      LASTCOLOR="${redH}"
+      LAST='¤%&!'
+    fi
+  fi
+
+  local VENV
+  [[ -n ${VIRTUAL_ENV} ]] && VENV="p:${VIRTUAL_ENV##*/} "
+
+  local VCS
+  case $HOST_TAGS in
+    *:minimalshell:*)
+    # nothing
+    ;;
+    *)
+    if [[ $(which vcprompt) ]]; then
+      VCS=`vcprompt -f "%n:%b%u%a%m "`
+    elif [[ $(type -t __git_ps1) == "function" ]]; then
+      VCS=`__git_ps1 "(%s) "`
+    fi
+    ;;
+  esac
+
+  local PWD
+  local pwdw=$(( ${w} - 4 - ${#VCS}  - ${#VENV} - ${#RVM} ))
+  PWD=$(__dir_chomp  "$(pwd)" $pwdw)
+
   # Select host name color based on HOST_TAGS environment variable
   case ${HOST_TAGS} in
     *:server:*)
@@ -183,46 +128,121 @@ function __prompt_activate {
       ;;
   esac
 
+  PS1="${TITLEBAR}\
+${yellowH}▶${HH} \
+${blue}${PWD} \
+${cyanH}${VCS}\
+${yellowH}\
+${VENV}\
+${RVM}\
+\n${yellowH}:${MM} \
+${UCOLOR}${UNAME}${yellowH}@${HOST_COLOR}${HNAME}${black}${cyanB}${SSH}\
+${LASTCOLOR}${LAST} \
+${resetFormating}"
+
+}
+
+__prompt_command() {
+  export __RUNNING_PROMPT_COMMAND=1
+  case $TERM in
+    dumb)
+    # do nothing
+    ;;
+    *)
+      __pwd_logger;
+      history -a;
+      [ -n  ${DARKMODE} ] && __darkmode_switcher
+      echo -ne '\a'
+      ;;
+  esac
+  __prompt_fn
+  unset __RUNNING_PROMPT_COMMAND
+}
+export -f __prompt_command
+
+## NOTE not used atm
+function __prompt_rvm {
+  local w=$(tput cols 2>/dev/null||echo -n 100)
+  [ "$w" -gt 60 ] &&
+    which rvm-prompt >/dev/null 2>/dev/null && echo -n "r:$(rvm-prompt v g 2>/dev/null) "
+}
+
+## NOTE not used atm
+function __prompt_nvm {
+  local w=$(tput cols 2>/dev/null||echo -n 100)
+  [ "$w" -gt 70 ] &&
+    if [ "$(type -t nvm_version)" == "function" ]; then
+      echo -n "n:$(nvm_version) "
+    fi
+}
+
+# Username or alias
+function __prompt_username {
+  if [ "$(type -t __user_alias)" == "function" ]; then
+    __user_alias
+  else
+    echo -n "$(whoami | cut -c1-4)"
+  fi
+}
+export -f  __prompt_username
+
+# Hostname or alias
+function __prompt_hostname {
+  if [[ -n ${HOST_ALIAS} ]]; then
+    echo -n ${HOST_ALIAS}
+  else
+    echo -n "$(hostname | cut -c1-4)"
+  fi
+}
+export -f  __prompt_hostname
+
+# Support function to compactify a path
+# copied: http://stackoverflow.com/questions/3497885/code-challenge-bash-prompt-path-shortener
+function __dir_chomp {
+  local p=${1/#$HOME/\~} b s
+  # Remove [ and ] from strings
+  p=${p//[/ }
+      p=${p//]/ }
+  # Remove multiple spaces, don't need them
+  p=${p//  / }
+  s=${#p}
+  while [[ $p != "${p//\/}" ]]&&(($s>$2))
+  do
+    p=${p#/}
+    [[ $p =~ \.?. ]]
+    b=$b/${BASH_REMATCH[0]}
+    p=${p#*/}
+    ((s=${#b}+${#p}))
+  done
+  echo ${b/\/~/\~}${b+/}$p
+}
+export -f  __dir_chomp
+
+# Compact version of current working directory
+function __title_pwd {
+  echo -n $(__dir_chomp  "$(pwd)" 40)
+}
+export -f  __title_pwd
+
+
+# Set up prompt
+function __prompt_activate {
   # Set title in xterm*
   case $TERM in
     xterm*|rxvt*)
       TITLEBAR='\[\033]0;$(__prompt_username)@$(__prompt_hostname):$(__title_pwd) - terminal\007\]'
-      PROMPT_COMMAND="export RET=\$?;export __RUNNING_PROMPT_COMMAND=1;${PROMPT_COMMAND%;};unset __RUNNING_PROMPT_COMMAND"
       trap '[[ ! $BASH_SOURCE ]] && [[ ! $BASH_COMMAND == "export RET="* ]] && [[ ! $BASH_COMMAND == "export __RUNNING_PROMPT_COMMAND=1" ]] && [[ ! $__RUNNING_PROMPT_COMMAND ]] &&
                  printf "\e]0;%s\a" "$(__prompt_username)@$(__prompt_hostname): $BASH_COMMAND : $(__title_pwd)" >/dev/tty' DEBUG
       ;;
     *)
       TITLEBAR=""
-      PROMPT_COMMAND="export RET=\$?;${PROMPT_COMMAND}"
       ;;
   esac
 
-  
-  # Set the prompt
-  case ${HOST_TAGS} in
-    *:minimalshell:*)
-      PS1="${TITLEBAR}\
-${cyan}\$(__prompt_username)${yellowH}@${HOST_COLOR}\$(__prompt_hostname)${black}${cyanB}\$(__prompt_ssh)\
-${blue}\$(__prompt_pwd) \
-${yellowH}\$(__prompt_venv) \
-${yellowH}\$(__prompt_last) \
-${resetFormating}"
-      ;;
-    *)
-      PS1="${TITLEBAR}\
-${yellowH}▶\$(__prompt_h) \
-${blue}\$(__prompt_pwd) \
-${cyanH}\$(__prompt_vcs)\
-${yellowH}\
-\$(__prompt_venv)\
-\$(__prompt_rvm)\
-\n${yellowH}:\$(__prompt_m) \
-${cyan}\$(__prompt_username)${yellowH}@${HOST_COLOR}\$(__prompt_hostname)${black}${cyanB}\$(__prompt_ssh)\
-${yellowH}\$(__prompt_last) \
-${resetFormating}"
-      ;;
-  esac
-      PS2='> '
-      PS4='+ '
+  PS1="${TITLEBAR}"
+  PS2='> '
+  PS4='+ '
+  export PROMPT_COMMAND="export RET=\$?;__prompt_command"
 }
+
 export -f  __prompt_activate
