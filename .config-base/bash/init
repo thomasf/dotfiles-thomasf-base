@@ -215,9 +215,9 @@ export -f __pwd_logger
 
 __darkmode_switcher() {
   if [ -e ~/.config/darkmode ]; then
-    [ ! $DARKMODE = dark ] && export DARKMODE=dark && termcolors
+    [ ! "${DARKMODE}" = dark ] && export DARKMODE=dark && termcolors
   else
-    [ $DARKMODE = dark ] && export DARKMODE=light && termcolors
+    [ "${DARKMODE}" = dark ] && export DARKMODE=light && termcolors
   fi
 }
 export -f __darkmode_switcher
