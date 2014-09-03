@@ -112,7 +112,7 @@ __prompt_fn() {
   esac
 
   local PWD
-  local pwdw=$(( ${w} - 4 - ${#VCS}  - ${#VENV} - ${#RVM} ))
+  local pwdw=$(( ${w} - 4  - 1 - ${#VCS}  - ${#VENV} - ${#RVM} ))
   PWD=$(__dir_chomp  "$(pwd)" $pwdw)
 
   # Select host name color based on HOST_TAGS environment variable
