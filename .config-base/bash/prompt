@@ -156,6 +156,7 @@ __prompt_command() {
       ;;
   esac
   __prompt_fn
+  _z --add "$(command pwd '$_Z_RESOLVE_SYMLINKS' 2>/dev/null)" 2>/dev/null;
   unset __RUNNING_PROMPT_COMMAND
 }
 export -f __prompt_command
