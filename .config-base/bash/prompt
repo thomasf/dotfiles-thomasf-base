@@ -79,18 +79,19 @@ __prompt_fn() {
   local LASTCOLOR="${yellowH}"
   local LAST
   if [[ $EUID -eq 0 ]]; then
-    LASTCOLOR="${redH}"
     if [[ ${RET} = "0" ]]; then
+      LASTCOLOR="${yellow}"
       LAST="#"
     else
-      LAST='!!! #'
+      LASTCOLOR="${redH}"
+      LAST='!#'
     fi
   else
     if [[ ${RET} = "0" ]]; then
       LAST="\$"
     else
       LASTCOLOR="${redH}"
-      LAST='¤%&!'
+      LAST='!\$'
     fi
   fi
 
@@ -112,7 +113,8 @@ __prompt_fn() {
   esac
 
   local PWD
-  local pwdw=$(( ${w} - 4  - 1 - ${#VCS}  - ${#VENV} - ${#RVM} ))
+  local PADDING=5
+  local pwdw=$(( ${w} - ${PADDING} - ${#LAST} - ${#VCS}  - ${#VENV} - ${#RVM} ))
   PWD=$(__dir_chomp  "$(pwd)" $pwdw)
 
   # Select host name color based on HOST_TAGS environment variable
