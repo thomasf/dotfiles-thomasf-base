@@ -107,29 +107,29 @@ class AutoArchiver:
 log = setup_logger(logging.INFO)
 
 
-home = AutoArchiver("~",
-                    exclude=
-                    [
-                        ".*",
-                        "auto-archive", "Applications",
-                        "books",
-                        "Copy",
-                        "Desktop", "Documents", "Downloads", "Dropbox",
-                        "Library",
-                        "Media", "Movies", "Music", "media", "mnt",
-                        "notes",
-                        "Pictures", "Programming", "Projects", "Public",
-                        "programming", "public_html",
-                        "Ubuntu One",
-                        "Videos", "VirtualBox VMs",
-                        "repos", "repos",
-                        "temp", "test", "tmp"
-                    ])
+home = AutoArchiver(
+    "~",
+    exclude=[
+        ".*",
+        "auto-archive", "Applications",
+        "books",
+        "Copy",
+        "Desktop", "Documents", "Downloads", "Dropbox",
+        "Library",
+        "Media", "Movies", "Music", "media", "mnt",
+        "notes",
+        "Pictures", "Programming", "Projects", "Public",
+        "programming", "public_html",
+        "Ubuntu One",
+        "Videos", "VirtualBox VMs",
+        "repos",
+        "temp", "test", "tmp"
+    ])
 home.run()
 
 # browser_downloads = AutoArchiver("~/Downloads/browser")
 # browser_downloads.run()
 
 downloads = AutoArchiver(
-    "~/Downloads", exclude=["sorted", "bittorrent", "browser", "seed"])
+    "~/Downloads", exclude=["sorted", "bittorrent", "seed"])
 downloads.run()
