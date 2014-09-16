@@ -41,9 +41,7 @@ ppath ~/.rbenv/bin
 ppath ~/Library/Haskell/bin
 
 # ~/.opt User home path prepends
-ppath ~/.opt/go/bin \
-    && GOROOT=~/.opt/go/ \
-    && export GOROOT
+ppath ~/.opt/go/bin
 
 mkdir -p ~/.opt/go-lib/bin/ &&
       GOPATH=~/.opt/go-lib/ &&
