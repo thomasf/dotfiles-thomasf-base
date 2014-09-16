@@ -42,6 +42,7 @@ ppath ~/Library/Haskell/bin
 
 # ~/.opt User home path prepends
 ppath ~/.opt/go/bin
+ppath ~/.opt/go-tools/bin
 
 mkdir -p ~/.opt/go-lib/bin/ &&
       GOPATH=~/.opt/go-lib/ &&
