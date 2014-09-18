@@ -39,7 +39,7 @@ use_env() {
 }
 
 dl() {
-  curl -O "$@"
+  curl -O -L "$@"
 }
 
 alias historyreload='history -r'
