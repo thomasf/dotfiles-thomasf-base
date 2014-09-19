@@ -274,6 +274,8 @@ for file in $(find $HOME/.config-base/bash/completion.d/ -not -type d); do
 done
 
 alias t=todo.sh
+alias tl='t ls'
+alias tp='t projectview'
 complete -F _todo t
 
 # ------------------------------------------------------------------------------
