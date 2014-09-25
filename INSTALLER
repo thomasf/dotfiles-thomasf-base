@@ -15,3 +15,94 @@
 
 [ -e "${HOME}/.config/pudb" ] \
     || ln -fs "$(pwd)/.config-base/pudb" "${HOME}/.config/pudb"
+
+gc() {
+  git config --global "$@"
+}
+
+ case "${USER}" in
+   thomasf|a00001)
+     gc user.name "Thomas Frössman"
+     gc user.email "thomasf@jossystem.se"
+     gc github.user thomasf
+     ;;
+ esac
+
+# disable advices
+gc advice.pushnonfastforward "false"
+gc advice.statushints "false"
+gc advice.commitbeforemerge "false"
+gc advice.resolveconflict "false"
+gc advice.implicitidentity "false"
+gc advice.detachedhead "false"
+
+# set up aliases
+gc alias.lg "log --stat --ignore-space-change --pretty=format:'%C(yellow)%h%Creset %C(green)%ad%Creset %C(cyan)%ae%Creset %C(blue)%s%Creset'"
+gc alias.lgv "log -p --pretty=format:'%C(yellow)%h%Creset %C(cyan)%an <%ae>%Creset %Cgreen%cr%Creset %C(magenta)%s%Creset%C(yellow)%d%Creset'"
+gc alias.lgt "log --graph --all --pretty=format:'%C(yellow)%h%Creset %C(cyan)%ae%Creset %Cgreen%cr%Creset %s%C(yellow)%d%Creset' --abbrev-commit"
+gc alias.lgs "log --graph --pretty=format:'%Cred%h%Creset -%C(yellow)%d%Creset %s %Cgreen(%cr) %C(bold blue)<%an>%Creset' --abbrev-commit --date=relative"
+gc alias.staged "diff --cached"
+gc alias.showroot "rev-parse --show-toplevel"
+gc alias.verref "describe --tag HEAD"
+gc alias.ribbon "tag --force _ribbon origin/master"
+gc alias.catchup "log --patch --reverse --topo-order _ribbon..origin/master"
+gc alias.diffdir "difftool -t kdiff3 --dir-diff"
+gc alias.pu "pull"
+gc alias.ps "push"
+
+# misc settings
+
+gc color.ui auto
+
+# gc diff.tool kdiff3
+# gc difftool.prompt false
+# gc merge.tool kdiff3
+# gc alias.ks "difftool -y -t Kaleidoscope"
+
+# This gives us 'ours', 'base', and 'theirs', instead of just 'ours' and
+# 'theirs'. More details:
+#   http://psung.blogspot.com/2011/02/reducing-merge-headaches-git-meets.html
+gc merge.conflictstyle diff3
+
+# Prevents us from having to do merge resolution for things we've already
+# resolved before; see http://git-scm.com/blog/2010/03/08/rerere.html
+gc rerere.enabled true
+
+# With this, "git pull --rebase" is the default form of pull FOR NEWLY CREATED
+# BRANCHES; for branches created before this config option is set, pull.rebase
+# true handles that
+gc branch.autosetuprebase always
+
+# "git pull --rebase" is now the default for pull no matter what
+gc pull.rebase true
+
+# This makes sure that push pushes only the current branch, and pushes it to the
+# same branch pull would pull from
+gc push.default upstream
+
+# This converts CRLF endings to LF endings on Mac & Lin and also keeps them in
+# the repo, but for Windows checkouts it converts LF to CRLF (and back to LF on
+# commits)
+gc core.autocrlf input
+
+# script_dir="$( cd "$( dirname "$0" )" && pwd )"
+
+# gc alias.meld "!$script_dir/bin/git-meld/git-meld.pl"
+
+gc core.excludesfile ~/.gitignore_global
+
+# Forces the use of SSH instead of HTTPS for any URLs that point to github.
+# This means that if a repo uses "https://github/..." for "origin", we will
+# automatically use SSH. No more password prompts!
+gc url.ssh://git@github.com/.insteadOf https://github.com/
+
+gc log.date "relative"
+gc format.pretty "format:%C(yellow)%h%Creset %C(green)%ad%Creset %C(cyan)%ae%Creset %s"
+gc color.ui "auto"
+gc core.editor "ee"
+gc mergetool.keepbackup "false"
+gc mergetool.keeptemporaries "false"
+gc mergetool.prompt "true"
+gc diff.renamelimit "50000"
+
+unset -f gc
