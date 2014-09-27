@@ -571,7 +571,7 @@ s() {
   command git status --short --branch
 }
 
-r() {
+gr() {
   command git rev-parse 2> /dev/null || return 1
   command git remote -v
 }
