@@ -163,21 +163,21 @@ __prompt_command() {
 }
 export -f __prompt_command
 
-## NOTE not used atm
-function __prompt_rvm {
-  local w=$(tput cols 2>/dev/null||echo -n 100)
-  [ "$w" -gt 60 ] &&
-    which rvm-prompt >/dev/null 2>/dev/null && echo -n "r:$(rvm-prompt v g 2>/dev/null) "
-}
+# ## NOTE not used atm
+# function __prompt_rvm {
+#   local w=$(tput cols 2>/dev/null||echo -n 100)
+#   [ "$w" -gt 60 ] &&
+#     which rvm-prompt >/dev/null 2>/dev/null && echo -n "r:$(rvm-prompt v g 2>/dev/null) "
+# }
 
-## NOTE not used atm
-function __prompt_nvm {
-  local w=$(tput cols 2>/dev/null||echo -n 100)
-  [ "$w" -gt 70 ] &&
-    if [ "$(type -t nvm_version)" == "function" ]; then
-      echo -n "n:$(nvm_version) "
-    fi
-}
+# ## NOTE not used atm
+# function __prompt_nvm {
+#   local w=$(tput cols 2>/dev/null||echo -n 100)
+#   [ "$w" -gt 70 ] &&
+#     if [ "$(type -t nvm_version)" == "function" ]; then
+#       echo -n "n:$(nvm_version) "
+#     fi
+# }
 
 # Username or alias
 function __prompt_username {
