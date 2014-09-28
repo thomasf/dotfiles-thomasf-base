@@ -503,15 +503,19 @@ jr() {
 }
 
 # fkill - kill process
+# fkill() {
+#   ps -ef | sed 1d | fzf -m | awk '{print $2}' | xargs kill -${1:-9}
+# }
+
 fkill() {
-  ps -ef | sed 1d | fzf -m | awk '{print $2}' | xargs kill -${1:-9}
+  ps -h -U $UID -o pid,user,cmd | sed -e "s:${HOME}:\~:g" | fzf -e -n 3..  | sed -e 's/ *\([0-9]* \).*/\1/' | xargs kill
 }
 
 fpip() {
   local pipfile
   pipfile=$(find \
               -type f -iname requirements\* -o \
-              -type f -iwholename \*requirements/\*.txt -o \
+              -type f -iwholename \*requirements/\*.txt -o\
               -type f -iwholename \*requirements/\*.pip |
                fzf)
   [[ -z $pipfile ]] && return 1
