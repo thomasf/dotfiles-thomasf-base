@@ -511,6 +511,35 @@ fkill() {
   ps -h -U $UID -o pid,user,cmd | sed -e "s:${HOME}:\~:g" | fzf -e -n 3..  | sed -e 's/ *\([0-9]* \).*/\1/' | xargs kill
 }
 
+_lsof_ps_like_common_dev_ports() {
+  local c=-1
+  local pids
+  local names
+  local line
+  while read -r line
+  do
+    case $line in
+      n*)
+        names[pids[c]]+=${line:1}" "
+        ;;
+      p*)
+        pids[++c]=${line:1}
+        ;;
+    esac
+  done < <(lsof -F pcn -iTCP:8000-8100 -sTCP:LISTEN)
+  for ((i=0; i<=c; i++))
+  do
+    for name in ${names[pids[i]]}
+    do
+      echo "${pids[i]} $(ps -h -o user ${pids[i]}) $name $(ps -h -o cmd ${pids[i]})"
+    done
+  done
+}
+
+fkillport() {
+  _lsof_ps_like_common_dev_ports | fzf -e -n 3..  | sed -e 's/ *\([0-9]* \).*/\1/' | xargs kill
+}
+
 fpip() {
   local pipfile
   pipfile=$(find \
