@@ -616,17 +616,22 @@ d() {
 
 lg() {
   command git rev-parse 2> /dev/null || return 1
-  command git log --stat --ignore-space-change --pretty=format:'%C(yellow)%h%Creset %C(green)%ad%Creset %C(cyan)%ae%Creset %C(blue)%s%Creset'
+  command git lg "$@"
 }
 
 lgv() {
   command git rev-parse 2> /dev/null || return 1
-  command git log -p --pretty=format:'%C(yellow)%h%Creset %C(cyan)%an <%ae>%Creset %Cgreen%cr%Creset %C(magenta)%s%Creset%C(yellow)%d%Creset'
+  command git lgv "$@"
+}
+
+lgs() {
+  command git rev-parse 2> /dev/null || return 1
+  command git lgs "$@"
 }
 
 lgt() {
   command git rev-parse 2> /dev/null || return 1
-  command git log --graph --all --pretty=format:'%C(yellow)%h%Creset %C(cyan)%ae%Creset %Cgreen%cr%Creset %s%C(yellow)%d%Creset' --abbrev-commit  
+  command git lgt "$@"
 }
 
 case $HOST_TAGS in
