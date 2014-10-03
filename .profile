@@ -44,11 +44,6 @@ ppath ~/Library/Haskell/bin
 ppath ~/.opt/go/bin
 ppath ~/.opt/go-tools/bin
 
-mkdir -p ~/.opt/go-lib/bin/ &&
-      GOPATH=~/.opt/go-lib/ &&
-      export GOPATH &&
-      ppath $GOPATH/bin
-
 ppath ~/.opt/ec2-api-tools/bin \
     && EC2_HOME=~/.opt/ec2-api-tools \
     && export EC2_HOME
