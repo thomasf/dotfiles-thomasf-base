@@ -1,0 +1,217 @@
+#!/usr/bin/env python
+#
+#    Written by Piotr Dlugosz <pidlug at gmail dot com>
+#
+#    RecollFS - Recoll Filesystem Version 0.0.1 (30.04.2014)
+#    This program can be distributed under the terms of the GNU GPL.
+#    See the file COPYING.
+#
+#    Based on TrackerFS by Alex Kritikos <alex dot kritikos at gmail dot com>
+
+"""
+RecollFS provides a filesystem of symlinks using Recoll
+"""
+
+import fuse
+from fuse import Fuse
+import errno
+from stat import *
+try:
+    from recoll import recoll
+except:
+    import recoll
+import time
+import urllib
+import os
+import syslog
+
+class Logger:
+    def log_debug(self, msg):
+        print "Debug:", msg
+        #syslog.syslog(syslog.LOG_DEBUG, msg)
+
+    def log_error(self, msg):
+        print "Error:", msg
+        syslog.syslog(syslog.LOG_ERR, msg)
+
+    def log_info(self, msg):
+        print "Info:", msg
+        #syslog.syslog(syslog.LOG_INFO, msg)
+
+
+class RecollClient(Logger):
+    """
+    A recoll client object
+    """
+    def __init__(self, index):
+
+        self.rdb=recoll.connect(index)
+        self.rquery = self.rdb.query()
+
+    def query(self, qstring):
+        results = self.rquery.execute(qstring)
+        hits = {}
+        for i in range(results):
+          try:
+            doc = self.rquery.fetchone()
+            result = urllib.url2pathname(doc.url[7:]).encode("utf-8", 'ignore')
+            shortname = os.path.basename(result)
+            #print "url: '%s', result: '%s', shortname: '%s'"% (doc.url.encode("utf-8", 'ignore'), result, shortname)
+            uniq = 0
+            possible_name = shortname
+            while possible_name in hits:
+              uniq += 1
+              possible_name = "%s (%s)" % (shortname, str(uniq))
+            hits[possible_name] = result
+          except Exception as exc:
+            self.log_error(str(exc))
+
+        return hits
+
+
+class directory(object):
+
+  def __init__(self, name, cache_time = 300):
+    self.name = name
+    self.time = 0
+    self.cache_time = cache_time
+    self.contents = {}
+
+  def read(self, query_function):
+    current_time = time.time()
+
+    # check if cache is not expired and we have the directory contents 
+    # if not read it using the function provided as argument
+    if current_time - self.time > self.cache_time or not self.contents:
+      self.contents = query_function(self.name)
+      self.time = time.time()
+
+    #print "directory.read - %i" % len(self.contents)
+    return self.contents
+
+  def getfile(self, name):
+    # return single file name from cached contents or None if not found
+    return self.contents.get(name, None)
+
+
+class Recollfs(Fuse, Logger):
+
+    def __init__(self, *args, **kw):
+        Fuse.__init__(self, *args, **kw)
+        self.index = ""
+        self.dirs = {}
+        self.tclient = None
+
+    def main(self, *args, **kw):
+        self.tclient = RecollClient(self.index)
+        return fuse.Fuse.main(self, *args, **kw)
+
+    def hit_target(self, path):
+        """
+        path should be in the form of /dir/link
+            but it won't always be
+        FIXME: sloppy checking for this
+        """
+        linkedname = None
+        try:
+          qstring = path[1:path.rindex('/')]
+          filename = path[path.rindex('/')+1:]
+          linkedname = self.dirs[qstring].getfile(filename)
+        except Exception as exc:
+          self.log_error(str(exc))
+          pass
+        self.log_debug("hit_target '%s': '%s'" % (filename, linkedname))
+        return linkedname
+
+    def get_hits(self, qstring):
+        """
+        TODO: if it's not needed anywhere else, fold into readdir
+        """
+        hits = self.dirs[qstring].read(self.tclient.query)
+        self.log_debug("get_hits: '%s', count: %i " % (qstring, len(hits)))
+        return hits.keys()
+
+    def getattr(self, path):
+        st = fuse.Stat()
+        self.log_debug("getattr: '%s'" % path)
+        if path == '/' or self.dirs.has_key(path[1:]):
+            st.st_mode = S_IFDIR | S_IRWXU | S_IRWXG | S_IRWXO
+            st.st_nlink = 2
+        else:
+            linkedfile = self.hit_target(path)
+            if linkedfile != None:
+               self.log_debug("getattr file: '%s'" % linkedfile)
+               st1 = os.lstat(linkedfile)
+               st.st_nlink = 1
+               st.st_mode = S_IFLNK | st1.st_mode & 4095
+               st.st_size = st1.st_size
+               st.st_atime = st1.st_atime
+               st.st_mtime = st1.st_mtime
+               st.st_ctime = st1.st_ctime
+            else:
+               self.log_error("getattr error")
+               return -errno.ENOENT
+        return st
+
+    def readlink(self, path):
+        target = self.hit_target(path)
+        self.log_debug("readlink file: '%s'" % target)
+        if target != None:
+            return target
+        else:
+            e = OSError("readlink Not a link '%s'" % path)
+            e.errno = EINVAL
+            raise e
+
+    def readdir(self, path, offset):
+        """
+        if path is /, return all dirs
+        if path is /dir, and "dir" exists, return hits for the "dir" query
+        """
+        yield fuse.Direntry('.')
+        yield fuse.Direntry('..')
+        if path == '/':
+            for r in self.dirs:
+                yield fuse.Direntry(r)
+        elif self.dirs.has_key(path[1:]):
+            for r in self.get_hits(path[1:]):
+                yield fuse.Direntry(r)
+
+    def mkdir(self, path, mode):
+        new_dir = path[1:]
+        if (self.dirs.has_key(new_dir) == False) and (len(new_dir) > 0) and (new_dir.find('/') == -1):
+            self.dirs[new_dir] = directory(new_dir)
+
+    def rename(self, path, path1):
+        new_dir = path1[1:]
+        old_dir = path[1:]
+        if (self.dirs.has_key(new_dir) == False) and (len(new_dir) > 0) and (new_dir.find('/') == -1):
+            try:
+                del self.dirs[old_dir]
+                self.dirs[new_dir] = directory(new_dir)
+            except Exception as exc:
+                self.log_error(str(exc))
+                return # FIXME: return an error!
+
+    def rmdir(self, path):
+        old_dir = path[1:]
+        try:
+            del self.dirs[old_dir]
+        except:
+            return # FIXME: return an error!
+
+def main():
+    usage="""
+Recoll filesystem
+
+""" + Fuse.fusage
+    fuse.fuse_python_api = (0, 2)
+    server = Recollfs(version="%prog " + fuse.__version__, usage=usage, dash_s_do='setsingle')
+    server.multithreaded = 0
+
+    server.parser.add_option(mountopt="index", default='~/.recoll', help="The directory containing the Recoll configuration.")
+    server.parse(values=server, errex=1)
+    server.main()
+
+if __name__ == '__main__':
+    main()
