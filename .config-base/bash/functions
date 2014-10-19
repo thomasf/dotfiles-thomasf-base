@@ -206,6 +206,7 @@ bakdir() {
 }
 
 wsdir-set() {
+  $(which wsname) || return 0
   if [ $(wsname -p) ]; then
     mkdir -p ~/.config/wsdirs/
     echo -ne $PWD > ~/.config/wsdirs/$(wsname -p)
@@ -213,12 +214,14 @@ wsdir-set() {
 }
 
 wsdir-unset() {
+  $(which wsname) || return 0
   if [ $(wsname -p) ]; then
     rm -f ~/.config/wsdirs/$(wsname -p)
   fi
 }
 
 wsdir-cd() {
+  $(which wsname) || return 0
   local wsnamep=$(wsname -p)
   if [ -f ~/.config/wsdirs/$wsnamep ]; then
     cd $(cat ~/.config/wsdirs/$wsnamep)
@@ -228,6 +231,7 @@ wsdir-cd() {
 }
 
 wsdir-get() {
+  $(which wsname) || return 0
   local wsnamep=$(wsname -p)
   if [ -f ~/.config/wsdirs/$wsnamep ]; then
     echo -ne $(cat ~/.config/wsdirs/$wsnamep)
@@ -237,8 +241,9 @@ wsdir-get() {
 }
 
 wsenv-edit() {
+  $(which wsname) || return 0
   local wsnamep=""
-  if [ $(wsname -p) ]; then
+  if  $(which wsname) && [ $(wsname -p) ]; then
     if [ $(wsdir-get) ]; then
       wsnamep=$(basename $(wsdir-get))
     else
@@ -250,6 +255,7 @@ wsenv-edit() {
 }
 
 wsenv-source() {
+  $(which wsname) || return 0
   local wsnamep=""
   if [ $(wsname -p) ]; then
     if [ $(wsdir-get) ]; then
