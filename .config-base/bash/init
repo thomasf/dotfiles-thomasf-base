@@ -383,11 +383,11 @@ esac
 
 if [ ! "${TERM}" == "dumb" ] &&
      [ "${PWD}" == "${HOME}" ]; then
-  if wsdir-cd || cdd; then
-    wsenv-source || true
+  if wsdir-cd >/dev/null || cdd  >/dev/null ; then
+    wsenv-source >/dev/null || true
     [ -z $VIRTUAL_ENV ] &&
-      [ $(which wsname) ] &&
-      [ $(wsname -p) ] &&
+      [ $(which wsname >/dev/null ) ] &&
+      [ $(wsname -p >/dev/null ) ] &&
       workon $(wsname -p) 2>/dev/null || true
     git status --short --branch 2>/dev/null || true
   fi

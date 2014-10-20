@@ -10,11 +10,11 @@ name=$(wmctrl -d 2> /dev/null | grep  "[0-9]* \*" | tr -s ' '  | cut -d ' ' -f 1
 
 case $1 in
   -p)
-    echo -n $(echo $name | cut -d '.' -f -1)
+    echo -n $(echo -n $name | cut -d '.' -f -1)
     ;;
   -s)
     if [[ "$name" == *\.* ]]; then
-      echo -n $(echo $name | cut -d '.' -f 2-)
+      echo -n $(echo -n $name | cut -d '.' -f 2-)
     else
       exit 1
     fi
