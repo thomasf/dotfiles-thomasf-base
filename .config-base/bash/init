@@ -335,9 +335,7 @@ case $HOST_TAGS in
   # nothing
   ;;
   *)
-    [ $(which /usr/bin/ruby) ] && \
-      /usr/bin/ruby --disable-gems -e'#' >/dev/null 2>/dev/null  \
-                    [ $(which hub) ] && \
+    [ $(which hub) ] && \
       alias git=hub
     ;;
 esac
