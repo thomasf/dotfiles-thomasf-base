@@ -5,6 +5,29 @@
 set -e
 set -x
 
+
+cdo() {
+  cd "${HOME}/.opt/${1}"
+}
+export -f cdo
+
+uptodate() {
+  local dir=${1}
+  [ ! -d ${dir} ] && return 1
+  cd ${dir}
+  git fetch upstream master
+  local changes=$(git rev-list HEAD..upstream/master --count)
+  return $changes
+  # return 2
+}
+export -f uptodate
+
+resetupstream() {
+  git log HEAD..upstream/master --oneline
+  git reset --hard upstream/master
+}
+export -f resetupstream
+
 runCmd() {
     if [ -n "$DISPLAY" ] && [ `which urxvt` ]; then
         exec urxvt -title upgradeall -name upgradeall -e bash -c \
@@ -23,12 +46,18 @@ read any;" &
     fi
 }
 
+( uptodate "${HOME}/.opt/dunst" || runCmd "cdo dunst ; resetupstream ; make ; sudo make install" ) &
+( uptodate "${HOME}/.opt/compton" || runCmd "cdo compton; resetupstream; make" ) &
+( uptodate "${HOME}/.opt/mu" || runCmd "cdo mu; resetupstream; make ; sudo make install" ) &
 runCmd "sudo apt-get update ; sudo apt-get dist-upgrade"
 runCmd "xmonadUpdate"
-runCmd "~/.emacs.d/installDeps emacs"
+runCmd "${HOME}/.emacs.d/installDeps emacs"
 runCmd "hsadmin pull"
-runCmd "cd ~/.opt/dunst ; git pull upstream master ; make ; sudo make install"
-runCmd "cd ~/.opt/compton ; git pull upstream master ; make ;"
-runCmd "cd ~/.opt/mu ; git pull upstream master ; make ; sudo make install"
 
-# runCmd "virtualenv-burrito upgrade; rvm get stable; (cd ~/.opt/nvm; git pull origin master)"
+runCmd "\
+echo UPDATING yt-download
+youtube-dl --update; \
+echo UPDATING PT; \
+go-get-tools -u github.com/monochromegane/the_platinum_searcher/...; \
+echo UPDATING HUB; \
+go-get-tools -u github.com/github/hub"
