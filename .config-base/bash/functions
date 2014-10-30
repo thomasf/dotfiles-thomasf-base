@@ -489,17 +489,20 @@ jd() {
   cd "${root}${dir}" >/dev/null
 }
 
+_find_repos() {
+  find -L . -maxdepth 10 \
+       -type d -name '.git' -o \
+       -type d -name '.hg' \
+       2>/dev/null |
+    xargs -n 1 dirname
+}
+
 # Jump to repository
 jr() {
   local dir=""
   local query="$@"
   dir=$(cd ~/repos &&
-           find -L . -maxdepth 5 \
-                -type d -name '.git' -o \
-                -type d -name '.hg' |
-             xargs -n 1 dirname |
-             cut -c3- |
-             sort |
+           _find_repos | cut -c3- | sort |
              selectline --query="$query") || return 1
   dir="${HOME}/repos/${dir}"
   if [ ! ${OSTYPE:0:6} = darwin ]; then
