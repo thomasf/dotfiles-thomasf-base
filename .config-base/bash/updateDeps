@@ -40,5 +40,3 @@ dl_bin "recollfs" "https://raw.githubusercontent.com/pidlug/recollfs/master/reco
 
 dl "z" "https://raw.github.com/rupa/z/master/z.sh" &
 dl "autoenv" "https://raw.github.com/kennethreitz/autoenv/master/activate.sh" &
-
-youtube-dl -U &
