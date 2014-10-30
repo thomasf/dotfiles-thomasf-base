@@ -532,7 +532,7 @@ _lsof_ps_like_common_dev_ports() {
         pids[++c]=${line:1}
         ;;
     esac
-  done < <(lsof -F pcn -iTCP:8000-8100 -sTCP:LISTEN)
+  done < <(lsof -F pcn -iTCP:8000-9000 -sTCP:LISTEN)
   for ((i=0; i<=c; i++))
   do
     for name in ${names[pids[i]]}
