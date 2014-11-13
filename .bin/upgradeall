@@ -57,7 +57,13 @@ runCmd "hsadmin pull"
 runCmd "\
 echo UPDATING yt-download
 youtube-dl --update; \
-echo UPDATING PT; \
-go-get-tools -u github.com/monochromegane/the_platinum_searcher/...; \
-echo UPDATING HUB; \
-go-get-tools -u github.com/github/hub"
+echo UPDATING go-tools; \
+go-get-tools -v -u \
+github.com/monochromegane/the_platinum_searcher/... \
+github.com/github/hub \
+github.com/tools/godep \
+github.com/nsf/gocode \
+code.google.com/p/rog-go/exp/cmd/godef \
+golang.org/x/tools/cmd/goimports \
+golang.org/x/tools/cmd/eg \
+;"
