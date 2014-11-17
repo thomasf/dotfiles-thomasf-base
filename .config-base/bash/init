@@ -111,16 +111,13 @@ if [ $UID != 0 ]; then
     && VIRTUALENVWRAPPER_HOOK_DIR="${HOME}/.virtualenvwrapper-hooks" \
     && export VIRTUALENVWRAPPER_HOOK_DIR
 
-  # Maybe load virtualenvburruto or else pythonbrew
+  # Maybe load virtualenvwrapper
   if [ -f "/usr/local/bin/virtualenvwrapper.sh" ]; then
     if [ ${OSTYPE:0:6} = darwin ]; then
       export VIRTUALENVWRAPPER_PYTHON=/usr/local/bin/python
     fi
     log "virtualenvwrapper" \
       && source "/usr/local/bin/virtualenvwrapper.sh"
-  elif [ -f "${HOME}/.venvburrito/startup.sh" ]; then
-    log "virtualenvburrito" \
-      && source "${HOME}/.venvburrito/startup.sh"
   fi
 
   # disabled due to problems w. ubuntu 14.04
