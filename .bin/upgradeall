@@ -13,7 +13,7 @@ export -f cdo
 
 uptodate() {
   local dir=${1}
-  [ ! -d ${dir} ] && return 1
+  [ ! -d ${dir} ] && return 0
   cd ${dir}
   git fetch upstream master
   local changes=$(git rev-list HEAD..upstream/master --count)
