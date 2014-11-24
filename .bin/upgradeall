@@ -58,7 +58,9 @@ runCmd "\
 echo UPDATING yt-download
 youtube-dl --update; \
 echo UPDATING go-tools; \
-go-get-tools -v -u \
+GOPATH=~/repos/go; \
+export GOPATH; \
+go get -v -u \
 github.com/monochromegane/the_platinum_searcher/... \
 github.com/github/hub \
 github.com/tools/godep \

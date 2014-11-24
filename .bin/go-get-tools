@@ -1,4 +1,0 @@
-#!/bin/sh
-GOPATH=${HOME}/.opt/go-tools
-export GOPATH
-go get "$@"
