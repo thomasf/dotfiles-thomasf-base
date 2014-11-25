@@ -32,10 +32,10 @@ dl_bin "git-imerge" "https://raw.github.com/mhagger/git-imerge/master/git-imerge
 dl_bin "ghi" "https://raw.github.com/stephencelis/ghi/master/ghi" &
 dl_bin "vcprompt" "https://raw.github.com/djl/vcprompt/master/bin/vcprompt" &
 dl_bin "svtget" "https://raw.github.com/mmn/svtget/master/bash/svtget" &
-dl_bin "fzf" "https://raw.github.com/junegunn/fzf/master/fzf" &
-dl_bin "spark" "https://raw2.github.com/holman/spark/master/spark" &
-dl_bin "pamixer" "https://raw2.github.com/mk-fg/pulseaudio-mixer-cli/master/pulseaudio-mixer-cli.py" &
-dl_bin "git-ls-dir" "https://raw2.github.com/aspiers/git-config/master/bin/git-ls-dir" &
+dl_bin "fzf" "https://raw.gitub.com/junegunn/fzf/master/fzf" &
+dl_bin "spark" "https://raw.github.com/holman/spark/master/spark" &
+dl_bin "pamixer" "https://raw.github.com/mk-fg/pulseaudio-mixer-cli/master/pulseaudio-mixer-cli.py" &
+dl_bin "git-ls-dir" "https://raw.github.com/aspiers/git-config/master/bin/git-ls-dir" &
 dl_bin "recollfs" "https://raw.githubusercontent.com/pidlug/recollfs/master/recollfs" &
 
 dl "z" "https://raw.github.com/rupa/z/master/z.sh" &
