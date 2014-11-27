@@ -497,18 +497,33 @@ _find_repos() {
     xargs -n 1 dirname
 }
 
+_jump_repo() {
+  local basedir="${1}"
+  shift
+  [[ -d "${basedir}" ]] || return 1
+  local query="$@"
+  local selected=$(cd "${basedir}" && _find_repos | cut -c3- | sort |
+                  selectline --query="$query") || return 1
+  local target="${basedir}/${selected}"
+  if [ ! ${OSTYPE:0:6} = darwin ]; then
+    target=`readlink -f $target`
+  fi
+  cd "$target"
+}
+
 # Jump to repository
 jr() {
-  local dir=""
-  local query="$@"
-  dir=$(cd ~/repos &&
-           _find_repos | cut -c3- | sort |
-             selectline --query="$query") || return 1
-  dir="${HOME}/repos/${dir}"
-  if [ ! ${OSTYPE:0:6} = darwin ]; then
-    dir=`readlink -f $dir`
-  fi
-  cd "$dir"
+  _jump_repo "${HOME}/repos" "$@"
+}
+
+# Jump to repository under gopath
+jg() {
+  _jump_repo "${GOPATH}/src" "$@"
+}
+
+# Jump to repository under (23) critters path
+jc() {
+  _jump_repo "${HOME}/repos/23c" "$@"
 }
 
 # fkill - kill process
