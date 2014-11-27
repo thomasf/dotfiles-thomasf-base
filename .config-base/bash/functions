@@ -337,6 +337,7 @@ __select_subdir() {
   local result=$(find . -mindepth 1 -maxdepth 10 -type d \
                       -not \( -name ".?*" -prune \) \
                       -not \( -name "node_modules" -prune \) \
+                      -not \( -name "Godeps" -prune \) \
                     | cut -c 3- | selectline --query="$query")
   [[ -z $result ]] && return 1
   echo -n "./${result}"
@@ -532,7 +533,11 @@ jc() {
 # }
 
 fkill() {
-  ps -h -U $UID -o pid,user,cmd | sed -e "s:${HOME}:\~:g" | fzf -e -n 3..  | sed -e 's/ *\([0-9]* \).*/\1/' | xargs kill
+  ps -h -U $UID -o pid,user,cmd |
+    sed -e "s:${HOME}:\~:g" |
+    fzf -e -n 3..  |
+    sed -e 's/ *\([0-9]* \).*/\1/' |
+    xargs kill
 }
 
 _lsof_ps_like_common_dev_ports() {
@@ -674,16 +679,6 @@ case $HOST_TAGS in
 esac
 
 
-
-octopresscreate () {
-  local name="${1}"
-  mkdir $name &&
-    cd $name &&
-    git init . &&
-    git remote add octopress https://github.com/imathis/octopress &&
-    git pull octopress master
-}
-
 # Go to currently active buffer directory in Emacs
 cdb() {
   local EMACS_CWP=$(emacsclient -a false -e "
@@ -708,23 +703,23 @@ pwdclip() {
 }
 
 
-# TODO WIP
-fontadjust() {
-  local cw="$(tput cols)"
-  local newsize=${__afs_fs}
-  [[ ${cw} != ${__afs_cw} ]] || return 0
-  if [[ ${cw} -lt 60  ]] ; then
-    newsize="9.8"
-  elif  [[ ${cw} -gt 77  ]] ; then
-    newsize="11.8"
-  fi
+# # TODO WIP
+# fontadjust() {
+#   local cw="$(tput cols)"
+#   local newsize=${__afs_fs}
+#   [[ ${cw} != ${__afs_cw} ]] || return 0
+#   if [[ ${cw} -lt 60  ]] ; then
+#     newsize="9.8"
+#   elif  [[ ${cw} -gt 77  ]] ; then
+#     newsize="11.8"
+#   fi
 
-  if [[ ${__afs_fs} == ${newsize} ]]; then
-    export __afs_cw="${cw}"
-    return 0
-  fi
-  local font="xft:PragmataPro:size=${newsize}"
-  echo -en "\033]50;$font\007"
-  export __afs_fs="${newsize}"
-  export __afs_cw="${cw}"
-}
+#   if [[ ${__afs_fs} == ${newsize} ]]; then
+#     export __afs_cw="${cw}"
+#     return 0
+#   fi
+#   local font="xft:PragmataPro:size=${newsize}"
+#   echo -en "\033]50;$font\007"
+#   export __afs_fs="${newsize}"
+#   export __afs_cw="${cw}"
+# }

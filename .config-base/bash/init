@@ -237,8 +237,6 @@ esac
 
 
 
-
-
 #
 # ------------------------------------------------------------------------------
 #
@@ -247,9 +245,6 @@ esac
 # enable xon/xoff flow control
 [ $(which stty) ] \
   && stty -ixon
-# set bell frequency to 0
-[ $(which setterm) ] \
-  && setterm -bfreq 0
 
 # ------------------------------------------------------------------------------
 # COMPLETION
@@ -323,10 +318,7 @@ if [ -n "$DISPLAY" ] && [ -x /usr/bin/xsel ] ; then
 fi
 
 
-# ------------------------------------------------------------------------------
-# HUB
-#
-
+# host tags
 case $HOST_TAGS in
   *:minimalshell:*)
   # nothing
