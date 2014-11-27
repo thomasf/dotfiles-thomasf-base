@@ -522,8 +522,8 @@ jg() {
   _jump_repo "${GOPATH}/src" "$@"
 }
 
-# Jump to repository under (23) critters path
-jc() {
+# Jump to repository under 23c path
+j2() {
   _jump_repo "${HOME}/repos/23c" "$@"
 }
 
@@ -609,9 +609,31 @@ z() {
   if [[ -z "$*" ]]; then
     cd "$(_z -l 2>&1 | sed -n 's/^[ 0-9.,]*//p' | fzf)"
   else
-    # local reporoot="$(command git rev-parse --show-toplevel 2> /dev/null)"
-    _last_z_args="$@"
-    _z "$@"
+    case $1 in
+      r)
+        cd "${HOME}/repos"
+        ;;
+      g)
+        cd "${HOME}/repos/github"
+        ;;
+
+      d)
+        cd "${HOME}/Downloads"
+        ;;
+
+      n)
+        cd "${HOME}/notes"
+        ;;
+
+      2)
+        cd "${HOME}/repos/23c"
+        ;;
+
+      *)
+        _last_z_args="$@"
+        _z "$@"
+        ;;
+    esac
   fi
 }
 
@@ -680,7 +702,7 @@ esac
 
 
 # Go to currently active buffer directory in Emacs
-cdb() {
+je() {
   local EMACS_CWP=$(emacsclient -a false -e "
   (let ((current-buffer
          (nth 1 (assoc 'buffer-list
@@ -697,6 +719,7 @@ cdb() {
     return 1
   fi
 }
+alias cdb='je'
 
 pwdclip() {
   pwd | xsel --clipboard
