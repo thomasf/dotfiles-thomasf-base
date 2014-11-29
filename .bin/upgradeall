@@ -68,4 +68,5 @@ github.com/nsf/gocode \
 code.google.com/p/rog-go/exp/cmd/godef \
 golang.org/x/tools/cmd/goimports \
 golang.org/x/tools/cmd/eg \
+golang.org/x/tools/cmd/gorename \
 ;"
