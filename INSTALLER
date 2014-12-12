@@ -22,6 +22,9 @@
 gc() {
   git config --global "$@"
 }
+gu() {
+  git config --global --unset "$@"
+}
 
  case "${USER}" in
    thomasf|a00001)
@@ -97,7 +100,8 @@ gc core.excludesfile ~/.gitignore_global
 # Forces the use of SSH instead of HTTPS for any URLs that point to github.
 # This means that if a repo uses "https://github/..." for "origin", we will
 # automatically use SSH. No more password prompts!
-gc url.ssh://git@github.com/.insteadOf https://github.com/
+# gc url.ssh://git@github.com/.insteadOf https://github.com/
+gu url.ssh://git@github.com/.insteadOf
 
 gc log.date "relative"
 gc format.pretty "format:%C(yellow)%h%Creset %C(green)%ad%Creset %C(cyan)%ae%Creset %s"
@@ -109,3 +113,4 @@ gc mergetool.prompt "true"
 gc diff.renamelimit "50000"
 
 unset -f gc
+unset -f gu
