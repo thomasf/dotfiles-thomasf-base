@@ -10,6 +10,9 @@ emacsclient_bin=''
 cmd=$(basename ${0})
 
 if [ "${OSTYPE:0:6}" = "darwin" ] \
+   && [ -x ${HOME}/Applications/Emacs.app/Contents/MacOS/bin/emacsclient ]; then
+  emacsclient_bin=${HOME}/Applications/Emacs.app/Contents/MacOS/bin/emacsclient
+elif [ "${OSTYPE:0:6}" = "darwin" ] \
    && [ -x /Applications/Emacs.app/Contents/MacOS/bin/emacsclient ]; then
   emacsclient_bin=/Applications/Emacs.app/Contents/MacOS/bin/emacsclient
 elif [ -x ~/.opt/emacs/lib-src/emacsclient ]; then
@@ -27,6 +30,9 @@ fi
 if [ "${OSTYPE:0:6}" = "darwin" ] \
    && [ -x /Applications/Emacs.app/Contents/MacOS/Emacs ]; then
   emacs_bin=/Applications/Emacs.app/Contents/MacOS/Emacs
+elif [ "${OSTYPE:0:6}" = "darwin" ] \
+   && [ -x ${HOME}/Applications/Emacs.app/Contents/MacOS/Emacs ]; then
+  emacs_bin=${HOME}/Applications/Emacs.app/Contents/MacOS/Emacs
 elif [ -x ~/.opt/emacs/src/emacs ]; then
   emacs_bin=~/.opt/emacs/src/emacs
 elif [ -x /usr/bin/emacs ]; then
