@@ -20,10 +20,10 @@
   gocode set autobuild true
 
 gc() {
-  git config --global "$@"
+  git config --global "$@" || true
 }
 gu() {
-  git config --global --unset "$@"
+  git config --global --unset "$@" || true
 }
 
  case "${USER}" in
