@@ -16,6 +16,8 @@
 # Flattr: http://flattr.com/thing/300374/SVT-Get-a-local-cache-tool-for-SVT-Play
 
 # Changelog:
+# -- v0.1.6
+#    * Added support for avconv
 # -- v0.1.5
 #    * Sikevux added svt.se support
 # -- v0.1.4
@@ -53,7 +55,7 @@ debug=""
 # you can also give them as argument using flag -f "-vcodec copy..."
 ffmpeg_flags="-vcodec copy -strict experimental"
 
-DEPENDENCIES="ffmpeg curl $SED cut bash tr"
+DEPENDENCIES="curl $SED cut bash tr"
 PLAYERS="mplayer vlc"
 for DEP in $DEPENDENCIES; do
 	if [ -z "`which $DEP`" ]; then
@@ -61,7 +63,16 @@ for DEP in $DEPENDENCIES; do
 		exit
 	fi
 done
-    
+
+TOOLS="ffmpeg avconv"
+tool="ffmpeg"
+if [ -z "$(which ffmpeg)" ]; then
+	if [ -z "$(which avconv)" ]; then
+		echo "ERROR: Missing avconv and ffmpeg" >&2
+		exit
+	fi
+	tool="avconv"
+fi
 
 # Available bitrates: 320 850 1400 2400
 BITRATE=""
@@ -353,7 +364,7 @@ fi
 
 if [ $play ]; then
     if [ $is_applehttp ]; then
-	CMD="ffmpeg -i \"$tcUrl\" $ffmpeg_flags - | \"$mediaplayer\" - \"$subUrl\" &>/dev/null" 
+	CMD="$tool -i \"$tcUrl\" $ffmpeg_flags - | \"$mediaplayer\" - \"$subUrl\" &>/dev/null"
     elif [ $extension == "mp4" ]; then
 	CMD="rtmpdump -r \"$tcUrl\" -W \"$swfUrl\" -o - | \"$mediaplayer\" - \"$subUrl\" &>/dev/null"
     elif [ $extension == "flv" ]; then
@@ -370,7 +381,7 @@ else # if [ ! $play ]
     if [ $is_applehttp ]; then
         # in case of any problem with segmentation fault. make sure you have latest possibe ffmpeg. on Mac build ffmpeg from source.
         # bug ticket: http://ffmpeg.org/trac/ffmpeg/ticket/749
-	CMD="ffmpeg -i \"$tcUrl\" $ffmpeg_flags \"file:$filename\""
+	CMD="$tool -i \"$tcUrl\" $ffmpeg_flags \"file:$filename\""
     elif [ "$extension" == "mp4" ]; then
 	CMD="rtmpdump -r \"$tcUrl\" -W \"$swfUrl\" -o \"$filename\""
     elif [ $extension == "flv" ]; then

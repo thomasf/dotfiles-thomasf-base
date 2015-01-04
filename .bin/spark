@@ -5,7 +5,7 @@
 #
 # Generates sparklines for a set of data.
 #
-# Here's a a good web-based sparkline generator that was a bit of inspiration
+# Here's a good web-based sparkline generator that was a bit of inspiration
 # for spark:
 #
 #   https://datacollective.org/sparkblocks
@@ -57,6 +57,9 @@ spark()
 
   # print ticks
   local ticks=(▁ ▂ ▃ ▄ ▅ ▆ ▇ █)
+
+  # use a high tick if data is constant
+  (( min == max )) && ticks=(▅ ▆)
 
   local f=$(( (($max-$min)<<8)/(${#ticks[@]}-1) ))
   (( f < 1 )) && f=1

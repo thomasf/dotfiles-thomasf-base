@@ -1875,6 +1875,10 @@ _git_config ()
 		__gitcomp "$__git_send_email_suppresscc_options"
 		return
 		;;
+	sendemail.transferencoding)
+		__gitcomp "7bit 8bit quoted-printable base64"
+		return
+		;;
 	--get|--get-all|--unset|--unset-all)
 		__gitcomp_nl "$(__git_config_get_set_variables)"
 		return
@@ -2546,6 +2550,16 @@ _git_tag ()
 		;;
 	*)
 		__gitcomp_nl "$(__git_refs)"
+		;;
+	esac
+
+	case "$cur" in
+	--*)
+		__gitcomp "
+			--list --delete --verify --annotate --message --file
+			--sign --cleanup --local-user --force --column --sort
+			--contains --points-at
+			"
 		;;
 	esac
 }
