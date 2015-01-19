@@ -26,7 +26,6 @@ dl_completion "ipython" "https://github.com/ipython/ipython/raw/master/examples/
 dl_completion "maven" "https://raw.github.com/juven/maven-bash-completion/master/bash_completion.bash" &
 dl_completion "vagrant" "https://raw.github.com/kura/vagrant-bash-completion/master/etc/bash_completion.d/vagrant" &
 dl_completion "docker" "https://raw.github.com/dotcloud/docker/master/contrib/completion/bash/docker" &
-dl_completion "fzf" "https://raw.github.com/junegunn/fzf/master/fzf-completion.bash" &
 
 dl_bin "git-imerge" "https://raw.github.com/mhagger/git-imerge/master/git-imerge" &
 dl_bin "ghi" "https://raw.github.com/stephencelis/ghi/master/ghi" &

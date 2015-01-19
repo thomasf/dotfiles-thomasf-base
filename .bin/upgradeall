@@ -71,4 +71,5 @@ golang.org/x/tools/cmd/eg \
 golang.org/x/tools/cmd/gorename \
 github.com/shurcooL/markdownfmt \
 golang.org/x/tools/cmd/oracle \
+github.com/junegunn/fzf/src/fzf \
 ;"
