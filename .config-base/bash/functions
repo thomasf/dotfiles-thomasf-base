@@ -656,6 +656,11 @@ gr() {
   command git remote -v
 }
 
+gf() {
+  command git rev-parse 2> /dev/null || return 1
+  command git fetch --all
+}
+
 d() {
   command git rev-parse 2> /dev/null || return 1
   command git diff "$@"
