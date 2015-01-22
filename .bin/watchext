@@ -1,0 +1,23 @@
+#!/bin/sh
+
+cmd=$(basename ${0})
+
+case $cmd in
+  watchgo)
+    lookfor="go h c m"
+  ;;
+  *)
+    lookfor="$1"
+    shift
+    ;;
+esac
+
+while file=$(inotifywait -q -r -e modify --format "%w%f" ./); do
+  EXT=${file##*.}
+  for check in $lookfor; do
+    if [ $EXT = $check ]; then
+      eval "$@"
+      continue
+    fi
+  done
+done
