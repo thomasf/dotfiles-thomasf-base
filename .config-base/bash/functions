@@ -650,6 +650,7 @@ gr() {
 gf() {
   command git rev-parse 2> /dev/null || return 1
   command git fetch --all
+  command git fetch --tags
 }
 
 d() {
