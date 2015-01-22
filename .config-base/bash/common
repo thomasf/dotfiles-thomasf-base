@@ -72,26 +72,6 @@ export VIRTUALENV_DISTRIBUTE=1
 # ----------------------------------------------------------------------------
 # Support functions for script/function writing
 
-
-# uncommon cleans the environment of things that are not supposed to be
-# available in an interactive shell.
-uncommon() {
-  unset -f log
-}
-
-
-# log is supposed to help shell init performance debugging.
-log() {
-  # [ ! -z "$PS1" ] \
-  #   && [ ! "${TERM}" == "dumb" ] \
-  #   && [ ! "${TERM}" == "eterm" ] \
-  #   && [ ! "${TERM}" == "eterm-color" ] \
-  #   && echo -n "■"
-  return 0
-}
-export -f log
-
-
 # select a line
 selectline() {
   fzf --no-sort "$@"

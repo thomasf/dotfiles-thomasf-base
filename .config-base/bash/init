@@ -9,6 +9,17 @@ bash_uptime() {
   echo "$(($(date +%s)-${bash_start_time})) seconds"
 }
 
+# log is supposed to help shell init performance debugging.
+log() {
+  # [ ! -z "$PS1" ] \
+  #   && [ ! "${TERM}" == "dumb" ] \
+  #   && [ ! "${TERM}" == "eterm" ] \
+  #   && [ ! "${TERM}" == "eterm-color" ] \
+  #   && echo -n "■"
+  return 0
+}
+export -f log
+
 
 # -------------------------------------------------------------------------------
 # Connect to gpg agent if possible
@@ -336,6 +347,10 @@ if [ ! -z "${BASH}" ]; then
   esac
 fi
 
+# replace log function with empty stub
+log() {
+  return 0
+}
 
 
 [ $(which manpath) ] && \
@@ -373,7 +388,5 @@ fi
   && export TMOUT=3600 \
     || true
 
-
-uncommon
 
 # end of init
