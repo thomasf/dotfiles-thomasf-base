@@ -9,18 +9,6 @@ bash_uptime() {
   echo "$(($(date +%s)-${bash_start_time})) seconds"
 }
 
-log() {
-  # [ ! -z "$PS1" ] \
-  #   && [ ! "${TERM}" == "dumb" ] \
-  #   && [ ! "${TERM}" == "eterm" ] \
-  #   && [ ! "${TERM}" == "eterm-color" ] \
-  #   && echo -n "■"
-  return 0
-}
-
-# Don't let virtualenv change the prompt
-export VIRTUAL_ENV_DISABLE_PROMPT=1
-export VIRTUALENV_DISTRIBUTE=1
 
 # -------------------------------------------------------------------------------
 # Connect to gpg agent if possible
@@ -113,7 +101,7 @@ if [ $UID != 0 ]; then
 
   # Maybe load virtualenvwrapper
   if [ -f "/usr/local/bin/virtualenvwrapper.sh" ]; then
-    if [ ${OSTYPE:0:6} = darwin ]; then
+    if [ ${__OS} = darwin ]; then
       export VIRTUALENVWRAPPER_PYTHON=/usr/local/bin/python
     fi
     log "virtualenvwrapper" \
@@ -156,7 +144,7 @@ fi
 log "bash config"
 shopt -s checkwinsize
 
-if [ ! ${OSTYPE:0:6} = darwin ]; then
+if [ ! ${__OS} = darwin ]; then
   shopt -s checkjobs
   shopt -s cdspell
   shopt -s dirspell
@@ -235,8 +223,6 @@ case $HOST_TAGS in
     ;;
 esac
 
-
-
 #
 # ------------------------------------------------------------------------------
 #
@@ -260,7 +246,7 @@ log "bash completion"
   && . "/usr/local/etc/bash_completion"
 
 for file in $(find $HOME/.config-base/bash/completion.d/ -not -type d); do
-  if [ ! ${file} = ag ] && [ ! ${OSTYPE:0:6} = darwin ]; then
+  if [ ! ${file} = ag ] && [ ! ${__OS} = darwin ]; then
     source $file
   fi
 done
@@ -350,10 +336,7 @@ if [ ! -z "${BASH}" ]; then
   esac
 fi
 
-# replace logger with empty stub
-function log() {
-  return 0
-}
+
 
 [ $(which manpath) ] && \
   unset MANPATH && \
@@ -390,5 +373,7 @@ fi
   && export TMOUT=3600 \
     || true
 
+
+uncommon
 
 # end of init

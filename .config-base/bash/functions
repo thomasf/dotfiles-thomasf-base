@@ -2,18 +2,9 @@
 # ------------------------------------------------------------------------------
 # ALIASES AND FUNCTIONS
 #
-export FZF_DEFAULT_OPTS="--extended --no-black --no-256"
 
-selectline() {
-  fzf --no-sort "$@"
-}
-export -f selectline
+source ~/.config-base/bash/common
 
-# if [ -n "$DISPLAY" ] && [ $(which dmenu) ] ; then
-#   alias selectline="dmenu -l 50"
-# else
-#   alias selectline="fzf --no-sort"
-# fi
 
 # The use_env call below is a reusable command to activate/create a new Python
 # virtualenv, requiring only a single declarative line of code in your .env files.
@@ -285,14 +276,14 @@ eless() {
 }
 
 alias j="jobs -l"
-if [ ${OSTYPE:0:6} = darwin ]; then
+if [ ${__OS} = darwin ]; then
   alias ls="ls -G"
 else
   alias ls="ls --group-directories-first --color"
 fi
 
 l() {
-  if [ $(which pls) ] && [ ! ${OSTYPE:0:6} = darwin ]; then
+  if [ $(which pls) ] && [ ! ${__OS} = darwin ]; then
     pls "$@"
   else
     ls -l "$@"
@@ -411,9 +402,9 @@ agentunset() {
 alias apt-update-upgrade='sudo apt-get update && sudo apt-get dist-upgrade'
 
 # ffmpeg - for - phone
-ffmpeg-for-phone() {
-  for A in $@; do ffmpeg -i ${A} -s qvga -vcodec mpeg4 -acodec libfaac ${A}.mp4 ;done
-}
+# ffmpeg-for-phone() {
+#   for A in $@; do ffmpeg -i ${A} -s qvga -vcodec mpeg4 -acodec libfaac ${A}.mp4 ;done
+# }
 
 # Extract wrapper for a number of archive formats
 ex () {
@@ -500,9 +491,9 @@ _jump_repo() {
   [[ -d "${basedir}" ]] || return 1
   local query="$@"
   local selected=$(cd "${basedir}" && _find_repos | cut -c3- | sort |
-                  selectline --query="$query") || return 1
+                        selectline --query="$query") || return 1
   local target="${basedir}/${selected}"
-  if [ ! ${OSTYPE:0:6} = darwin ]; then
+  if [ ! ${__OS} = darwin ]; then
     target=`readlink -f $target`
   fi
   cd "$target"
@@ -726,6 +717,18 @@ pwdclip() {
   pwd | xsel --clipboard
 }
 
+__select_ssh() {
+  echo -n $(cat ~/.ssh/config | grep ^Host | awk '{ print $2 }' | fzf)
+}
+export -f __select_ssh
+
+sshc() {
+  ssh "$(__select_ssh)"
+}
+
+moshc() {
+  mosh "$(__select_ssh)"
+}
 
 # # TODO WIP
 # fontadjust() {

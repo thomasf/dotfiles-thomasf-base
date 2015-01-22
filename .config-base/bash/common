@@ -1,9 +1,121 @@
 # -*- mode: sh -*-
-# Common functionality..
 
-#[ -n "$__common" ] && return 0
+# Common shell functions and settings
 
-__BASH="${HOME}/.config-base/bash"
-export __BASH
 
-#__common="loaded"; export __common
+# This file will be a better documented and structured version from all kinds
+# of files that are sourced during shell init.
+#
+# The contents of this file is most shell stuff that causes as little io/wait
+# as possible. Avoid executing shell commands, do NOT source anything else from
+# this file. etc..
+#
+# This file should be compatible with maybe bash4, bash3, zsh and maybe dash.
+#
+
+
+# ----------------------------------------------------------------------------
+# Early return
+
+# Return if common already has been loaded
+[ -n "$__SHCOMMON" ] && return 0
+
+
+# ----------------------------------------------------------------------------
+# Variable helpers
+
+
+# __SHBASE contains the path to the base directory for shell scripts.
+__SHBASE="${HOME}/.config-base/bash"
+export __SHBASE
+
+
+# __BASH is an legacy alias for __SHBASE
+# TODO: remove __BASH variable references and alias
+__BASH=$__SHBASE; export __BASH
+
+
+# __OS is a variable that holds a simplified version of $OSTYPE
+case "$OSTYPE" in
+  solaris*)
+    __OS="solaris"
+    ;;
+  darwin*)
+    __OS="darwin"
+    ;;
+  linux*)
+    __OS="linux"
+    ;;
+  bsd*)
+    __OS="bsd"
+    ;;
+  *)
+    __OS="unknown-$OSTYPE"
+    ;;
+esac
+export __OS
+
+
+# ----------------------------------------------------------------------------
+# Settings for various things
+
+
+# default FZF options
+export FZF_DEFAULT_OPTS="--extended --no-black --no-256"
+
+
+# virtualenv options
+export VIRTUAL_ENV_DISABLE_PROMPT=1
+export VIRTUALENV_DISTRIBUTE=1
+
+
+# ----------------------------------------------------------------------------
+# Support functions for script/function writing
+
+
+# uncommon cleans the environment of things that are not supposed to be
+# available in an interactive shell.
+uncommon() {
+  unset -f log
+}
+
+
+# log is supposed to help shell init performance debugging.
+log() {
+  # [ ! -z "$PS1" ] \
+  #   && [ ! "${TERM}" == "dumb" ] \
+  #   && [ ! "${TERM}" == "eterm" ] \
+  #   && [ ! "${TERM}" == "eterm-color" ] \
+  #   && echo -n "■"
+  return 0
+}
+export -f log
+
+
+# select a line
+selectline() {
+  fzf --no-sort "$@"
+}
+export -f selectline
+
+
+# ----------------------------------------------------------------------------
+# Functions intended for interactive use
+
+
+# Reload all shell init stuff
+rebash() {
+  unset __common
+  . "${HOME}/.bash_profile"
+}
+export -f rebash
+
+
+# ----------------------------------------------------------------------------
+# All done
+
+# __SHCOMMON is used to detect that this file already has been sourced
+__SHCOMMON="loaded"
+export __SHCOMMON
+
+# eof

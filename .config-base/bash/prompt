@@ -9,6 +9,9 @@
 # Show version controlled repository status.
 # vcprompt is used if installed, otherwise __git_ps1 will be tried as well.
 # Install vcsprompt -> hg clone https://bitbucket.org/mitsuhiko/vcprompt
+
+source ~/.config-base/bash/common
+
 export GIT_PS1_SHOWDIRTYSTATE="yes"
 export GIT_PS1_SHOWUPSTREAM="no"
 export GIT_PS1_SHOWUNTRACKEDFILES="yes"
