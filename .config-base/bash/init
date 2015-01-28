@@ -42,6 +42,19 @@ export GPG_TTY
   && return
 
 # ------------------------------------------------------------------------------
+# LOAD INTERACTIVE
+#
+
+source ~/.config-base/bash/interactive
+
+#
+#
+#
+# .....  and here followed all old stuff
+#
+
+
+# ------------------------------------------------------------------------------
 # PRIVATE AND LOCAL
 #
 [ -e "${HOME}/.bashrc-private" ] \

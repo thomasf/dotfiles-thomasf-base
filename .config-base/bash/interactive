@@ -1,0 +1,17 @@
+# -*- mode: sh -*-
+
+# All functions in this file are supposed to be used interactivley
+
+source ~/.config-base/bash/common
+
+
+# ----------------------------------------------------------------------------
+#
+
+# rebash reloads all shell init stuff
+rebash() {
+  unset __common
+  . "${HOME}/.bash_profile"
+}
+export -f rebash
+

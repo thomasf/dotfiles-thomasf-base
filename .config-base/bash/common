@@ -83,12 +83,7 @@ export -f selectline
 # Functions intended for interactive use
 
 
-# Reload all shell init stuff
-rebash() {
-  unset __common
-  . "${HOME}/.bash_profile"
-}
-export -f rebash
+
 
 
 # ----------------------------------------------------------------------------
