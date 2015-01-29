@@ -17,6 +17,7 @@ while file=$(inotifywait -q -r -e modify --format "%w%f" ./); do
   for check in $lookfor; do
     if [ $EXT = $check ]; then
       eval "$@"
+      echo -n "*"
       continue
     fi
   done
