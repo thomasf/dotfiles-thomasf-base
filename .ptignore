@@ -4,6 +4,9 @@ CACHE/
 node_modules/
 .sass-cache/
 .tox/
+
+.git/
+
 build/
 *.src.coffee
 *.min.js
