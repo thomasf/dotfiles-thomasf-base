@@ -125,9 +125,12 @@ if [ $UID != 0 ]; then
 
   # Maybe load virtualenvwrapper
   if [ -f "/usr/local/bin/virtualenvwrapper.sh" ]; then
-    if [ ${__OS} = darwin ]; then
-      export VIRTUALENVWRAPPER_PYTHON=/usr/local/bin/python
-    fi
+    # TODO: Probably do conditional check for this, it's only needed and only
+    # works with python from homebrew.
+    #
+    # if [ ${__OS} = darwin ]; then
+    #   export VIRTUALENVWRAPPER_PYTHON=/usr/local/bin/python
+    # fi
     log "virtualenvwrapper" \
       && source "/usr/local/bin/virtualenvwrapper.sh"
   fi
