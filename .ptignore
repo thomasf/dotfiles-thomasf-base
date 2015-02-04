@@ -5,6 +5,7 @@ node_modules/
 .sass-cache/
 .tox/
 
+Godeps/_workspace/
 .git/
 
 build/
