@@ -634,7 +634,9 @@ alias g="git"
 
 gu() {
   command git rev-parse 2> /dev/null || return 1
-  command git up "$@"
+  command git fetch --all
+  command git fetch --tags
+  command git rebase
 }
 
 s() {
