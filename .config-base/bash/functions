@@ -6,12 +6,14 @@
 source ~/.config-base/bash/common
 
 
+# dl takes an URL as its argument and downloads it using the server supplied
+# file name to PWD.
 dl() {
   curl -O -L "$@"
 }
 
-alias historyreload='history -r'
-
+# h displayes the bash history with fuzzy match/select.
+# NOTE: h relies on a bunch of tools being installed.
 h() {
   local line=''
   line="$(history | selectline)"
@@ -35,7 +37,6 @@ h() {
 }
 
 alias df='df -h'
-# alias reset="echo -ne '\033c'"
 
 __exec_in_dir() {
   local ncolors=$(tput colors)
@@ -329,9 +330,8 @@ function findname {
 }
 alias fn='findname'
 
+# cdup maches upwards the path and sets PWD to the first partial match.
 function cdup {
-
-  # TODO: Allow an integer parameter to define the number of levels to jump up; allow it to be used with a named arg
 
   if [ $# == 0 ]; then
     cd ..
@@ -611,13 +611,22 @@ zz() {
 
 alias j=z
 alias jj=zz
+
 alias g="git"
 
+# git "update"
 gu() {
   command git rev-parse 2> /dev/null || return 1
   command git fetch --all
   command git fetch --tags
   command git rebase
+}
+
+# Git "put"
+gp() {
+  command git rev-parse 2> /dev/null || return 1
+  command git push --tags
+  command git push
 }
 
 s() {
@@ -630,6 +639,7 @@ gr() {
   command git remote -v
 }
 
+# Git fetch all
 gf() {
   command git rev-parse 2> /dev/null || return 1
   command git fetch --all
