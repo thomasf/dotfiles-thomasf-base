@@ -38,4 +38,3 @@ dl_bin "git-ls-dir" "https://raw.github.com/aspiers/git-config/master/bin/git-ls
 dl_bin "recollfs" "https://raw.githubusercontent.com/pidlug/recollfs/master/recollfs" &
 
 dl "z" "https://raw.github.com/rupa/z/master/z.sh" &
-dl "autoenv" "https://raw.github.com/kennethreitz/autoenv/master/activate.sh" &

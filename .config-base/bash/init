@@ -135,21 +135,6 @@ if [ $UID != 0 ]; then
       && source "/usr/local/bin/virtualenvwrapper.sh"
   fi
 
-  # disabled due to problems w. ubuntu 14.04
-  # [[ -s $HOME/opt/pythonz/etc/bashrc ]] && log "pythonz" && source $HOME/opt/pythonz/etc/bashrc
-
-  case $HOST_TAGS in
-    *:minimalshell:*)
-    # nothing
-    ;;
-    *)
-      # load autoenv
-      [ -f "${__BASH}/autoenv" ] \
-        && . "${__BASH}/autoenv"
-      ;;
-  esac
-
-
   # Set flexsdk home
   [ -d "${HOME}/.opt/flex_sdk" ] \
     && export FLEX_HOME="${HOME}/.opt/flex_sdk"
