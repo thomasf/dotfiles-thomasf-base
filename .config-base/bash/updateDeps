@@ -16,8 +16,6 @@ dl_completion() {
   dl "completion.d/${1}" "${2}"
 }
 
-cp $(go env GOROOT)/misc/bash/go completion.d/go &
-
 dl_completion "nvm" "https://raw.github.com/creationix/nvm/master/bash_completion" &
 dl_completion "lein" "https://raw.github.com/technomancy/leiningen/master/bash_completion.bash" &
 dl_completion "android" "https://raw.github.com/mbrubeck/android-completion/master/android" &
