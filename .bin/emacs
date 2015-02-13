@@ -116,11 +116,11 @@ if [ -n "$DISPLAY" ]; then
   export GTK2_RC_FILES=${HOME}/.config-xmonad/gtk/gtk-2.0/${mode}
 fi
 
-case $TERM in
-  rxvt-unicode-256color|screen-256color)
-    export TERM="rxvt-16color"
-    ;;
-esac
+# case $TERM in
+#   rxvt-unicode-256color|screen-256color)
+#     export TERM="rxvt-16color"
+#     ;;
+# esac
 
 if [ -n "$run_background" ]; then
   exec ${run} ${server_argument} ${window_argument} ${editor_argument} "$@" 2>/dev/null &
