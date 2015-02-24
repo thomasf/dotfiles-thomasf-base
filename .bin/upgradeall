@@ -61,7 +61,6 @@ echo UPDATING go-tools; \
 GOPATH=~/repos/go; \
 export GOPATH; \
 go get -v -u \
-github.com/monochromegane/the_platinum_searcher/... \
 github.com/github/hub \
 github.com/tools/godep \
 github.com/nsf/gocode \
@@ -73,3 +72,5 @@ github.com/shurcooL/markdownfmt \
 golang.org/x/tools/cmd/oracle \
 github.com/junegunn/fzf/src/fzf \
 ;"
+
+# github.com/monochromegane/the_platinum_searcher/... \
