@@ -61,8 +61,10 @@ export -f runCmdIfChange
 
 # upgrader-goget installs variout things using go get.
 upgrader-goget() {
+  (
   echo UPDATING yt-download
   youtube-dl --update
+  ) &
   echo UPDATING go-tools
   GOPATH=~/repos/go
   export GOPATH;
