@@ -6,71 +6,117 @@ set -e
 set -x
 
 
+# cdo cd's into ~/.opt/$1
 cdo() {
   cd "${HOME}/.opt/${1}"
 }
 export -f cdo
 
+# uptodate fetches a git repo and returns non 0 if HEAD is in sync with remote.
 uptodate() {
   local dir=${1}
   [ ! -d ${dir} ] && return 0
   cd ${dir}
   git fetch upstream master
   local changes=$(git rev-list HEAD..upstream/master --count)
+  echo "uptodate ${dir} changes: ${changes}"
   return $changes
   # return 2
 }
 export -f uptodate
 
+# resetupstream resets a git working tree
 resetupstream() {
   git log HEAD..upstream/master --oneline
   git reset --hard upstream/master
 }
 export -f resetupstream
 
+# runCmd runs a command in a subshell, on graphical terminals this
 runCmd() {
-    if [ -n "$DISPLAY" ] && [ `which urxvt` ]; then
-        exec urxvt -title upgradeall -name upgradeall -e bash -c \
-            "termcolors; echo RUN \" $* \";
+  if [ -n "$DISPLAY" ] && [ `which urxvt` ]; then
+    exec urxvt -title upgradeall -name upgradeall -e bash -c \
+         "termcolors; echo RUN \" $* \";
 $*
 echo ;
 echo \"COMPLETED: $* \";
 echo \">>> ENTER KEY CLOSES TERMINAL!\";
 read any;" &
-
-    else
-        (
-            set +e
-            $*
-        )
-    fi
+  else
+    (
+      set +e
+      $*
+    )
+  fi
 }
 
-( uptodate "${HOME}/.opt/dunst" || runCmd "cdo dunst ; resetupstream ; make ; sudo make install" ) &
-( uptodate "${HOME}/.opt/compton" || runCmd "cdo compton; resetupstream; make" ) &
-( uptodate "${HOME}/.opt/mu" || runCmd "cdo mu; resetupstream; make ; sudo make install" ) &
-runCmd "sudo apt-get update ; sudo apt-get dist-upgrade"
-runCmd "xmonadUpdate"
-runCmd "${HOME}/.emacs.d/installDeps emacs"
-runCmd "hsadmin pull"
+# runcmdifchange runs a command in a subshell if there are changes in the
+# remote git repo
+runCmdIfChange() {
+  local dir=${1}
+  local cmd=${2}
+  uptodate "${HOME}/.opt/${dir}" || runCmd "${0} ${cmd}"
+}
+export -f runCmdIfChange
 
-runCmd "\
-echo UPDATING yt-download
-youtube-dl --update; \
-echo UPDATING go-tools; \
-GOPATH=~/repos/go; \
-export GOPATH; \
-go get -v -u \
-github.com/github/hub \
-github.com/tools/godep \
-github.com/nsf/gocode \
-code.google.com/p/rog-go/exp/cmd/godef \
-golang.org/x/tools/cmd/goimports \
-golang.org/x/tools/cmd/eg \
-golang.org/x/tools/cmd/gorename \
-github.com/shurcooL/markdownfmt \
-golang.org/x/tools/cmd/oracle \
-github.com/junegunn/fzf/src/fzf \
-;"
+# upgrader-goget installs variout things using go get.
+upgrader-goget() {
+  echo UPDATING yt-download
+  youtube-dl --update
+  echo UPDATING go-tools
+  GOPATH=~/repos/go
+  export GOPATH;
+  go get -v -u \
+     code.google.com/p/rog-go/exp/cmd/godef \
+     github.com/golang/lint/golint \
+     github.com/junegunn/fzf/src/fzf \
+     github.com/nsf/gocode \
+     github.com/shurcooL/markdownfmt \
+     github.com/tools/godep \
+     golang.org/x/tools/cmd/eg \
+     golang.org/x/tools/cmd/goimports \
+     golang.org/x/tools/cmd/gorename \
+     golang.org/x/tools/cmd/oracle \
+     github.com/github/hub \
+     ;
 
-# github.com/monochromegane/the_platinum_searcher/... \
+  # github.com/monochromegane/the_platinum_searcher/... \
+}
+
+upgrader-dunst() {
+  cdo dunst
+  resetupstream
+  make
+  sudo make install
+}
+
+upgrader-compton(){
+  cdo compton
+  resetupstream
+  make
+}
+
+upgrader-mu(){
+  cdo mu
+  resetupstream
+  make
+  sudo make install
+}
+
+cmd=${1}
+case $cmd in
+  goget|dust|compton|mu)
+    upgrader-${cmd}
+    ;;
+  *)
+    runCmdIfChange "${HOME}/.opt/dunst" "dunst" &
+    runCmdIfChange "${HOME}/.opt/compton" "compton" &
+    runCmdIfChange "${HOME}/.opt/mu" "mu" &
+    runCmd "sudo apt-get update ; sudo apt-get dist-upgrade"
+    runCmd "xmonadUpdate"
+    runCmd "${HOME}/.emacs.d/installDeps emacs"
+    runCmd "hsadmin pull"
+    runCmd "$0 goget" &
+    ;;
+esac
+
