@@ -73,6 +73,7 @@ upgrader-goget() {
      github.com/golang/lint/golint \
      github.com/junegunn/fzf/src/fzf \
      github.com/nsf/gocode \
+     github.com/laher/goxc \
      github.com/shurcooL/markdownfmt \
      github.com/tools/godep \
      golang.org/x/tools/cmd/eg \
@@ -105,9 +106,31 @@ upgrader-mu(){
   sudo make install
 }
 
+upgrader-npm() {
+  npm install -g \
+      npm-proxy-cache \
+      bower \
+      browserify watchify \
+      coffee-script \
+      coffeelint \
+      docco \
+      grunt-cli \
+      gulp \
+      js2coffee \
+      jshint \
+      jslint \
+      jsonlint \
+      stylus \
+      titanium \
+      uglify-js \
+      uglifycss \
+      underscore-cli \
+      webpack
+}
+
 cmd=${1}
 case $cmd in
-  goget|dust|compton|mu)
+  goget|dust|compton|mu|npm)
     upgrader-${cmd}
     ;;
   *)
