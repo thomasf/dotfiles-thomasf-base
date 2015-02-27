@@ -125,7 +125,8 @@ upgrader-npm() {
       uglify-js \
       uglifycss \
       underscore-cli \
-      webpack
+      webpack \
+      jsxhint
 }
 
 cmd=${1}
