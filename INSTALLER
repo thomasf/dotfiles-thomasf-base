@@ -59,6 +59,9 @@ gc alias.ps "push"
 # misc settings
 
 gc color.ui auto
+gc hub.autoUpdate "never"
+# gc init.templatedir "~/.config-base/git/templates"
+
 
 # gc diff.tool kdiff3
 # gc difftool.prompt false
@@ -111,6 +114,12 @@ gc mergetool.keepbackup "false"
 gc mergetool.keeptemporaries "false"
 gc mergetool.prompt "true"
 gc diff.renamelimit "50000"
+gc diff.algorithm "histogram"
+
+# gc gui.fontdiff "-family \"Anonymous Pro\" -size 11 -weight normal -slant roman -underline 0 -overstrike 0"
+
+# gc gui.fontdiff "-family \"PragmataPro\" -size 11 -weight normal -slant roman -underline 0 -overstrike 0"
+# gc gui.fontiu "-family \"PragmataPro\" -size 11 -weight normal -slant roman -underline 0 -overstrike 0"
 
 unset -f gc
 unset -f gu
