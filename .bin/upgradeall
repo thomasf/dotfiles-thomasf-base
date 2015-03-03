@@ -80,6 +80,7 @@ upgrader-goget() {
      golang.org/x/tools/cmd/goimports \
      golang.org/x/tools/cmd/gorename \
      golang.org/x/tools/cmd/oracle \
+     golang.org/x/tools/cmd/vet \
      github.com/github/hub \
      ;
 
