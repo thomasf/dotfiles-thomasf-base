@@ -62,8 +62,8 @@ export -f runCmdIfChange
 # upgrader-goget installs variout things using go get.
 upgrader-goget() {
   (
-  echo UPDATING yt-download
-  youtube-dl --update
+    echo UPDATING yt-download
+    youtube-dl --update
   ) &
   echo UPDATING go-tools
   GOPATH=~/repos/go
@@ -137,7 +137,7 @@ case $cmd in
   goget|dust|compton|mu|npm)
     upgrader-${cmd}
     ;;
-  *)
+  all)
     runCmdIfChange "${HOME}/.opt/dunst" "dunst" &
     runCmdIfChange "${HOME}/.opt/compton" "compton" &
     runCmdIfChange "${HOME}/.opt/mu" "mu" &
@@ -147,5 +147,7 @@ case $cmd in
     runCmd "hsadmin pull"
     runCmd "$0 goget" &
     ;;
+  *)
+    echo "$0 all|goget|dust|compton|mu|npm"
 esac
 
