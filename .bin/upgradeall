@@ -115,21 +115,22 @@ upgrader-npm() {
       browserify watchify \
       coffee-script \
       coffeelint \
-      docco \
       grunt-cli \
       gulp \
       js2coffee \
-      jshint \
-      jslint \
       jsonlint \
       stylus \
       titanium \
       uglify-js \
       uglifycss \
-      underscore-cli \
       webpack \
+      tern \
+      jshint \
       jsxhint \
-      tern
+      eslint \
+      babel-eslint \
+      eslint-plugin-react
+
 }
 
 cmd=${1}
