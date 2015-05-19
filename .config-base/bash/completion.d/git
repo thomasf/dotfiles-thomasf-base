@@ -735,7 +735,6 @@ __git_list_porcelain_commands ()
 __git_porcelain_commands=
 __git_compute_porcelain_commands ()
 {
-	__git_compute_all_commands
 	test -n "$__git_porcelain_commands" ||
 	__git_porcelain_commands=$(__git_list_porcelain_commands)
 }
@@ -1448,7 +1447,7 @@ _git_log ()
 		return
 		;;
 	--decorate=*)
-		__gitcomp "long short" "" "${cur##--decorate=}"
+		__gitcomp "full short no" "" "${cur##--decorate=}"
 		return
 		;;
 	--*)
