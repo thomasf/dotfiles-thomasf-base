@@ -83,9 +83,10 @@ upgrader-goget() {
      golang.org/x/tools/cmd/vet \
      github.com/github/hub \
      github.com/jstemmer/gotags \
+     github.com/monochromegane/the_platinum_searcher/... \
   ;
 
-  # github.com/monochromegane/the_platinum_searcher/... \
+
 }
 
 upgrader-dunst() {
