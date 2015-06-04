@@ -689,10 +689,8 @@ case $HOST_TAGS in
   ;;
   *)
     man() {
-      local init=""
       command man "$@" >/dev/null || return $?
-      [ -e ~/.emacs.d/init-low.el ] && init="-l ~/.emacs.d/init-low"
-      emacs -q $init -nw -eval "(man \"$@\")"
+      emacs -q -nw -eval "(progn (setq Man-notify-method 'bully) (man \"$@\"))"
     }
     
     ;;
