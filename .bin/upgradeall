@@ -76,14 +76,13 @@ upgrader-goget() {
      github.com/laher/goxc \
      github.com/shurcooL/markdownfmt \
      github.com/tools/godep \
-     golang.org/x/tools/cmd/eg \
-     golang.org/x/tools/cmd/goimports \
-     golang.org/x/tools/cmd/gorename \
-     golang.org/x/tools/cmd/oracle \
-     golang.org/x/tools/cmd/vet \
+     golang.org/x/tools/cmd/... \
      github.com/github/hub \
      github.com/jstemmer/gotags \
-     github.com/monochromegane/the_platinum_searcher/... \
+     github.com/shurcooL/Go-Package-Store \
+     github.com/sosedoff/pgweb \
+     github.com/smartystreets/goconvey \
+     github.com/monochromegane/the_platinum_searcher/cmd/... \
   ;
 
 
