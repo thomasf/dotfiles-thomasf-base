@@ -475,7 +475,7 @@ _find_repos() {
        -type d -name '.git' -o \
        -type d -name '.hg' \
        2>/dev/null |
-    xargs -n 1 dirname
+    xargs -n 1 dirname 2>/dev/null
 }
 
 _jump_repo() {

@@ -108,9 +108,9 @@ __prompt_fn() {
     ;;
     *)
     if [[ $(which vcprompt) ]]; then
-      VCS=`vcprompt -f "%n:%b%u%a%m "`
+      VCS=$(vcprompt -f "%n:%b%u%a%m " 2>/dev/null)
     elif [[ $(type -t __git_ps1) == "function" ]]; then
-      VCS=`__git_ps1 "(%s) "`
+      VCS=$(__git_ps1 "(%s) ")
     fi
     ;;
   esac
