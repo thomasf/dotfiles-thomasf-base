@@ -179,7 +179,7 @@ EXEC 01;34 # Unix
 
 ### Text formats
 
-# Text that we can edit with a regular editor
+# Text that we usually can edit with a regular editor
 .markdown 32
 .md 32
 .mkd 32
@@ -187,8 +187,17 @@ EXEC 01;34 # Unix
 .pdc 32
 .rst 32
 .txt 32
+.json 32
+.yml 32
+.toml 32
+.xml 32
+.cfg 32
+.ini 32
 
 # Source text
+*Makefile 32
+*Dockerfile 32
+*Procfile 32
 .0 32
 .1 32
 .2 32
@@ -208,12 +217,14 @@ EXEC 01;34 # Unix
 .css 32
 .cxx 32
 .el 32
+.go 32
 .h 32
 .hs 32
 .htm 32
 .html 32
 .java 32
 .js 32
+.jsx 32
 .kv 32
 .l 32
 .man 32
@@ -234,7 +245,7 @@ EXEC 01;34 # Unix
 .styl 32
 .tex 32
 .vim 32
-.xml 32
+.yml 32
 .zsh 32
 
 
@@ -287,6 +298,7 @@ EXEC 01;34 # Unix
 .ogg  33
 .ra 33
 .wav 33
+.aiff 33
 
 # Video
 .anx 33
