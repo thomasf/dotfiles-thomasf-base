@@ -58,6 +58,7 @@ ppath ~/.opt/AdobeAIRSDK/bin
 
 # Default gopath
 export GOPATH="${HOME}/repos/go"
+export GO15VENDOREXPERIMENT=1
 
 # Perl local
 export PERL_LOCAL_LIB_ROOT="${HOME}/.config/perl5";
