@@ -50,9 +50,11 @@ build/
 *.ttf
 *.otf
 
-
 *_flymake*
 *_flycheck*
 
 *.po
 
+*.iso
+*.rar
+*.pkg
