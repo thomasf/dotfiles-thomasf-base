@@ -27,6 +27,7 @@ dl_completion "docker" "https://raw.github.com/dotcloud/docker/master/contrib/co
 dl_completion "go" "https://raw.githubusercontent.com/thomasf/go-bash-completion/master/go-bash-completion.bash" &
 
 dl_bin "git-imerge" "https://raw.github.com/mhagger/git-imerge/master/git-imerge" &
+dl_bin "git-when-merged" "https://raw.githubusercontent.com/mhagger/git-when-merged/master/bin/git-when-merged" &
 dl_bin "ghi" "https://raw.github.com/stephencelis/ghi/master/ghi" &
 dl_bin "vcprompt" "https://raw.github.com/djl/vcprompt/master/bin/vcprompt" &
 dl_bin "svtget" "https://raw.github.com/mmn/svtget/master/bash/svtget" &
