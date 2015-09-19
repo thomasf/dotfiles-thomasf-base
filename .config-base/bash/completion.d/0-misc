@@ -9,3 +9,5 @@ complete -F _filedir_xspec ee
 
 complete -o bashdefault -o default -o nospace -F __git_wrap__git_main rgit
 complete -o bashdefault -o default -o nospace -F __git_wrap__git_main g
+
+complete -F _docker_compose doco

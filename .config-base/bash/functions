@@ -380,6 +380,7 @@ alias t2='tree -d -L 2'
 alias t3='tree -d -L 3'
 
 alias p='python'
+alias doco='docker-compose'
 
 alias agent='eval $(ssh-agent); ssh-add;'
 
