@@ -55,6 +55,7 @@ ppath ~/.opt/android-sdks/build-tools/19.0.3
 ppath ~/.opt/android-sdks/tools
 ppath ~/.opt/android-sdks/platform-tools
 ppath ~/.opt/AdobeAIRSDK/bin
+ppath ~/.opt/arm-cs-tools/bin
 
 # Default gopath
 export GOPATH="${HOME}/repos/go"
