@@ -1,6 +1,10 @@
 #!/bin/sh
 
-if [ `which ag` ]; then
+if [ `which pt` ]; then
+    ptargs="--context=0 --color"
+    pt $ptargs -e TODO[:]? | tr \\t ' ' | tr -s [:blank:]
+    pt $ptargs -e FIXME[:]? | tr \\t ' ' | tr -s [:blank:]
+elif [ `which ag` ]; then
     agargs="--context=0 --no-numbers --color --group"
     ag $agargs --color-match="33" TODO[:]? | tr \\t ' ' | tr -s [:blank:]
     ag $agargs --color-match="35" FIXME[:]? | tr \\t ' ' | tr -s [:blank:]

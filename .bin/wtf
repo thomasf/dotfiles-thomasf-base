@@ -21,10 +21,7 @@ d() {
 
 
 header "todo"
-todo
-
-header "git wtf"
-git wtf
+search-todo
 
 header "git status"
 s
