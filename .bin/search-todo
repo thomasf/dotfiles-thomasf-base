@@ -1,13 +1,9 @@
 #!/bin/sh
 
 if [ `which pt` ]; then
-    ptargs="--context=0 --color"
+    ptargs='--context=0 --color --ignore=node_modules  --ignore=vendor --ignore=Godeps'
     pt $ptargs -e TODO[:]? | tr \\t ' ' | tr -s [:blank:]
     pt $ptargs -e FIXME[:]? | tr \\t ' ' | tr -s [:blank:]
-elif [ `which ag` ]; then
-    agargs="--context=0 --no-numbers --color --group"
-    ag $agargs --color-match="33" TODO[:]? | tr \\t ' ' | tr -s [:blank:]
-    ag $agargs --color-match="35" FIXME[:]? | tr \\t ' ' | tr -s [:blank:]
 else
     ackargs="--color --group"
     ack $ackargs --color-match="yellow" TODO | tr \\t ' ' | tr -s [:blank:]
