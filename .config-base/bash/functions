@@ -283,9 +283,20 @@ l() {
 alias la='ls -A'
 alias ll="ls -l"
 alias lsg="git ls-dir"
-alias lsnew="find . -mindepth 1 -maxdepth 1 -mtime 0"
 alias lslistenports="sudo netstat -plunt"
 alias adblogcat="adb logcat | adb-logcat-pp"
+
+lsnew() {
+  find . \
+       -mindepth 1 \
+       -maxdepth ${1:-1} \
+       -not \( -type d -name ".git" -prune \) \
+       -not \( -type d -name ".avfs" -prune \) \
+       -type f \
+       -mtime 0 \
+       -printf '%Tm-%Td %TH:%TM  %P\n' \
+    | sort
+}
 
 fadb-uninstall() {
   local selected=$(adb shell 'pm list packages -f' | sed -e 's/.*=//' | sort | fzf)
@@ -651,8 +662,11 @@ gp() {
 }
 
 s() {
-  command git rev-parse 2> /dev/null || return 1
-  command git status --short --branch
+  if command git rev-parse 2> /dev/null; then
+    command git status --short --branch
+  else
+    lsnew 3
+  fi
 }
 
 gr() {
