@@ -3,9 +3,9 @@
 module GHI
   module Commands
     module Version
-      MAJOR   = 0
-      MINOR   = 9
-      PATCH   = 3
+      MAJOR   = 1
+      MINOR   = 0
+      PATCH   = 0
       PRE     = nil
 
       VERSION = [MAJOR, MINOR, PATCH, PRE].compact.join '.'
@@ -1815,7 +1815,11 @@ module GHI
             lang   = code_block['lang']
             code   = code_block['code']
 
-            output = pygmentize(lang, code)
+            if lang != ""
+              output = pygmentize(lang, code)
+            else
+              output = code
+            end
             with_indentation(output, indent)
           rescue
             code_block
@@ -1926,7 +1930,9 @@ module GHI
 
     def truncate string, reserved
       return string unless paginate?
-      result = string.scan(/.{0,#{columns - reserved}}(?:\s|\Z)/).first.strip
+      space=columns - reserved
+      space=5 if space < 5
+      result = string.scan(/.{0,#{space}}(?:\s|\Z)/).first.strip
       result << "..." if result != string
       result
     end
@@ -2007,7 +2013,6 @@ module GHI
       format_state assigns[:state], header
     end
 
-    # TODO: Show milestones.
     def format_issues issues, include_repo
       return 'None.' if issues.empty?
 
@@ -2027,15 +2032,18 @@ module GHI
         p = i['pull_request']['html_url'] and l += 2
         c = i['comments']
         l += c.to_s.length + 1 unless c == 0
+        m = i['milestone']
         [
           " ",
           (i['repo'].to_s.rjust(rmax) if i['repo']),
           format_number(n.to_s.rjust(nmax)),
           truncate(title, l),
           format_labels(labels),
+          (fg(:green) { m['title'] } if m),
           (fg('aaaaaa') { c } unless c == 0),
           (fg('aaaaaa') { '↑' } if p),
-          (fg(:yellow) { '@' } if a)
+          (fg(:yellow) { '@' } if a),
+          (fg('aaaaaa') { '‡' } if m)
         ].compact.join ' '
       }
     end
@@ -2204,6 +2212,7 @@ EOF
     def format_editor issue = nil
       message = ERB.new(<<EOF).result binding
 
+
 Please explain the issue. The first line will become the title. Trailing
 lines starting with '#' (like these) will be ignored, and empty messages will
 not be submitted. Issues are formatted with GitHub Flavored Markdown (GFM):
@@ -2215,7 +2224,11 @@ On <%= repo %>
 <%= no_color { format_issue issue, columns - 2 if issue } %>
 EOF
       message.rstrip!
-      message.gsub!(/(?!\A)^.*$/) { |line| "# #{line}".rstrip }
+      message.gsub!(/(?!\A)^.*$/) { |line|
+        unless line.empty?
+          "# #{line}".rstrip
+        end
+      }
       message.insert 0, [
         issue['title'] || issue[:title], issue['body'] || issue[:body]
       ].compact.join("\n\n") if issue
@@ -2246,9 +2259,9 @@ EOF
     def format_comment_editor issue, comment = nil
       message = ERB.new(<<EOF).result binding
 
-Leave a comment. Trailing lines starting with '#' (like these) will be 
-ignored, and empty messages will not be submitted. Comments are formatted 
-with GitHub Flavored Markdown (GFM):
+Leave a comment. Trailing lines starting with '#' (like these) will be ignored, 
+and empty messages will not be submitted. Comments are formatted with GitHub 
+Flavored Markdown (GFM):
 
   http://github.github.com/github-flavored-markdown
 
@@ -2408,12 +2421,13 @@ module GHI
         end
 
         if e.errors.any? { |err| err['code'] == 'already_exists' }
+          host = GHI.config('github.host') || 'github.com'
           message = <<EOF.chomp
 A ghi token already exists!
 
 Please revoke all previously-generated ghi personal access tokens here:
 
-  https://github.com/settings/applications
+  https://#{host}/settings/applications
 EOF
         else
           message = e.message
@@ -2633,7 +2647,9 @@ module GHI
         if password.nil?
           raise Authorization::Required, 'Authorization required'
         end
-      end
+			when Net::HTTPMovedPermanently
+				return Response.new(http.get(res['location']))
+			end
 
       raise Error, res
     end
@@ -2792,6 +2808,17 @@ module GHI
         abort options.to_s
       end
 
+      def require_repo_name
+        require_repo
+        repo_array = repo.partition "/"
+        if repo_array.length >= 2
+          repo_name = repo_array[2]
+        else
+          repo_name = nil
+        end
+        return repo_name
+      end
+        
       def detect_repo
         remote   = remotes.find { |r| r[:remote] == 'upstream' }
         remote ||= remotes.find { |r| r[:remote] == 'origin' }
@@ -3319,6 +3346,77 @@ EOF
 end
 module GHI
   module Commands
+    class Disable < Command
+
+      def options
+        OptionParser.new do |opts|
+          opts.banner = 'usage: ghi disable'
+        end
+      end
+
+      def execute
+        begin
+          options.parse! args
+          @repo ||= ARGV[0] if ARGV.one?
+        rescue OptionParser::InvalidOption => e
+          fallback.parse! e.args
+          retry
+        end
+        repo_name = require_repo_name
+        unless repo_name.nil?
+          patch_data = {}
+          patch_data[:name] = repo_name
+          patch_data[:has_issues] = false
+          res = throb { api.patch "/repos/#{repo}", patch_data }.body
+          if !res['has_issues']
+            puts "Issues are now disabled for this repo"
+          else
+            puts "Something went wrong disabling issues for this repo"
+          end
+        end
+      end
+
+    end
+  end
+end
+module GHI
+  module Commands
+    class Enable < Command
+
+      def options
+        OptionParser.new do |opts|
+          opts.banner = 'usage: ghi enable'
+        end
+      end
+
+      def execute
+        begin
+          options.parse! args
+          @repo ||= ARGV[0] if ARGV.one?
+        rescue OptionParser::InvalidOption => e
+          fallback.parse! e.args
+          retry
+        end
+        repo_name = require_repo_name
+        unless repo_name.nil?
+          patch_data = {}
+          patch_data[:name] = repo_name
+          patch_data[:has_issues] = true
+          res = throb { api.patch "/repos/#{repo}", patch_data }.body
+          if res['has_issues']
+            puts "Issues are now enabled for this repo"
+          else
+            puts "Something went wrong enabling issues for this repo"
+          end
+        end
+      end
+
+    end
+
+  end
+end
+module GHI
+  module Commands
     class Help < Command
       def self.execute args, message = nil
         new(args).execute message
@@ -3354,6 +3452,9 @@ The most commonly used ghi commands are:
    label       Create, list, modify, or delete labels
    assign      Assign an issue to yourself (or someone else)
    milestone   Manage project milestones
+   status      Determine whether or not issues are enabled for this repo
+   enable      Enable issues for the current repo
+   disable     Disable issues for the current repo
 
 See 'ghi help <command>' for more information on a specific command.
 EOF
@@ -3590,7 +3691,7 @@ module GHI
         OptionParser.new do |opts|
           opts.banner = 'usage: ghi list [options]'
           opts.separator ''
-          opts.on '-a', '--global', '--all', 'all of your issues on GitHub' do
+          opts.on '-g', '--global', 'all of your issues on GitHub' do
             assigns[:filter] = 'all'
             @repo = nil
           end
@@ -4034,7 +4135,7 @@ EOF
 
         options.parse! args
 
-        if extract_issue
+        if GHI.config('ghi.infer-issue') != 'false' && extract_issue
           Edit.execute args.push('-so', issue, '--', repo)
           exit
         end
@@ -4140,6 +4241,38 @@ module GHI
       def merged?
         # API returns with a Not Found error when the PR is not merged
         api.get "/repos/#{repo}/pulls/#{issue}/merge" rescue false
+      end
+    end
+  end
+end
+module GHI
+  module Commands
+    class Status < Command
+
+      def options
+        OptionParser.new do |opts|
+          opts.banner = 'usage: ghi status'
+        end
+      end
+
+      def execute
+        begin
+          options.parse! args
+          @repo ||= ARGV[0] if ARGV.one?
+        rescue OptionParser::InvalidOption => e
+          fallback.parse! e.args
+          retry
+        end
+        
+        require_repo
+        res = throb { api.get "/repos/#{repo}" }.body
+
+        if res['has_issues']
+          puts "Issues are enabled for this repo"
+        else
+          puts "Issues are not enabled for this repo"
+        end
+
       end
     end
   end
