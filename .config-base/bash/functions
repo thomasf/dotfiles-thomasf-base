@@ -379,7 +379,7 @@ function cdup {
 
 function cdl {
   local target
-  target=`readlink -f $PWD`
+  target=`resolvelink $PWD`
   [[ -z $target ]] && return 1
   cd $target
 }
@@ -506,9 +506,7 @@ _jump_repo() {
   local selected=$(cd "${basedir}" && _find_repos | cut -c3- | sort |
                         selectline --query="$query") || return 1
   local target="${basedir}/${selected}"
-  if [ ! ${__OS} = darwin ]; then
-    target=`readlink -f $target`
-  fi
+  target=`resolvelink $target`
   cd "$target"
 }
 

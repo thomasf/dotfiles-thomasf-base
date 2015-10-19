@@ -82,10 +82,10 @@ case ${OSTYPE} in
     *)
         # set JAVA_HOME
         if [ $(which javac) ]; then
-            JAVA_HOME=$(readlink -f $(which javac) | sed "s:/bin/javac::")
+            JAVA_HOME=$(resolvelink $(which javac) | sed "s:/bin/javac::")
             export JAVA_HOME
         elif [ $(which java) ]; then
-            JAVA_HOME=$(readlink -f $(which java) | sed "s:/bin/java::")
+            JAVA_HOME=$(resolvelink $(which java) | sed "s:/bin/java::")
             export JAVA_HOME
         fi
         ;;
