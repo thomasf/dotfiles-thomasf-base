@@ -69,23 +69,20 @@ upgrader-goget() {
   GOPATH=~/repos/go
   export GOPATH;
   go get -v -u \
-     code.google.com/p/rog-go/exp/cmd/godef \
-     github.com/golang/lint/golint \
-     github.com/junegunn/fzf/src/fzf \
-     github.com/nsf/gocode \
-     github.com/laher/goxc \
-     github.com/shurcooL/markdownfmt \
-     github.com/tools/godep \
-     golang.org/x/tools/cmd/... \
      github.com/github/hub \
+     github.com/golang/lint/golint \
      github.com/jstemmer/gotags \
-     github.com/shurcooL/Go-Package-Store \
-     github.com/sosedoff/pgweb \
-     github.com/smartystreets/goconvey \
+     github.com/junegunn/fzf/src/fzf \
+     github.com/kardianos/govendor/... \
      github.com/monochromegane/the_platinum_searcher/cmd/... \
+     github.com/nsf/gocode \
+     github.com/rogpeppe/godef \
+     github.com/shurcooL/Go-Package-Store \
+     github.com/shurcooL/markdownfmt \
+     github.com/smartystreets/goconvey \
+     github.com/sosedoff/pgweb \
+     golang.org/x/tools/cmd/... \
   ;
-
-
 }
 
 upgrader-dunst() {
@@ -108,34 +105,54 @@ upgrader-mu(){
   sudo make install
 }
 
+upgrader-pip() {
+  deactivate || true
+  workon default || true
+  pip install --upgrade \
+      autopep8 \
+      bumpversion \
+      detox \
+      devpi-client \
+      docker-compose \
+      git-goggles \
+      git-up \
+      mkdocs \
+      pyformat \
+      pyrg \
+      tox \
+      virtualenv \
+  ;
+}
+
 upgrader-npm() {
   npm install -g \
-      npm-proxy-cache \
+      babel-eslint \
       bower \
       browserify watchify \
       coffee-script \
       coffeelint \
+      eslint \
+      eslint-plugin-react \
       grunt-cli \
       gulp \
       js2coffee \
+      jshint \
       jsonlint \
+      jsxhint \
+      npm-proxy-cache \
       stylus \
+      tern \
       titanium \
       uglify-js \
       uglifycss \
       webpack \
-      tern \
-      jshint \
-      jsxhint \
-      eslint \
-      babel-eslint \
-      eslint-plugin-react
+  ;
 
 }
 
 cmd=${1}
 case $cmd in
-  goget|dust|compton|mu|npm)
+  goget|dust|compton|mu|npm|pip)
     upgrader-${cmd}
     ;;
   all)
@@ -149,6 +166,6 @@ case $cmd in
     runCmd "$0 goget" &
     ;;
   *)
-    echo "$0 all|goget|dust|compton|mu|npm"
+    echo "$0 all goget dust compton mu npm pip"
 esac
 
