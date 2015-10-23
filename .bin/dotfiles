@@ -13,7 +13,6 @@
     :license: ISC, see LICENSE.rst for more details.
 """
 
-__version__ = '0.6.3'
 
 import os
 import os.path
@@ -25,15 +24,12 @@ except ImportError:
     import configparser
 from optparse import OptionParser, OptionGroup
 
+__version__ = '0.6.4'
 
 #############
 # compat.py #
 #############
 
-"""
-Provides :func:`os.symlink`, :func:`os.path.islink` and
-:func:`os.path.realpath` implementations for win32.
-"""
 
 if hasattr(os, 'symlink'):
     symlink = os.symlink
@@ -71,7 +67,7 @@ else:
     # FILE_FLAG_OPEN_REPARSE_POINT | FILE_FLAG_BACKUP_SEMANTI
     FILE_FLAG_REPARSE_BACKUP = 35651584
 
-    kdll = windll.LoadLibrary("kernel32.dll")
+    kdll = windll.LoadLibrary('kernel32.dll')
     CreateSymbolicLinkA = windll.kernel32.CreateSymbolicLinkA
     CreateSymbolicLinkA.restype = wintypes.BOOLEAN
     CreateSymbolicLinkW = windll.kernel32.CreateSymbolicLinkW
@@ -100,7 +96,7 @@ else:
         else:
             stat = CreateSymbolicLinkA(name, target, is_dir)
         if win32_verbose:
-            print("CreateSymbolicLink(name=%s, target=%s, is_dir=%d) = %#x" %
+            print('CreateSymbolicLink(name=%s, target=%s, is_dir=%d) = %#x' %
                   (name, target, is_dir, stat))
         if not stat:
             print("Can't create symlink %s -> %s" % (name, target))
@@ -119,7 +115,7 @@ else:
         assert path
         has_link_attr = GetFileAttributes(path) & FILE_ATTRIBUTE_REPARSE_POINT
         if win32_verbose:
-            print("islink(%s): attrs=%#x: %s" %
+            print('islink(%s): attrs=%#x: %s' %
                   (path, GetFileAttributes(path), has_link_attr != 0))
         return has_link_attr != 0
 
@@ -138,7 +134,7 @@ else:
         status = _DevIoCtl(hDevice, ioControlCode, input, input_size, output,
                            output_size, bytesReturned, None)
         if win32_verbose:
-            print("DeviceIOControl: status = %d" % status)
+            print('DeviceIOControl: status = %d' % status)
         if status != 0:
             return output[:bytesReturned.value]
         else:
@@ -152,15 +148,15 @@ else:
             return _CreateFileA(path, access, sharemode, None, creation,
                                 flags, None)
 
-    SymbolicLinkReparseFormat = "LHHHHHHL"
+    SymbolicLinkReparseFormat = 'LHHHHHHL'
     SymbolicLinkReparseSize = struct.calcsize(SymbolicLinkReparseFormat)
 
     def readlink(path):
-        """ Windows readlink implementation. """
+        """Windows readlink implementation."""
         # This wouldn't return true if the file didn't exist, as far as I know.
         if not islink(path):
             if win32_verbose:
-                print("readlink(%s): not a link." % path)
+                print('readlink(%s): not a link.' % path)
             return None
 
         # Open the file correctly depending on the string type.
@@ -174,7 +170,7 @@ else:
         # Minimum possible length (assuming length of target is bigger than 0)
         if not buffer or len(buffer) < 9:
             if win32_verbose:
-                print("readlink(%s): no reparse buffer." % path)
+                print('readlink(%s): no reparse buffer.' % path)
             return None
 
         # Parse and return our result.
@@ -213,17 +209,17 @@ else:
         #       iSubstituteNameLength)
         start = SubstituteNameOffset + SymbolicLinkReparseSize
         actualPath = buffer[start:
-                            start + SubstituteNameLength].decode("utf-16")
+                            start + SubstituteNameLength].decode('utf-16')
         # This utf-16 string is null terminated
-        index = actualPath.find("\0")
+        index = actualPath.find('\0')
         if index > 0:
             actualPath = actualPath[:index]
-        if actualPath.startswith("\\??\\"):  # ASCII 92, 63, 63, 92
+        if actualPath.startswith('\\??\\'):  # ASCII 92, 63, 63, 92
             ret = actualPath[4:]             # strip off leading junk
         else:
             ret = actualPath
         if win32_verbose:
-            print("readlink(%s->%s->%s): index(null) = %d" %
+            print('readlink(%s->%s->%s): index(null) = %d' %
                   (path, repr(actualPath), repr(ret), index))
         return ret
 
@@ -262,6 +258,7 @@ def is_link_to(path, target):
 # core.py #
 ###########
 
+
 class Dotfile(object):
 
     def __init__(self, name, target, home, add_dot=True, dry_run=False):
@@ -288,25 +285,25 @@ class Dotfile(object):
                 os.makedirs(dirname)
             symlink(target, name)
         else:
-            print("Creating symlink %s => %s" % (target, name))
+            print('Creating symlink %s => %s' % (target, name))
 
     def _rmtree(self, path):
         if not self.dry_run:
             shutil.rmtree(path)
         else:
-            print("Removing %s and everything under it" % path)
+            print('Removing %s and everything under it' % path)
 
     def _remove(self, path):
         if not self.dry_run:
             os.remove(path)
         else:
-            print("Removing %s" % path)
+            print('Removing %s' % path)
 
     def _move(self, src, dst):
         if not self.dry_run:
             shutil.move(src, dst)
         else:
-            print("Moving %s => %s" % (src, dst))
+            print('Moving %s => %s' % (src, dst))
 
     def sync(self, force):
         if self.status == 'missing':
@@ -356,7 +353,6 @@ class Dotfile(object):
 
 
 class Dotfiles(object):
-
     """A Dotfiles Repository."""
 
     defaults = {
@@ -366,6 +362,7 @@ class Dotfiles(object):
         'ignore': set(['.dotfilesrc']),
         'homedir': os.path.expanduser('~/'),
         'path': os.path.expanduser('~/Dotfiles'),
+        'no_dot_prefix': False
     }
 
     def __init__(self, **kwargs):
@@ -412,24 +409,27 @@ class Dotfiles(object):
             if pkg_path in self.packages:
                 self._load_recursive(pkg_path)
             else:
+                add_dot = False if self.no_dot_prefix else not bool(sub_dir)
                 self.dotfiles.append(Dotfile(dotfile[len(self.prefix):],
-                                             os.path.join(
-                                                 src_dir, dotfile), dst_dir,
-                                             add_dot=not bool(sub_dir), dry_run=self.dry_run))
+                                             os.path.join(src_dir, dotfile),
+                                             dst_dir, add_dot=add_dot,
+                                             dry_run=self.dry_run))
 
         # Externals are top-level only
         if not sub_dir:
             for dotfile in self.externals.keys():
-                self.dotfiles.append(Dotfile(dotfile,
-                                             os.path.expanduser(
-                                                 self.externals[dotfile]),
-                                             dst_dir, add_dot=not bool(sub_dir), dry_run=self.dry_run))
+                self.dotfiles.append(
+                    Dotfile(dotfile,
+                            os.path.expanduser(self.externals[dotfile]),
+                            dst_dir, add_dot=not bool(sub_dir),
+                            dry_run=self.dry_run))
 
     def _fqpn(self, dotfile, pkg_name=None):
         """Return the fully qualified path to a dotfile."""
         if pkg_name is None:
             return os.path.join(self.repository,
-                                self.prefix + os.path.basename(dotfile).strip('.'))
+                                self.prefix +
+                                os.path.basename(dotfile).strip('.'))
         return os.path.join(self.repository, self.prefix + pkg_name,
                             os.path.basename(dotfile))
 
@@ -456,7 +456,7 @@ class Dotfiles(object):
             files = set(map(lambda x: os.path.join(self.homedir, x), files))
             dotfiles = [x for x in self.dotfiles if x.name in files]
             if not dotfiles:
-                raise Exception("file not found")
+                raise Exception('file not found')
 
         for dotfile in dotfiles:
             dotfile.sync(force)
@@ -488,7 +488,8 @@ class Dotfiles(object):
             else:
                 home = self.homedir
                 target = self._fqpn(file)
-                if action == 'add' and os.path.split(target)[1] in self.packages:
+                if (action == 'add' and
+                        os.path.split(target)[1] in self.packages):
                     print("Skipping \"%s\", packages not yet supported" % file)
                     return
             if sub_dir.startswith('.') or file_name.startswith('.'):
@@ -508,8 +509,8 @@ class Dotfiles(object):
             shutil.copytree(self.repository, target, symlinks=True)
             shutil.rmtree(self.repository)
         else:
-            print("Recursive copy %s => %s" % (self.repository, target))
-            print("Removing %s and everything under it" % self.repository)
+            print('Recursive copy %s => %s' % (self.repository, target))
+            print('Removing %s and everything under it' % self.repository)
 
         self.repository = target
 
@@ -524,6 +525,7 @@ class Dotfiles(object):
 
 
 CONFIG_FILE = '.dotfilesrc'
+
 Repository = Dotfiles
 
 # Users can define configuration at several different levels to overlay
@@ -545,6 +547,7 @@ def missing_default_repo():
 
     For a first-time user, this is the first message they're likely to see, so
     it should be as helpful as possible.
+
     """
 
     print("""
@@ -565,78 +568,83 @@ look like:
     repository = {0}
 
 Type 'dotfiles -h' to see detailed usage information.""".format
-          (repo_settings['path']), CONFIG_FILE)
+          (repo_settings['path'], CONFIG_FILE))
 
 
 def add_global_flags(parser):
-    parser.add_option("-v", "--version",
-                      action="store_true", dest="show_version", default=False,
-                      help="show version number and exit")
+    parser.add_option('-v', '--version',
+                      action='store_true', dest='show_version', default=False,
+                      help='show version number and exit')
 
-    parser.add_option("-f", "--force",
-                      action="store_true", dest="force", default=False,
-                      help="overwrite colliding dotfiles (use with --sync)")
+    parser.add_option('-f', '--force',
+                      action='store_true', dest='force', default=False,
+                      help='overwrite colliding dotfiles (use with --sync)')
 
-    parser.add_option("-R", "--repo",
-                      type="string", dest="repository",
-                      help="set repository location (default: %s)" % (
+    parser.add_option('-R', '--repo',
+                      type='string', dest='repository',
+                      help='set repository location (default: %s)' % (
                           repo_settings['path']))
 
-    parser.add_option("-p", "--prefix",
-                      type="string", dest="prefix",
-                      help="set prefix character (default: %s)" % (
+    parser.add_option('-p', '--prefix',
+                      type='string', dest='prefix',
+                      help='set prefix character (default: %s)' % (
                           None if not repo_settings['prefix'] else
                           repo_settings['prefix']))
 
-    parser.add_option("-C", "--config",
-                      type="string", dest="config_file",
-                      help="set configuration file (default: ~/%s)" % (
+    parser.add_option('-C', '--config',
+                      type='string', dest='config_file',
+                      help='set configuration file (default: ~/%s)' % (
                           CONFIG_FILE))
 
-    parser.add_option("-H", "--home",
-                      type="string", dest="homedir",
-                      help="set home directory location (default: %s)" % (
+    parser.add_option('-H', '--home',
+                      type='string', dest='homedir',
+                      help='set home directory location (default: %s)' % (
                           repo_settings['homedir']))
 
-    parser.add_option("-d", "--dry-run",
-                      action="store_true", default=False,
+    parser.add_option('-d', '--dry-run',
+                      action='store_true', default=False,
                       help="don't modify anything, just print commands")
+
+    parser.add_option('-n', '--no-dot-prefix',
+                      action='store_true', default=False,
+                      help="don't prefix symlinks in target directory " +
+                      "with a '.'")
 
 
 def add_action_group(parser):
-    action_group = OptionGroup(parser, "Actions")
+    action_group = OptionGroup(parser, 'Actions')
 
-    action_group.add_option("-a", "--add",
-                            action="store_const", dest="action", const="add",
-                            help="add dotfile(s) to the repository")
+    action_group.add_option('-a', '--add',
+                            action='store_const', dest='action', const='add',
+                            help='add dotfile(s) to the repository')
 
-    action_group.add_option("-c", "--check",
-                            action="store_const", dest="action", const="check",
-                            help="check for broken and unsynced dotfiles")
+    action_group.add_option('-c', '--check',
+                            action='store_const', dest='action', const='check',
+                            help='check for broken and unsynced dotfiles')
 
-    action_group.add_option("-l", "--list",
-                            action="store_const", dest="action", const="list",
-                            help="list currently managed dotfiles")
+    action_group.add_option('-l', '--list',
+                            action='store_const', dest='action', const='list',
+                            help='list currently managed dotfiles')
 
-    action_group.add_option("-r", "--remove",
-                            action="store_const", dest="action",
-                            const="remove",
-                            help="remove dotfile(s) from the repository")
+    action_group.add_option('-r', '--remove',
+                            action='store_const', dest='action',
+                            const='remove',
+                            help='remove dotfile(s) from the repository')
 
-    action_group.add_option("-s", "--sync",
-                            action="store_const", dest="action", const="sync",
-                            help="update dotfile symlinks")
+    action_group.add_option('-s', '--sync',
+                            action='store_const', dest='action', const='sync',
+                            help='update dotfile symlinks')
 
-    action_group.add_option("-m", "--move",
-                            action="store_const", dest="action", const="move",
-                            help="move (rename) dotfiles repository")
+    action_group.add_option('-m', '--move',
+                            action='store_const', dest='action', const='move',
+                            help='move (rename) dotfiles repository')
 
     parser.add_option_group(action_group)
 
 
 def parse_args():
 
-    parser = OptionParser(usage="%prog ACTION [OPTION...] [FILE...]")
+    parser = OptionParser(usage='%prog ACTION [OPTION...] [FILE...]')
 
     add_global_flags(parser)
     add_action_group(parser)
@@ -649,16 +657,15 @@ def parse_args():
 
     if not opts.action:
         print("Error: An action is required. Type 'dotfiles -h' to see "
-              "detailed usage information.")
+              'detailed usage information.')
         exit(-1)
 
     return (opts, args)
 
 
 def parse_config(config_file):
-
     parser = configparser.SafeConfigParser()
-    parser.read(config_file)
+    parser.read(os.path.expanduser(config_file))
 
     opts = dict()
 
@@ -696,12 +703,12 @@ def dispatch(repo, opts, args):
 
     elif opts.action == 'move':
         if len(args) > 1:
-            print("Error: Move cannot handle multiple targets.")
+            print('Error: Move cannot handle multiple targets.')
             exit(-1)
         repo.move(args[0])
 
     else:
-        print("Error: Something truly terrible has happened.")
+        print('Error: Something truly terrible has happened.')
         exit(-1)
 
 
@@ -751,6 +758,7 @@ def main():
                                repo_config_opts.get('prefix') or
                                config_opts.get('prefix') or
                                repo_settings['prefix'])
+    repo_settings['no_dot_prefix'] = cli_opts.no_dot_prefix
 
     update_settings(repo_config_opts, 'ignore')
     update_settings(repo_config_opts, 'externals')
@@ -764,5 +772,6 @@ def main():
 ############
 # run main #
 ############
+
 if __name__ == '__main__':
     main()
