@@ -25,15 +25,18 @@ export -f log
 # Connect to gpg agent if possible
 # TODO maybe not always do this
 log "gpg-agent"
-agent_file="$HOME/.gnupg/gpg-agent-info-$(hostname)"
-if [ -r "$agent_file" ] && kill -0 $(grep GPG_AGENT_INFO "$agent_file" | cut -d: -f 2) 2>/dev/null; then
-  source "$agent_file"
-  export GPG_AGENT_INFO;
-  export SSH_AUTH_SOCK;
-  export SSH_AGENT_PID
+if [ -z "$SSH_CLIENT" ]; then
+  agent_file="$HOME/.gnupg/gpg-agent-info-$(hostname)"
+  if [ -r "$agent_file" ] && kill -0 $(grep GPG_AGENT_INFO "$agent_file" | cut -d: -f 2) 2>/dev/null; then
+    source "$agent_file"
+    export GPG_AGENT_INFO;
+    export SSH_AUTH_SOCK;
+    export SSH_AGENT_PID
+  fi
+  GPG_TTY=$(tty)
+  export GPG_TTY
 fi
-GPG_TTY=$(tty)
-export GPG_TTY
+
 
 # ------------------------------------------------------------------------------
 # NON INTERACTIVE RETURN POINT
