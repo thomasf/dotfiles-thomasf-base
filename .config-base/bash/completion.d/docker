@@ -17,6 +17,13 @@
 #
 # Configuration:
 #
+# For several commands, the amount of completions can be configured by
+# setting environment variables.
+#
+# DOCKER_COMPLETION_SHOW_NETWORK_IDS
+#   "false" - Show names only (default)
+#   "true"  - Show names and ids
+#
 # You can tailor completion for the "events", "history", "inspect", "run",
 # "rmi" and "save" commands by settings the following environment
 # variables:
@@ -139,7 +146,12 @@ __docker_containers_and_images() {
 }
 
 __docker_networks() {
-	COMPREPLY=( $(compgen -W "$(__docker_q network ls | awk 'NR>1 {print $2}')" -- "$cur") )
+	# By default, only network names are completed.
+	# Set DOCKER_COMPLETION_SHOW_NETWORK_IDS=true to also complete network IDs.
+	local fields='$2'
+	[ "${DOCKER_COMPLETION_SHOW_NETWORK_IDS}" = true ] && fields='$1,$2'
+	local networks=$(__docker_q network ls --no-trunc | awk "NR>1 {print $fields}")
+	COMPREPLY=( $(compgen -W "$networks" -- "$cur") )
 }
 
 __docker_volumes() {
@@ -303,26 +315,35 @@ __docker_capabilities() {
 
 __docker_log_drivers() {
 	COMPREPLY=( $( compgen -W "
+		awslogs
 		fluentd
 		gelf
 		journald
 		json-file
 		none
+		splunk
 		syslog
 	" -- "$cur" ) )
 }
 
 __docker_log_driver_options() {
 	# see docs/reference/logging/index.md
-	local fluentd_options="fluentd-address tag"
-	local gelf_options="gelf-address tag"
-	local json_file_options="max-file max-size"
-	local syslog_options="syslog-address syslog-facility tag"
 	local awslogs_options="awslogs-region awslogs-group awslogs-stream"
+	local fluentd_options="env fluentd-address labels tag"
+	local gelf_options="env gelf-address labels tag"
+	local journald_options="env labels"
+	local json_file_options="env labels max-file max-size"
+	local syslog_options="syslog-address syslog-facility tag"
+	local splunk_options="splunk-caname splunk-capath splunk-index splunk-insecureskipverify splunk-source splunk-sourcetype splunk-token splunk-url"
+
+	local all_options="$fluentd_options $gelf_options $journald_options $json_file_options $syslog_options $splunk_options"
 
 	case $(__docker_value_of_option --log-driver) in
 		'')
-			COMPREPLY=( $( compgen -W "$fluentd_options $gelf_options $json_file_options $syslog_options" -S = -- "$cur" ) )
+			COMPREPLY=( $( compgen -W "$all_options" -S = -- "$cur" ) )
+			;;
+		awslogs)
+			COMPREPLY=( $( compgen -W "$awslogs_options" -S = -- "$cur" ) )
 			;;
 		fluentd)
 			COMPREPLY=( $( compgen -W "$fluentd_options" -S = -- "$cur" ) )
@@ -330,14 +351,17 @@ __docker_log_driver_options() {
 		gelf)
 			COMPREPLY=( $( compgen -W "$gelf_options" -S = -- "$cur" ) )
 			;;
+		journald)
+			COMPREPLY=( $( compgen -W "$journald_options" -S = -- "$cur" ) )
+			;;
 		json-file)
 			COMPREPLY=( $( compgen -W "$json_file_options" -S = -- "$cur" ) )
 			;;
 		syslog)
 			COMPREPLY=( $( compgen -W "$syslog_options" -S = -- "$cur" ) )
 			;;
-		awslogs)
-			COMPREPLY=( $( compgen -W "$awslogs_options" -S = -- "$cur" ) )
+		splunk)
+			COMPREPLY=( $( compgen -W "$splunk_options" -S = -- "$cur" ) )
 			;;
 		*)
 			return
@@ -384,6 +408,17 @@ __docker_complete_log_driver_options() {
 				user
 				uucp
 			" -- "${cur#=}" ) )
+			return
+			;;
+		*splunk-url=*)
+			COMPREPLY=( $( compgen -W "http:// https://" -- "${cur#=}" ) )
+			compopt -o nospace
+			__ltrim_colon_completions "${cur}"
+			return
+			;;
+		*splunk-insecureskipverify=*)
+			COMPREPLY=( $( compgen -W "true false" -- "${cur#=}" ) )
+			compopt -o nospace
 			return
 			;;
 	esac
@@ -1101,11 +1136,7 @@ _docker_network_inspect() {
 			COMPREPLY=( $( compgen -W "--help" -- "$cur" ) )
 			;;
 		*)
-			local counter=$(__docker_pos_first_nonflag)
-			if [ $cword -eq $counter ]; then
-				__docker_networks
-			fi
-			;;
+			__docker_networks
 	esac
 }
 
