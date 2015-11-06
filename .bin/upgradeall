@@ -66,7 +66,7 @@ upgrader-goget() {
     youtube-dl --update
   ) &
   echo UPDATING go-tools
-  GOPATH=~/repos/go
+  GOPATH=${HOME}
   export GOPATH;
   go get -v -u \
      github.com/github/hub \

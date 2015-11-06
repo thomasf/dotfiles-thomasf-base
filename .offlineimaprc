@@ -19,4 +19,4 @@ remotepasseval = get_password("myGmail")
 ssl = yes
 sslcacertfile = /etc/ssl/certs/ca-certificates.crt
 maxconnections = 5
-#folderfilter = lambda foldername: foldername not in '[Gmail]/All Mail'
+folderfilter = lambda foldername: foldername not in '[Gmail].Spam'

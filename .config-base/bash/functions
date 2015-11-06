@@ -512,17 +512,12 @@ _jump_repo() {
 
 # Jump to repository
 jr() {
-  _jump_repo "${HOME}/repos" "$@"
+  _jump_repo "${HOME}/src" "$@"
 }
 
 # Jump to repository under gopath
 jg() {
   _jump_repo "${GOPATH}/src" "$@"
-}
-
-# Jump to repository under 23c path
-j2() {
-  _jump_repo "${HOME}/repos/23c" "$@"
 }
 
 # fkill - kill process
@@ -608,11 +603,11 @@ z() {
     cd "$(_z -l 2>&1 | sed -n 's/^[ 0-9.,]*//p' | fzf)"
   else
     case $1 in
-      r)
-        cd "${HOME}/repos"
+      s)
+        cd "${HOME}/src"
         ;;
       g)
-        cd "${HOME}/repos/github"
+        cd "${HOME}/src/github.com"
         ;;
 
       d)
@@ -624,7 +619,7 @@ z() {
         ;;
 
       2)
-        cd "${HOME}/repos/23c"
+        cd "${HOME}/src/gitlab.23c.se"
         ;;
 
       *)

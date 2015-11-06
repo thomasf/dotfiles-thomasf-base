@@ -110,17 +110,6 @@ if [ $UID != 0 ]; then
     && log "nvm" \
     && source "${HOME}/.opt/nvm/nvm.sh"
 
-  # Maybe load Ruby version manager
-  # NOTE Bash from ubuntu 14.04 seems to be rvm incompatible
-  # [ -f "${HOME}/.rvm/scripts/rvm" ] \
-  #   && log "rvm" \
-  #   && source "${HOME}/.rvm/scripts/rvm"
-
-  # Maybe load rbenv
-  [ -f "${HOME}/.rbenv/bin/rbenv" ] \
-    && log "rbenv" \
-    && eval "$($HOME/.rbenv/bin/rbenv init -)"
-
   # Set virtualenvwrapper hooks dir
   [ -e "${HOME}/.virtualenvwrapper-hooks" ] \
     && VIRTUALENVWRAPPER_HOOK_DIR="${HOME}/.virtualenvwrapper-hooks" \

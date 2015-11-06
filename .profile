@@ -44,7 +44,6 @@ ppath ~/Library/Haskell/bin
 # ~/.opt User home path prepends
 ppath ~/.opt/go/bin
 ppath ~/.opt/go-tools/bin
-ppath ~/repos/go/bin
 
 ppath ~/.opt/ec2-api-tools/bin \
     && EC2_HOME=~/.opt/ec2-api-tools \
@@ -59,7 +58,8 @@ ppath ~/.opt/AdobeAIRSDK/bin
 ppath ~/.opt/arm-cs-tools/bin
 
 # Default gopath
-export GOPATH="${HOME}/repos/go"
+export GOPATH="${HOME}"
+ppath "${GOPATH}/bin"
 export GO15VENDOREXPERIMENT=1
 
 # Perl local
