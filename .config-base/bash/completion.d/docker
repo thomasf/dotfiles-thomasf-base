@@ -21,8 +21,8 @@
 # setting environment variables.
 #
 # DOCKER_COMPLETION_SHOW_NETWORK_IDS
-#   "false" - Show names only (default)
-#   "true"  - Show names and ids
+#   "no"  - Show names only (default)
+#   "yes" - Show names and ids
 #
 # You can tailor completion for the "events", "history", "inspect", "run",
 # "rmi" and "save" commands by settings the following environment
@@ -48,6 +48,9 @@
 # Please arrange options sorted alphabetically by long name with the short
 # options immediately following their corresponding long form.
 # This order should be applied to lists, alternatives and code blocks.
+
+__docker_previous_extglob_setting=$(shopt -p extglob)
+shopt -s extglob
 
 __docker_q() {
 	docker ${host:+-H "$host"} ${config:+--config "$config"} 2>/dev/null "$@"
@@ -147,9 +150,9 @@ __docker_containers_and_images() {
 
 __docker_networks() {
 	# By default, only network names are completed.
-	# Set DOCKER_COMPLETION_SHOW_NETWORK_IDS=true to also complete network IDs.
+	# Set DOCKER_COMPLETION_SHOW_NETWORK_IDS=yes to also complete network IDs.
 	local fields='$2'
-	[ "${DOCKER_COMPLETION_SHOW_NETWORK_IDS}" = true ] && fields='$1,$2'
+	[ "${DOCKER_COMPLETION_SHOW_NETWORK_IDS}" = yes ] && fields='$1,$2'
 	local networks=$(__docker_q network ls --no-trunc | awk "NR>1 {print $fields}")
 	COMPREPLY=( $(compgen -W "$networks" -- "$cur") )
 }
@@ -1352,6 +1355,7 @@ _docker_run() {
 		--add-host
 		--attach -a
 		--blkio-weight
+		--blkio-weight-device
 		--cap-add
 		--cap-drop
 		--cgroup-parent
@@ -1607,7 +1611,7 @@ _docker_start() {
 _docker_stats() {
 	case "$cur" in
 		-*)
-			COMPREPLY=( $( compgen -W "--no-stream --help" -- "$cur" ) )
+			COMPREPLY=( $( compgen -W "--all -a --help --no-stream" -- "$cur" ) )
 			;;
 		*)
 			__docker_containers_running
@@ -1889,5 +1893,8 @@ _docker() {
 	eval "$previous_extglob_setting"
 	return 0
 }
+
+eval "$__docker_previous_extglob_setting"
+unset __docker_previous_extglob_setting
 
 complete -F _docker docker
