@@ -36,7 +36,7 @@ h() {
   fi
 }
 
-alias df='df -h'
+alias df='df -h -T'
 
 __exec_in_dir() {
   local ncolors=$(tput colors)
