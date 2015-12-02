@@ -121,5 +121,7 @@ gc diff.algorithm "histogram"
 # gc gui.fontdiff "-family \"PragmataPro\" -size 11 -weight normal -slant roman -underline 0 -overstrike 0"
 # gc gui.fontiu "-family \"PragmataPro\" -size 11 -weight normal -slant roman -underline 0 -overstrike 0"
 
+gc ghq.root ${HOME}/src
+
 unset -f gc
 unset -f gu
