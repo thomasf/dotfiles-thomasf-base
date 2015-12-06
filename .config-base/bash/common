@@ -61,7 +61,7 @@ export __OS
 
 
 # default FZF options
-export FZF_DEFAULT_OPTS="--extended --no-black --no-256"
+export FZF_DEFAULT_OPTS=" --no-black --no-256"
 
 
 # virtualenv options
@@ -87,10 +87,10 @@ export -f selectline
 
 
 # ----------------------------------------------------------------------------
+
 # All done
 
 # __SHCOMMON is used to detect that this file already has been sourced
 __SHCOMMON="loaded"
 export __SHCOMMON
-
 # eof

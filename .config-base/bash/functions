@@ -183,7 +183,7 @@ bakmv() {
 }
 
 wsdir-set() {
-  [[ $(which wsname) ]] || return 0
+  hash wsname 2>/dev/null || return 0
   if [[ $(wsname -p) ]]; then
     mkdir -p ~/.config/wsdirs/
     echo -ne $PWD > ~/.config/wsdirs/$(wsname -p)
@@ -191,14 +191,14 @@ wsdir-set() {
 }
 
 wsdir-unset() {
-  [[ $(which wsname) ]] || return 0
+  hash wsname 2>/dev/null || return 0
   if [[ $(wsname -p) ]]; then
     rm -f ~/.config/wsdirs/$(wsname -p)
   fi
 }
 
 wsdir-cd() {
-  [[ $(which wsname) ]] || return 0
+  hash wsname 2>/dev/null || return 0
   local wsnamep=$(wsname -p)
   if [ -f ~/.config/wsdirs/$wsnamep ]; then
     cd $(cat ~/.config/wsdirs/$wsnamep)
@@ -208,7 +208,7 @@ wsdir-cd() {
 }
 
 wsdir-get() {
-  [[ $(which wsname) ]] || return 0
+  hash wsname 2>/dev/null || return 0
   local wsnamep=$(wsname -p)
   if [ -f ~/.config/wsdirs/$wsnamep ]; then
     echo -ne $(cat ~/.config/wsdirs/$wsnamep)
@@ -218,9 +218,9 @@ wsdir-get() {
 }
 
 wsenv-edit() {
-  [[ $(which wsname) ]] || return 0
+  hash wsname 2>/dev/null || return 0
   local wsnamep=""
-  if  [[ $(which wsname) ]] && [[ $(wsname -p) ]]; then
+  if [[ $(wsname -p) ]]; then
     if [[ $(wsdir-get) ]]; then
       wsnamep=$(basename $(wsdir-get))
     else
@@ -232,7 +232,7 @@ wsenv-edit() {
 }
 
 wsenv-source() {
-  [[ $(which wsname) ]] || return 0
+  hash wsname 2>/dev/null || return 0
   local wsnamep=""
   if [[ $(wsname -p) ]]; then
     if [[ $(wsdir-get) ]]; then
@@ -273,7 +273,7 @@ else
 fi
 
 l() {
-  if [ $(which pls) ] && [ ! ${__OS} = darwin ]; then
+  if hash pls 2>/dev/null && [ ! ${__OS} = darwin ]; then
     pls "$@"
   else
     ls -l "$@"
@@ -472,7 +472,7 @@ dudir() {
 
 # z workspace prefix name
 cdd() {
-  if [ -n "$DISPLAY" ] && [ $(which wsname) ]; then
+  if [ -n "$DISPLAY" ] && hash wsname 2>/dev/null; then
     local name
     name="$(wsname -p)" || return 1
     case $name in
@@ -533,7 +533,8 @@ _jump_repo_ghq() {
 
 # Jump to repository
 jr() {
-  if [ $(which ghq) ]; then
+
+  if hash ghq 2>/dev/null; then
     _jump_repo_ghq "$@"
   else
     _jump_repo_find "${HOME}/src" "$@"

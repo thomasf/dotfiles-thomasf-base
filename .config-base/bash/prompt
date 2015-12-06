@@ -51,9 +51,8 @@ __prompt_fn() {
   local whiteB="\[\033[47m\]"
 
   local w=100
-  if [[ $(which tput) ]]; then
+  hash tput 2>/dev/null &&
     w=$(tput cols)
-  fi
 
   local HH=`date +%H`
   local MM=`date +%M`
@@ -107,7 +106,7 @@ __prompt_fn() {
     # nothing
     ;;
     *)
-    if [[ $(which vcprompt) ]]; then
+    if hash vcprompt 2>/dev/null; then
       VCS=$(vcprompt -f "%n:%b%u%a%m " 2>/dev/null)
     elif [[ $(type -t __git_ps1) == "function" ]]; then
       VCS=$(__git_ps1 "(%s) ")

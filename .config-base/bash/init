@@ -217,7 +217,7 @@ case $HOST_TAGS in
   # nothing
   ;;
   *)
-    if [ $(which termcolors) ] && [ -z $SSH_TTY ] && [ -z $TMUX ]; then
+    if hash termcolors 2>/dev/null && [ -z $SSH_TTY ] && [ -z $TMUX ]; then
       case $TERM in
         rxvt*|xterm*)
           [ -e ~/.config/darkmode ] && export DARKMODE=dark || export DARKMODE=light
@@ -234,8 +234,8 @@ esac
 # TERMINAL OPTIONS
 #
 # enable xon/xoff flow control
-[ $(which stty) ] \
-  && stty -ixon
+hash stty 2>/dev/null &&
+  stty -ixon
 
 # ------------------------------------------------------------------------------
 # COMPLETION
@@ -315,7 +315,7 @@ case $HOST_TAGS in
   # nothing
   ;;
   *)
-    [ $(which hub) ] && \
+    hash hub 2>/dev/null &&
       alias git=hub
     ;;
 esac
@@ -347,8 +347,8 @@ log() {
 }
 
 
-[ $(which manpath) ] && \
-  unset MANPATH && \
+hash manpath 2>/dev/null &&
+  unset MANPATH &&
   export MANPATH=$(manpath -q)
 
 case $TERM in
@@ -365,7 +365,7 @@ if [ ! "${TERM}" == "dumb" ] &&
   if wsdir-cd >/dev/null || cdd  >/dev/null ; then
     wsenv-source >/dev/null || true
     [ -z $VIRTUAL_ENV ] &&
-      [ $(which wsname >/dev/null ) ] &&
+      hash wsname 2>/dev/null &&
       [ $(wsname -p >/dev/null ) ] &&
       workon $(wsname -p) 2>/dev/null || true
     git status --short --branch 2>/dev/null || true
@@ -374,15 +374,15 @@ if [ ! "${TERM}" == "dumb" ] &&
   __pwd_logger
 fi
 
-[ ! -z $SSH_TTY ] \
-  && [ -z $TMUX ] \
-  && [ $(which tmux) ] \
-  && tmux list-sessions 2>/dev/null \
-    || true
+[ ! -z $SSH_TTY ] &&
+  [ -z $TMUX ] &&
+  hash tmux 2>/dev/null &&
+  tmux list-sessions 2>/dev/null ||
+    true
 
-[ $UID == 0 ] \
-  && export TMOUT=3600 \
-    || true
+[ $UID == 0 ] &&
+  export TMOUT=3600 ||
+    true
 
 
 # end of init
