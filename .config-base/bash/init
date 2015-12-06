@@ -187,12 +187,13 @@ if [ "$TERM" = "eterm-color" ]; then
 fi
 
 # Add faked cd with full paths to log whenever pwd changes
-export __last_logged_pwd="$PWD"
+export __last_logged_pwd=${PWD// /\\ }
 __pwd_logger() {
-  if [[ ! "$PWD" == "$__last_logged_pwd" ]]; then
+  local CPWD=${PWD// /\\ }
+  if [[ ! "$CPWD" == "$__last_logged_pwd" ]]; then
     local HISTIGNORE=""
-    history -s "cd $PWD"
-    __last_logged_pwd="$PWD"
+    history -s cd ${CPWD}
+    __last_logged_pwd=${CPWD}
     declare -f __eterm_set_cwd >/dev/null && __eterm_set_cwd
   fi
 }
