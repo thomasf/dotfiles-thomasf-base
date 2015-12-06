@@ -384,7 +384,7 @@ function cdl {
   cd $target
 }
 
-alias c="cd"
+# alias c="cd"
 alias u="cdup"
 
 alias t2='tree -d -L 2'
