@@ -370,6 +370,8 @@ if [ ! "${TERM}" == "dumb" ] &&
       workon $(wsname -p) 2>/dev/null || true
     git status --short --branch 2>/dev/null || true
   fi
+  history -n
+  __pwd_logger
 fi
 
 [ ! -z $SSH_TTY ] \
