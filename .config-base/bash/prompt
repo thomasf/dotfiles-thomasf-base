@@ -156,7 +156,7 @@ __prompt_command() {
     *)
       __pwd_logger;
       history -a;
-      [ -n  ${DARKMODE} ] && __darkmode_switcher
+      [ -n ${DARKMODE} ] && __darkmode_switcher
       echo -ne '\a'
       ;;
   esac
