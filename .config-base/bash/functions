@@ -287,15 +287,26 @@ alias lslistenports="sudo netstat -plunt"
 alias adblogcat="adb logcat | adb-logcat-pp"
 
 lsnew() {
-  find . \
-       -mindepth 1 \
-       -maxdepth ${1:-1} \
-       -not \( -type d -name ".git" -prune \) \
-       -not \( -type d -name ".avfs" -prune \) \
-       -type f \
-       -mtime 0 \
-       -printf '%Tm-%Td %TH:%TM  %P\n' \
-    | sort
+  if [ ${__OS} = darwin ]; then
+    find . \
+         -mindepth 1 \
+         -maxdepth ${1:-1} \
+         -not \( -type d -name ".git" -prune \) \
+         -not \( -type d -name ".avfs" -prune \) \
+         -type f \
+         -mtime 0
+  else
+    find . \
+         -mindepth 1 \
+         -maxdepth ${1:-1} \
+         -not \( -type d -name ".git" -prune \) \
+         -not \( -type d -name ".avfs" -prune \) \
+         -type f \
+         -mtime 0 \
+         -printf '%Tm-%Td %TH:%TM  %P\n' \
+      | sort
+
+  fi
 }
 
 fadb-uninstall() {
