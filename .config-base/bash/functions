@@ -499,7 +499,7 @@ _find_repos() {
     xargs -n 1 dirname 2>/dev/null
 }
 
-_jump_repo() {
+_jump_repo_find() {
   local basedir="${1}"
   shift
   [[ -d "${basedir}" ]] || return 1
@@ -511,14 +511,22 @@ _jump_repo() {
   cd "$target"
 }
 
-# Jump to repository
-jr() {
-  _jump_repo "${HOME}/src" "$@"
+_jump_repo_ghq() {
+  local query="$@"
+  local selected=$(cd "${basedir}" && ghq list |
+                        selectline --query="$query") || return 1
+  local target="${basedir}/${selected}"
+  target="$(ghq root ${target})${target}"
+  cd "$target"
 }
 
-# Jump to repository under gopath
-jg() {
-  _jump_repo "${GOPATH}/src" "$@"
+# Jump to repository
+jr() {
+  if [ $(which ghq) ]; then
+    _jump_repo_ghq "$@"
+  else
+    _jump_repo_find "${HOME}/src" "$@"
+  fi
 }
 
 # fkill - kill process
