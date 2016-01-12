@@ -405,6 +405,10 @@ alias p='python'
 alias doco='docker-compose'
 alias dkr='docker'
 
+dps() {
+  docker ps | cut -c-$(tput cols)
+}
+
 alias agent='eval $(ssh-agent); ssh-add;'
 
 agentunset() {
