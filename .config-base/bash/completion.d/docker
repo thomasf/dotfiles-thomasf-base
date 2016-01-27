@@ -409,7 +409,7 @@ __docker_complete_log_options() {
 	local gelf_options="env gelf-address labels tag"
 	local journald_options="env labels"
 	local json_file_options="env labels max-file max-size"
-	local syslog_options="syslog-address syslog-facility tag"
+	local syslog_options="syslog-address syslog-tls-ca-cert syslog-tls-cert syslog-tls-key syslog-tls-skip-verify syslog-facility tag"
 	local splunk_options="env labels splunk-caname splunk-capath splunk-index splunk-insecureskipverify splunk-source splunk-sourcetype splunk-token splunk-url tag"
 
 	local all_options="$fluentd_options $gelf_options $journald_options $json_file_options $syslog_options $splunk_options"
@@ -457,8 +457,9 @@ __docker_complete_log_driver_options() {
 			return
 			;;
 		*syslog-address=*)
-			COMPREPLY=( $( compgen -W "tcp udp unix" -S "://" -- "${cur#=}" ) )
+			COMPREPLY=( $( compgen -W "tcp:// tcp+tls:// udp:// unix://" -- "${cur#=}" ) )
 			__docker_nospace
+			__ltrim_colon_completions "${cur}"
 			return
 			;;
 		*syslog-facility=*)
@@ -486,15 +487,23 @@ __docker_complete_log_driver_options() {
 			" -- "${cur#=}" ) )
 			return
 			;;
+		*syslog-tls-@(ca-cert|cert|key)=*)
+			_filedir
+			return
+			;;
+		*syslog-tls-skip-verify=*)
+			COMPREPLY=( $( compgen -W "true" -- "${cur#=}" ) )
+			return
+			;;
 		*splunk-url=*)
 			COMPREPLY=( $( compgen -W "http:// https://" -- "${cur#=}" ) )
-			compopt -o nospace
+			__docker_nospace
 			__ltrim_colon_completions "${cur}"
 			return
 			;;
 		*splunk-insecureskipverify=*)
 			COMPREPLY=( $( compgen -W "true false" -- "${cur#=}" ) )
-			compopt -o nospace
+			__docker_nospace
 			return
 			;;
 	esac
@@ -670,7 +679,7 @@ _docker_commit() {
 _docker_cp() {
 	case "$cur" in
 		-*)
-			COMPREPLY=( $( compgen -W "--help" -- "$cur" ) )
+			COMPREPLY=( $( compgen -W "--follow-link -L --help" -- "$cur" ) )
 			;;
 		*)
 			local counter=$(__docker_pos_first_nonflag)
@@ -761,6 +770,7 @@ _docker_daemon() {
 		--registry-mirror
 		--storage-driver -s
 		--storage-opt
+		--userns-remap
 	"
 
 	case "$prev" in
@@ -774,7 +784,7 @@ _docker_daemon() {
 			return
 			;;
 		--cluster-store-opt)
-			COMPREPLY=( $( compgen -W "kv.cacertfile kv.certfile kv.keyfile" -S = -- "$cur" ) )
+			COMPREPLY=( $( compgen -W "discovery.heartbeat discovery.ttl kv.cacertfile kv.certfile kv.keyfile kv.path" -S = -- "$cur" ) )
 			__docker_nospace
 			return
 			;;
@@ -834,6 +844,15 @@ _docker_daemon() {
 			;;
 		--log-opt)
 			__docker_complete_log_options
+			return
+			;;
+		--userns-remap)
+			if [[ $cur == *:* ]] ; then
+				COMPREPLY=( $(compgen -g -- "${cur#*:}") )
+			else
+				COMPREPLY=( $(compgen -u -S : -- "$cur") )
+				__docker_nospace
+			fi
 			return
 			;;
 		$(__docker_to_extglob "$options_with_args") )
@@ -1024,10 +1043,8 @@ _docker_history() {
 _docker_images() {
 	case "$prev" in
 		--filter|-f)
-			COMPREPLY=( $( compgen -W "dangling=true label=" -- "$cur" ) )
-			if [ "$COMPREPLY" = "label=" ]; then
-				__docker_nospace
-			fi
+			COMPREPLY=( $( compgen -S = -W "dangling label" -- "$cur" ) )
+			__docker_nospace
 			return
 			;;
                 --format)
@@ -1425,7 +1442,7 @@ _docker_ps() {
 			return
 			;;
 		*status=*)
-			COMPREPLY=( $( compgen -W "exited paused restarting running" -- "${cur#=}" ) )
+			COMPREPLY=( $( compgen -W "created dead exited paused restarting running" -- "${cur#=}" ) )
 			return
 			;;
 	esac
@@ -1852,7 +1869,7 @@ _docker_stop() {
 _docker_tag() {
 	case "$cur" in
 		-*)
-			COMPREPLY=( $( compgen -W "--force -f --help" -- "$cur" ) )
+			COMPREPLY=( $( compgen -W "--help" -- "$cur" ) )
 			;;
 		*)
 			local counter=$(__docker_pos_first_nonflag)
@@ -1981,7 +1998,14 @@ _docker_volume_inspect() {
 _docker_volume_ls() {
 	case "$prev" in
 		--filter|-f)
-			COMPREPLY=( $( compgen -W "dangling=true" -- "$cur" ) )
+			COMPREPLY=( $( compgen -W "dangling" -- "$cur" ) )
+			return
+			;;
+	esac
+
+	case "${words[$cword-2]}$prev=" in
+		*dangling=*)
+			COMPREPLY=( $( compgen -W "true false" -- "${cur#=}" ) )
 			return
 			;;
 	esac
