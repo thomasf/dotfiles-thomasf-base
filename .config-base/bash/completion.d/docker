@@ -748,6 +748,7 @@ _docker_daemon() {
 		--ip-masq=false
 		--iptables=false
 		--ipv6
+		--raw-logs
 		--selinux-enabled
 		--userland-proxy=false
 	"
@@ -1466,7 +1467,7 @@ _docker_ps() {
 _docker_pull() {
 	case "$cur" in
 		-*)
-			COMPREPLY=( $( compgen -W "--all-tags -a --help" -- "$cur" ) )
+			COMPREPLY=( $( compgen -W "--all-tags -a --disable-content-trust=false --help" -- "$cur" ) )
 			;;
 		*)
 			local counter=$(__docker_pos_first_nonflag)
@@ -1488,7 +1489,7 @@ _docker_pull() {
 _docker_push() {
 	case "$cur" in
 		-*)
-			COMPREPLY=( $( compgen -W "--help" -- "$cur" ) )
+			COMPREPLY=( $( compgen -W "--disable-content-trust=false --help" -- "$cur" ) )
 			;;
 		*)
 			local counter=$(__docker_pos_first_nonflag)
@@ -1766,6 +1767,11 @@ _docker_run() {
 					if [ "${COMPREPLY[*]}" != "disable" ] ; then
 						__docker_nospace
 					fi
+					;;
+				seccomp:*)
+					local cur=${cur##*:}
+					_filedir
+					COMPREPLY+=( $( compgen -W "unconfined" -- "$cur" ) )
 					;;
 				*)
 					COMPREPLY=( $( compgen -W "label apparmor seccomp" -S ":" -- "$cur") )
