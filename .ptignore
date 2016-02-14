@@ -28,6 +28,7 @@ build/
 *.out
 *.so
 *.class
+*.a
 
 *.jpg
 *.jpeg
