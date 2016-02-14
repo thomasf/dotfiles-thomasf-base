@@ -16,6 +16,7 @@ localfolders = ~/.config/myGmail-maildir
 type = Gmail
 remoteusereval = get_username("myGmail")
 remotepasseval = get_password("myGmail")
+auth_mechanisms = LOGIN
 ssl = yes
 sslcacertfile = /etc/ssl/certs/ca-certificates.crt
 maxconnections = 5
