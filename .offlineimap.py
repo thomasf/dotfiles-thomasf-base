@@ -30,3 +30,7 @@ def get_username(account):
 
 def get_password(account):
     return get_value(account, "password")
+
+
+if __name__ == '__main__':
+    print(get_password("myGmail"))
