@@ -72,7 +72,6 @@ upgrader-goget() {
      github.com/github/hub \
      github.com/golang/lint/golint \
      github.com/jstemmer/gotags \
-     github.com/motemen/ghq \
      github.com/junegunn/fzf \
      github.com/kardianos/govendor/... \
      github.com/monochromegane/the_platinum_searcher/cmd/... \
