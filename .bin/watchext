@@ -1,4 +1,4 @@
-#!/bin/sh
+#!/bin/bash
 
 cmd=$(basename ${0})
 runcmd="${@}"
@@ -14,6 +14,7 @@ case $cmd in
   *)
     lookfor="$1"
     shift
+    runcmd="${@}"
     ;;
 esac
 
