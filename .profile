@@ -43,7 +43,6 @@ ppath ~/Library/Haskell/bin
 
 # ~/.opt User home path prepends
 ppath ~/.opt/go/bin
-ppath ~/.opt/go-tools/bin
 
 ppath ~/.opt/ec2-api-tools/bin \
     && EC2_HOME=~/.opt/ec2-api-tools \
@@ -57,7 +56,9 @@ ppath ~/.opt/android-sdks/platform-tools
 ppath ~/.opt/AdobeAIRSDK/bin
 ppath ~/.opt/arm-cs-tools/bin
 
-# Default gopath
+# Default go env
+[ -d ~/.opt/go/bin ] &&
+  export GOROOT=~/.opt/go/
 export GOPATH="${HOME}"
 ppath "${GOPATH}/bin"
 export GO15VENDOREXPERIMENT=1
