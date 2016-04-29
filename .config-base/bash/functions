@@ -6,6 +6,13 @@
 source ~/.config-base/bash/common
 
 
+# select a line
+selectline() {
+  fzf --no-sort "$@"
+}
+export -f selectline
+
+
 # dl takes an URL as its argument and downloads it using the server supplied
 # file name to PWD.
 dl() {

@@ -70,16 +70,6 @@ export VIRTUALENV_DISTRIBUTE=1
 
 
 # ----------------------------------------------------------------------------
-# Support functions for script/function writing
-
-# select a line
-selectline() {
-  fzf --no-sort "$@"
-}
-export -f selectline
-
-
-# ----------------------------------------------------------------------------
 # Functions intended for interactive use
 
 
