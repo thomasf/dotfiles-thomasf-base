@@ -4,8 +4,8 @@ module GHI
   module Commands
     module Version
       MAJOR   = 1
-      MINOR   = 1
-      PATCH   = 1
+      MINOR   = 2
+      PATCH   = 0
       PRE     = nil
 
       VERSION = [MAJOR, MINOR, PATCH, PRE].compact.join '.'
@@ -908,7 +908,7 @@ EOF
       message = ERB.new(<<EOF).result binding
 
 Please explain the issue. The first line will become the title. Trailing
-lines starting with '#' (like these) will be ignored, and empty messages will
+markdown comments (like these) will be ignored, and empty messages will
 not be submitted. Issues are formatted with GitHub Flavored Markdown (GFM):
 
   http://github.github.com/github-flavored-markdown
@@ -918,9 +918,9 @@ On <%= repo %>
 <%= no_color { format_issue issue, columns - 2 if issue } %>
 EOF
       message.rstrip!
-      message.gsub!(/(?!\A)^.*$/) { |line|
-        "# #{line}".rstrip
-      }
+      message.gsub!(/(?!\A)^.*$/) { |line| line.rstrip }
+      max_line_len = message.gsub(/(?!\A)^.*$/).max_by(&:length).length
+      message.gsub!(/(?!\A)^.*$/) { |line| "<!-- #{line.ljust(max_line_len)} -->" }
       # Adding an extra newline for formatting
       message.insert 0, "\n"
       message.insert 0, [
@@ -932,8 +932,8 @@ EOF
     def format_milestone_editor milestone = nil
       message = ERB.new(<<EOF).result binding
 
-Describe the milestone. The first line will become the title. Trailing lines
-starting with '#' (like these) will be ignored, and empty messages will not be
+Describe the milestone. The first line will become the title. Trailing
+markdown comments (like these) will be ignored, and empty messages will not be
 submitted. Milestones are formatted with GitHub Flavored Markdown (GFM):
 
   http://github.github.com/github-flavored-markdown
@@ -943,7 +943,9 @@ On <%= repo %>
 <%= no_color { format_milestone milestone, columns - 2 } if milestone %>
 EOF
       message.rstrip!
-      message.gsub!(/(?!\A)^.*$/) { |line| "# #{line}".rstrip }
+      message.gsub!(/(?!\A)^.*$/) { |line| line.rstrip }
+      max_line_len = message.gsub(/(?!\A)^.*$/).max_by(&:length).length
+      message.gsub!(/(?!\A)^.*$/) { |line| "<!-- #{line.ljust(max_line_len)} -->" }
       message.insert 0, [
         milestone['title'], milestone['description']
       ].join("\n\n") if milestone
@@ -953,7 +955,7 @@ EOF
     def format_comment_editor issue, comment = nil
       message = ERB.new(<<EOF).result binding
 
-Leave a comment. Trailing lines starting with '#' (like these) will be ignored,
+Leave a comment. Trailing markdown comments (like these) will be ignored,
 and empty messages will not be submitted. Comments are formatted with GitHub
 Flavored Markdown (GFM):
 
@@ -965,7 +967,9 @@ On <%= repo %> issue #<%= issue['number'] %>
 <%= no_color { format_comment comment, columns - 2 } if comment %>
 EOF
       message.rstrip!
-      message.gsub!(/(?!\A)^.*$/) { |line| "# #{line}".rstrip }
+      message.gsub!(/(?!\A)^.*$/) { |line| line.rstrip }
+      max_line_len = message.gsub(/(?!\A)^.*$/).max_by(&:length).length
+      message.gsub!(/(?!\A)^.*$/) { |line| "<!-- #{line.ljust(max_line_len)} -->" }
       message.insert 0, comment['body'] if comment
       message
     end
@@ -1324,7 +1328,7 @@ module GHI
       proxy ||= GHI.config 'http.proxy',  :upcase => false
       if proxy
         proxy = URI.parse proxy
-        http = Net::HTTP::Proxy(proxy.host, proxy.port).new HOST, PORT
+        http = Net::HTTP::Proxy(proxy.host, proxy.port, proxy.user, proxy.password).new HOST, PORT
       else
         http = Net::HTTP.new HOST, PORT
       end
@@ -1365,7 +1369,7 @@ module GHI
         f << prefill if File.zero? path
         f.rewind
         system "#{editor} #{f.path}"
-        return File.read(f.path).gsub(/(?:^#.*$\n?)+\s*\z/, '').strip
+        return File.read(f.path).gsub(/(?:^\s*\<\!--.*--\>\s*$\n?)+\s*\z/, '').strip
       end
     end
 
@@ -1422,7 +1426,14 @@ module GHI
     end
 
     def curl path = '', params = {}
-      uri_for(path, params).open.read
+      proxy_uri   = GHI.config 'https.proxy', :upcase => false
+      proxy_uri ||= GHI.config 'http.proxy',  :upcase => false
+      proxy = URI.parse proxy_uri
+      if !(proxy.user.nil? || proxy.password.nil?)
+        uri_for(path, params).open(:proxy_http_basic_authentication => [proxy_uri, proxy.user, proxy.password]).read
+      else
+        uri_for(path, params).open.read
+      end
     end
 
     private
@@ -1822,6 +1833,7 @@ EOF
         end
         filename = "GHI_COMMENT_#{issue}"
         filename << "_#{comment['id']}" if comment
+        filename << ".md"
         e = Editor.new filename
         message = e.gets format_comment_editor(i, comment)
         e.unlink 'No comment.' if message.nil? || message.empty?
@@ -1975,7 +1987,7 @@ EOF
           begin
             if editor || assigns.empty?
               i = throb { api.get "/repos/#{repo}/issues/#{issue}" }.body
-              e = Editor.new "GHI_ISSUE_#{issue}"
+              e = Editor.new "GHI_ISSUE_#{issue}.md"
               message = e.gets format_editor(i)
               e.unlink "There's no issue." if message.nil? || message.empty?
               assigns[:title], assigns[:body] = message.split(/\n+/, 2)
@@ -2720,7 +2732,7 @@ EOF
             Web.new(repo).open 'issues/milestones/new'
           else
             if assigns[:title].nil?
-              e = Editor.new 'GHI_MILESTONE'
+              e = Editor.new 'GHI_MILESTONE.md'
               message = e.gets format_milestone_editor
               e.unlink 'Empty milestone.' if message.nil? || message.empty?
               assigns[:title], assigns[:description] = message.split(/\n+/, 2)
@@ -2735,7 +2747,7 @@ EOF
           else
             if edit || assigns.empty?
               m = throb { api.get "/repos/#{repo}/milestones/#{milestone}" }.body
-              e = Editor.new "GHI_MILESTONE_#{milestone}"
+              e = Editor.new "GHI_MILESTONE_#{milestone}.md"
               message = e.gets format_milestone_editor(m)
               e.unlink 'Empty milestone.' if message.nil? || message.empty?
               assigns[:title], assigns[:description] = message.split(/\n+/, 2)
@@ -2863,7 +2875,7 @@ EOF
             end
             assigns[:title] = args.join ' ' unless args.empty?
             if assigns[:title].nil? || editor
-              e = Editor.new 'GHI_ISSUE'
+              e = Editor.new 'GHI_ISSUE.md'
               message = e.gets format_editor(assigns)
               e.unlink "There's no issue?" if message.nil? || message.empty?
               assigns[:title], assigns[:body] = message.split(/\n+/, 2)
