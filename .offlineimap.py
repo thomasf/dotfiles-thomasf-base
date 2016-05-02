@@ -1,9 +1,8 @@
 # -*- coding: utf-8 -*-
-__author__ = 'Thomas Frössman'
 
-from subprocess import Popen, PIPE
-import os
 import json
+import os
+from subprocess import PIPE, Popen
 
 
 def load_gpg_json_dict():
