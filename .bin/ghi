@@ -20,8 +20,11 @@ require 'optparse'
 
 module GHI
   class << self
+    attr_reader :current_command
+
     def execute args
       STDOUT.sync = true
+      @current_command = "#{$0} #{args.join(' ')}".freeze
 
       double_dash = args.index { |arg| arg == '--' }
       if index = args.index { |arg| arg !~ /^-/ }
@@ -1254,7 +1257,7 @@ module GHI
       end
     end
 
-    CONTENT_TYPE = 'application/vnd.github.beta+json'
+    CONTENT_TYPE = 'application/vnd.github.v3+json'
     USER_AGENT = 'ghi/%s (%s; +%s)' % [
       GHI::Commands::Version::VERSION,
       RUBY_DESCRIPTION,
@@ -1510,8 +1513,13 @@ module GHI
 
       def require_repo
         return true if repo
-        warn 'Not a GitHub repo.'
-        warn ''
+        warn <<-WARNING
+Current directory is not a GitHub repository. Please retry this command from a
+GitHub repository or by appending your command with the user/repo:
+
+    #{GHI.current_command} -- [<user>/]<repo>
+
+        WARNING
         abort options.to_s
       end
 
@@ -1525,7 +1533,7 @@ module GHI
         end
         return repo_name
       end
-        
+
       def detect_repo
         remote   = remotes.find { |r| r[:remote] == 'upstream' }
         remote ||= remotes.find { |r| r[:remote] == 'origin' }
@@ -2539,7 +2547,7 @@ module GHI
             issues = res.body
 
             if exclude_pull_requests || pull_requests_only
-              prs, issues = issues.partition { |i| i['pull_request'].values.any? }
+              prs, issues = issues.partition { |i| i.key?('pull_request') }
               issues = prs if pull_requests_only
             end
             if assigns[:exclude_labels]
@@ -2949,7 +2957,7 @@ module GHI
       private
 
       def pull_request?(issue)
-        issue['pull_request']['html_url']
+        issue.key?('pull_request')
       end
 
       def determine_merge_status(pr)
