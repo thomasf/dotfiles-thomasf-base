@@ -50,14 +50,6 @@ read any;" &
   fi
 }
 
-# runcmdifchange runs a command in a subshell if there are changes in the
-# remote git repo
-runCmdIfChange() {
-  local dir=${1}
-  local cmd=${2}
-  uptodate "${HOME}/.opt/${dir}" || runCmd "${0} ${cmd}"
-}
-export -f runCmdIfChange
 
 # upgrader-goget installs variout things using go get.
 upgrader-goget() {
@@ -156,11 +148,8 @@ case $cmd in
     upgrader-${cmd}
     ;;
   all)
-    runCmdIfChange "${HOME}/.opt/dunst" "dunst" &
-    runCmdIfChange "${HOME}/.opt/compton" "compton" &
-    runCmdIfChange "${HOME}/.opt/mu" "mu" &
     runCmd "sudo apt-get update ; sudo apt-get dist-upgrade"
-    runCmd "xmonadUpdate"
+    # runCmd "xmonadUpdate"
     runCmd "${HOME}/.emacs.d/installDeps emacs"
     runCmd "hsadmin pull"
     runCmd "$0 goget" &
