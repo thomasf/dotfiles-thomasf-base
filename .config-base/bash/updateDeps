@@ -25,7 +25,7 @@ dl_completion "maven" "https://raw.github.com/juven/maven-bash-completion/master
 dl_completion "vagrant" "https://raw.github.com/kura/vagrant-bash-completion/master/etc/bash_completion.d/vagrant" &
 dl_completion "docker" "https://raw.github.com/dotcloud/docker/master/contrib/completion/bash/docker" &
 dl_completion "go" "https://raw.githubusercontent.com/thomasf/go-bash-completion/master/go-bash-completion.bash" &
-dl_completion "docker-compose" "https://raw.githubusercontent.com/docker/compose/21c16a787ae41685e860e584c8dfafabeac5f468/contrib/completion/bash/docker-compose" &
+dl_completion "docker-compose" "https://raw.githubusercontent.com/docker/compose/master/contrib/completion/bash/docker-compose" &
 
 dl_bin "git-imerge" "https://raw.github.com/mhagger/git-imerge/master/git-imerge" &
 dl_bin "git-when-merged" "https://raw.githubusercontent.com/mhagger/git-when-merged/master/bin/git-when-merged" &

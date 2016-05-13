@@ -727,7 +727,7 @@ module GHI
         a = i['assignee']
         a_is_me = a && a['login'] == Authorization.username
         l += a['login'].to_s.length + 2 if a
-        p = i['pull_request']['html_url'] and l += 2 if i['pull_request']
+        p = i['pull_request']['html_url'] and l += 2 if i.key?('pull_request')
         c = i['comments']
         l += c.to_s.length + 1 unless c == 0
         m = i['milestone']
@@ -754,7 +754,7 @@ module GHI
     def format_issue i, width = columns
       return unless i['created_at']
       ERB.new(<<EOF).result binding
-<% p = i['pull_request']['html_url'] %>\
+<% p = i['pull_request']['html_url'] if i.key?('pull_request') %>\
 <%= bright { no_color { indent '%s%s: %s' % [p ? '↑' : '#', \
 *i.values_at('number', 'title')], 0, width } } %>
 @<%= i['user']['login'] %> opened this <%= p ? 'pull request' : 'issue' %> \
@@ -1350,8 +1350,9 @@ module GHI
         if password.nil?
           raise Authorization::Required, 'Authorization required'
         end
-      when Net::HTTPMovedPermanently
-        return Response.new(http.get(res['location']))
+      when Net::HTTPMovedPermanently, Net::HTTPTemporaryRedirect
+        path = URI.parse(res['location']).path
+        return request method, path, options
       end
 
       raise Error, res
@@ -1431,8 +1432,11 @@ module GHI
     def curl path = '', params = {}
       proxy_uri   = GHI.config 'https.proxy', :upcase => false
       proxy_uri ||= GHI.config 'http.proxy',  :upcase => false
-      proxy = URI.parse proxy_uri
-      if !(proxy.user.nil? || proxy.password.nil?)
+      proxy = nil
+      if proxy_uri
+        proxy = URI.parse proxy_uri
+      end
+      if proxy && proxy.user && proxy.password
         uri_for(path, params).open(:proxy_http_basic_authentication => [proxy_uri, proxy.user, proxy.password]).read
       else
         uri_for(path, params).open.read
