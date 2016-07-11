@@ -26,6 +26,12 @@ dl_completion "vagrant" "https://raw.github.com/kura/vagrant-bash-completion/mas
 dl_completion "docker" "https://raw.github.com/dotcloud/docker/master/contrib/completion/bash/docker" &
 dl_completion "go" "https://raw.githubusercontent.com/thomasf/go-bash-completion/master/go-bash-completion.bash" &
 dl_completion "docker-compose" "https://raw.githubusercontent.com/docker/compose/master/contrib/completion/bash/docker-compose" &
+dl_completion "ansible" "https://raw.githubusercontent.com/dysosmus/ansible-completion/master/ansible-completion.bash" &
+dl_completion "ansible-doc" "https://raw.githubusercontent.com/dysosmus/ansible-completion/master/ansible-doc-completion.bash" &
+dl_completion "ansible-galaxy" "https://raw.githubusercontent.com/dysosmus/ansible-completion/master/ansible-galaxy-completion.bash" &
+dl_completion "ansible-playbook" "https://raw.githubusercontent.com/dysosmus/ansible-completion/master/ansible-playbook-completion.bash" &
+dl_completion "ansible-pull" "https://raw.githubusercontent.com/dysosmus/ansible-completion/master/ansible-pull-completion.bash" &
+dl_completion "ansible-vault" "https://raw.githubusercontent.com/dysosmus/ansible-completion/master/ansible-vault-completion.bash" &
 
 dl_bin "git-imerge" "https://raw.github.com/mhagger/git-imerge/master/git-imerge" &
 dl_bin "git-when-merged" "https://raw.githubusercontent.com/mhagger/git-when-merged/master/bin/git-when-merged" &
