@@ -410,7 +410,6 @@ alias t3='tree -d -L 3'
 
 alias p='python'
 alias doco='docker-compose'
-alias dkr='docker'
 
 dps() {
   docker ps | cut -c-$(tput cols)
