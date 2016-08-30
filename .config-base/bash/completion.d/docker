@@ -520,7 +520,7 @@ __docker_complete_log_options() {
 	local journald_options="env labels tag"
 	local json_file_options="env labels max-file max-size"
 	local syslog_options="env labels syslog-address syslog-facility syslog-format syslog-tls-ca-cert syslog-tls-cert syslog-tls-key syslog-tls-skip-verify tag"
-	local splunk_options="env labels splunk-caname splunk-capath splunk-index splunk-insecureskipverify splunk-source splunk-sourcetype splunk-token splunk-url tag"
+	local splunk_options="env labels splunk-caname splunk-capath splunk-format splunk-index splunk-insecureskipverify splunk-source splunk-sourcetype splunk-token splunk-url splunk-verify-connection tag"
 
 	local all_options="$fluentd_options $gcplogs_options $gelf_options $journald_options $json_file_options $syslog_options $splunk_options"
 
@@ -629,8 +629,12 @@ __docker_complete_log_driver_options() {
 			__ltrim_colon_completions "${cur}"
 			return
 			;;
-		splunk-insecureskipverify)
+		splunk-insecureskipverify|splunk-verify-connection)
 			COMPREPLY=( $( compgen -W "false true" -- "${cur##*=}" ) )
+			return
+			;;
+		splunk-format)
+			COMPREPLY=( $( compgen -W "inline json raw" -- "${cur##*=}" ) )
 			return
 			;;
 	esac
@@ -1290,9 +1294,15 @@ _docker_import() {
 }
 
 _docker_info() {
+	case "$prev" in
+		--format|-f)
+			return
+			;;
+	esac
+    
 	case "$cur" in
 		-*)
-			COMPREPLY=( $( compgen -W "--help" -- "$cur" ) )
+			COMPREPLY=( $( compgen -W "--format -f --help" -- "$cur" ) )
 			;;
 	esac
 }
@@ -1540,11 +1550,14 @@ _docker_network_ls() {
 			__docker_nospace
 			return
 			;;
+		--format)
+			return
+			;;
 	esac
 
 	case "$cur" in
 		-*)
-			COMPREPLY=( $( compgen -W "--filter -f --help --no-trunc --quiet -q" -- "$cur" ) )
+			COMPREPLY=( $( compgen -W "--filter -f --format --help --no-trunc --quiet -q" -- "$cur" ) )
 			;;
 	esac
 }
@@ -1704,7 +1717,7 @@ _docker_service_ps() {
 
 	case "$cur" in
 		-*)
-			COMPREPLY=( $( compgen -W "--all -a --filter -f --help --no-resolve" -- "$cur" ) )
+			COMPREPLY=( $( compgen -W "--all -a --filter -f --help --no-resolve --no-trunc" -- "$cur" ) )
 			;;
 		*)
 			local counter=$(__docker_pos_first_nonflag '--filter|-f')
@@ -2076,7 +2089,7 @@ _docker_node_ps() {
 
 	case "$cur" in
 		-*)
-			COMPREPLY=( $( compgen -W "--all -a --filter -f --help --no-resolve" -- "$cur" ) )
+			COMPREPLY=( $( compgen -W "--all -a --filter -f --help --no-resolve --no-trunc" -- "$cur" ) )
 			;;
 		*)
 			local counter=$(__docker_pos_first_nonflag '--filter|-f')
@@ -2173,7 +2186,7 @@ _docker_ps() {
 			return
 			;;
 		status)
-			COMPREPLY=( $( compgen -W "created dead exited paused restarting running" -- "${cur##*=}" ) )
+			COMPREPLY=( $( compgen -W "created dead exited paused restarting running removing" -- "${cur##*=}" ) )
 			return
 			;;
 		volume)
@@ -2825,15 +2838,18 @@ _docker_volume_ls() {
 
 	case "$prev" in
 		--filter|-f)
-			COMPREPLY=( $( compgen -S = -W "dangling driver name" -- "$cur" ) )
+			COMPREPLY=( $( compgen -S = -W "dangling driver label name" -- "$cur" ) )
 			__docker_nospace
+			return
+			;;
+		--format)
 			return
 			;;
 	esac
 
 	case "$cur" in
 		-*)
-			COMPREPLY=( $( compgen -W "--filter -f --help --quiet -q" -- "$cur" ) )
+			COMPREPLY=( $( compgen -W "--filter -f --format --help --quiet -q" -- "$cur" ) )
 			;;
 	esac
 }
@@ -2841,7 +2857,7 @@ _docker_volume_ls() {
 _docker_volume_rm() {
 	case "$cur" in
 		-*)
-			COMPREPLY=( $( compgen -W "--help" -- "$cur" ) )
+			COMPREPLY=( $( compgen -W "--force -f --help" -- "$cur" ) )
 			;;
 		*)
 			__docker_complete_volumes
