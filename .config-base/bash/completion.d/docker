@@ -520,7 +520,7 @@ __docker_complete_log_options() {
 	local journald_options="env labels tag"
 	local json_file_options="env labels max-file max-size"
 	local syslog_options="env labels syslog-address syslog-facility syslog-format syslog-tls-ca-cert syslog-tls-cert syslog-tls-key syslog-tls-skip-verify tag"
-	local splunk_options="env labels splunk-caname splunk-capath splunk-format splunk-index splunk-insecureskipverify splunk-source splunk-sourcetype splunk-token splunk-url splunk-verify-connection tag"
+	local splunk_options="env labels splunk-caname splunk-capath splunk-format splunk-gzip splunk-gzip-level splunk-index splunk-insecureskipverify splunk-source splunk-sourcetype splunk-token splunk-url splunk-verify-connection tag"
 
 	local all_options="$fluentd_options $gcplogs_options $gelf_options $journald_options $json_file_options $syslog_options $splunk_options"
 
@@ -629,7 +629,7 @@ __docker_complete_log_driver_options() {
 			__ltrim_colon_completions "${cur}"
 			return
 			;;
-		splunk-insecureskipverify|splunk-verify-connection)
+		splunk-gzip|splunk-insecureskipverify|splunk-verify-connection)
 			COMPREPLY=( $( compgen -W "false true" -- "${cur##*=}" ) )
 			return
 			;;
@@ -1103,6 +1103,7 @@ _docker_events() {
 				exec_detach
 				exec_start
 				export
+				health_status
 				import
 				kill
 				load
@@ -1735,6 +1736,7 @@ _docker_service_update() {
 		--constraint
 		--endpoint-mode
 		--env -e
+		--group-add
 		--label -l
 		--limit-cpu
 		--limit-memory
@@ -1784,10 +1786,15 @@ _docker_service_update() {
 			--arg
 			--container-label-add
 			--container-label-rm
+			--group-rm
 			--image
 		"
 
 		case "$prev" in
+			--group-rm)
+				COMPREPLY=( $(compgen -g -- "$cur") )
+				return
+				;;
 			--image)
 				__docker_complete_image_repos_and_tags
 				return
@@ -1804,6 +1811,10 @@ _docker_service_update() {
 			# we do not append a "=" here because "-e VARNAME" is legal systax, too
 			COMPREPLY=( $( compgen -e -- "$cur" ) )
 			__docker_nospace
+			return
+			;;
+		--group-add)
+			COMPREPLY=( $(compgen -g -- "$cur") )
 			return
 			;;
 		--log-driver)
