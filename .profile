@@ -55,6 +55,7 @@ ppath ~/.opt/android-sdks/tools
 ppath ~/.opt/android-sdks/platform-tools
 ppath ~/.opt/AdobeAIRSDK/bin
 ppath ~/.opt/arm-cs-tools/bin
+ppath ~/src/github.com/pfalcon/esp-open-sdk/xtensa-lx106-elf/bin/
 
 # Default go env
 [ -d ~/.opt/go/bin ] &&
