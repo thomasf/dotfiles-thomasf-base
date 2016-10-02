@@ -922,6 +922,7 @@ _docker_daemon() {
 		--fixed-cidr-v6
 		--graph -g
 		--group -G
+		--init-path
 		--insecure-registry
 		--ip
 		--label
@@ -981,16 +982,16 @@ _docker_daemon() {
 			__docker_nospace
 			return
 			;;
+		--config-file|--containerd|--init-path|--pidfile|-p|--tlscacert|--tlscert|--tlskey)
+			_filedir
+			return
+			;;
 		--exec-root|--graph|-g)
 			_filedir -d
 			return
 			;;
 		--log-driver)
 			__docker_complete_log_drivers
-			return
-			;;
-		--config-file|--containerd|--pidfile|-p|--tlscacert|--tlscert|--tlskey)
-			_filedir
 			return
 			;;
 		--storage-driver|-s)
@@ -1162,7 +1163,7 @@ _docker_events() {
 
 	case "$cur" in
 		-*)
-			COMPREPLY=( $( compgen -W "--filter -f --help --since --until" -- "$cur" ) )
+			COMPREPLY=( $( compgen -W "--filter -f --help --since --until --format" -- "$cur" ) )
 			;;
 	esac
 }
@@ -1406,7 +1407,7 @@ _docker_logs() {
 			COMPREPLY=( $( compgen -W "--details --follow -f --help --since --tail --timestamps -t" -- "$cur" ) )
 			;;
 		*)
-			local counter=$(__docker_pos_first_nonflag '--tail')
+			local counter=$(__docker_pos_first_nonflag '--since|--tail')
 			if [ $cword -eq $counter ]; then
 				__docker_complete_containers_all
 			fi
@@ -2103,10 +2104,7 @@ _docker_node_ps() {
 			COMPREPLY=( $( compgen -W "--all -a --filter -f --help --no-resolve --no-trunc" -- "$cur" ) )
 			;;
 		*)
-			local counter=$(__docker_pos_first_nonflag '--filter|-f')
-			if [ $cword -eq $counter ]; then
-				__docker_complete_nodes_plus_self
-			fi
+			__docker_complete_nodes_plus_self
 			;;
 	esac
 }
@@ -2179,6 +2177,10 @@ _docker_ps() {
 		id)
 			cur="${cur##*=}"
 			__docker_complete_container_ids
+			return
+			;;
+		is-task)
+			COMPREPLY=( $( compgen -W "true false" -- "${cur##*=}" ) )
 			return
 			;;
 		name)
@@ -2669,9 +2671,15 @@ _docker_start() {
 }
 
 _docker_stats() {
+	case "$prev" in
+		--format)
+			return
+			;;
+	esac
+
 	case "$cur" in
 		-*)
-			COMPREPLY=( $( compgen -W "--all -a --help --no-stream" -- "$cur" ) )
+			COMPREPLY=( $( compgen -W "--all -a --format --help --no-stream" -- "$cur" ) )
 			;;
 		*)
 			__docker_complete_containers_running
