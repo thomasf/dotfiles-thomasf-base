@@ -1121,7 +1121,7 @@ _docker_container_ls() {
 
 	case "$prev" in
 		--filter|-f)
-			COMPREPLY=( $( compgen -S = -W "ancestor before exited health id label name network since status volume" -- "$cur" ) )
+			COMPREPLY=( $( compgen -S = -W "ancestor before exited health id is-task label name network since status volume" -- "$cur" ) )
 			__docker_nospace
 			return
 			;;
@@ -1248,7 +1248,7 @@ _docker_container_run() {
 		--device-write-bps
 		--device-write-iops
 		--dns
-		--dns-opt
+		--dns-option
 		--dns-search
 		--entrypoint
 		--env -e
@@ -1704,6 +1704,7 @@ _docker_daemon() {
 		--oom-score-adjust
 		--pidfile -p
 		--registry-mirror
+		--seccomp-profile
 		--shutdown-timeout
 		--storage-driver -s
 		--storage-opt
@@ -1814,6 +1815,10 @@ _docker_daemon() {
 			;;
 		--log-opt)
 			__docker_complete_log_options
+			return
+			;;
+		--seccomp-profile)
+			_filedir json
 			return
 			;;
 		--userns-remap)
@@ -2629,6 +2634,7 @@ _docker_service_update() {
 
 	local boolean_options="
 		--help
+		--tty -t
 		--with-registry-auth
 	"
 
@@ -2833,21 +2839,21 @@ _docker_swarm_join-token() {
 _docker_swarm_leave() {
 	case "$cur" in
 		-*)
-			COMPREPLY=( $( compgen -W "--force --help" -- "$cur" ) )
+			COMPREPLY=( $( compgen -W "--force -f --help" -- "$cur" ) )
 			;;
 	esac
 }
 
 _docker_swarm_update() {
 	case "$prev" in
-		--cert-expiry|--dispatcher-heartbeat|--task-history-limit)
+		--cert-expiry|--dispatcher-heartbeat|--max-snapshots|--snapshot-interval|--task-history-limit)
 			return
 			;;
 	esac
 
 	case "$cur" in
 		-*)
-			COMPREPLY=( $( compgen -W "--cert-expiry --dispatcher-heartbeat --help --task-history-limit" -- "$cur" ) )
+			COMPREPLY=( $( compgen -W "--cert-expiry --dispatcher-heartbeat --help --max-snapshots --snapshot-interval --task-history-limit" -- "$cur" ) )
 			;;
 	esac
 }
@@ -2949,7 +2955,7 @@ _docker_node_remove() {
 _docker_node_rm() {
 	case "$cur" in
 		-*)
-			COMPREPLY=( $( compgen -W "--force --help" -- "$cur" ) )
+			COMPREPLY=( $( compgen -W "--force -f --help" -- "$cur" ) )
 			;;
 		*)
 			__docker_complete_nodes
