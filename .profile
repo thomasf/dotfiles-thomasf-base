@@ -37,6 +37,7 @@ ppath ~/.rvm/bin
 ppath ~/.cask/bin
 ppath ~/.rbenv/bin
 ppath ~/.npm-global/bin
+ppath ~/.local/bin
 
 # osx User home path prepends
 ppath ~/Library/Haskell/bin
