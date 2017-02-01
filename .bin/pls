@@ -23,8 +23,8 @@ while True:
             date = m.group(6)
             size = m.group(5)
             rest = m.group(7)
-            print u"%14s %6s %s" % (date, size, rest)
+            print(("%14s %6s %s" % (date, size, rest)))
         else:
-            print line.rstrip()
+            print((line.rstrip()))
     else:
         break
