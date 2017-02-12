@@ -1206,7 +1206,7 @@ _git_describe ()
 
 __git_diff_algorithms="myers minimal patience histogram"
 
-__git_diff_submodule_formats="log short"
+__git_diff_submodule_formats="diff log short"
 
 __git_diff_common_options="--stat --numstat --shortstat --summary
 			--patch-with-stat --name-only --name-status --color
@@ -1674,7 +1674,7 @@ _git_pull ()
 	__git_complete_remote_or_refspec
 }
 
-__git_push_recurse_submodules="check on-demand"
+__git_push_recurse_submodules="check on-demand only"
 
 __git_complete_force_with_lease ()
 {
@@ -2587,14 +2587,14 @@ _git_svn ()
 			--no-metadata --use-svm-props --use-svnsync-props
 			--log-window-size= --no-checkout --quiet
 			--repack-flags --use-log-author --localtime
+			--add-author-from
 			--ignore-paths= --include-paths= $remote_opts
 			"
 		local init_opts="
 			--template= --shared= --trunk= --tags=
 			--branches= --stdlayout --minimize-url
 			--no-metadata --use-svm-props --use-svnsync-props
-			--rewrite-root= --prefix= --use-log-author
-			--add-author-from $remote_opts
+			--rewrite-root= --prefix= $remote_opts
 			"
 		local cmt_opts="
 			--edit --rmdir --find-copies-harder --copy-similarity=
