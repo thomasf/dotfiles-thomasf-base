@@ -8,6 +8,10 @@ source ~/.config-base/bash/common
 # ----------------------------------------------------------------------------
 #
 
+rehistory() {
+  history -r
+}
+
 # rebash reloads all shell init stuff
 rebash() {
   unset __common
