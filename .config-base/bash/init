@@ -160,7 +160,7 @@ else
 fi
 shopt -s histappend
 export HISTCONTROL=ignoredups
-export HISTSIZE=50000
+export HISTSIZE=5000
 export HISTTIMEFORMAT='%F %T '
 export HISTIGNORE="&:ls:cd*:[bf]g:exit:pwd:clear:mount:umount:?"
 
