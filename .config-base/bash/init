@@ -116,7 +116,7 @@ if [ $UID != 0 ]; then
     && export VIRTUALENVWRAPPER_HOOK_DIR
 
   # Maybe load virtualenvwrapper
-  if [ -f "/usr/local/bin/virtualenvwrapper.sh" ]; then
+  if [ -f "/usr/local/bin/virtualenvwrapper_lazy.sh" ]; then
     # TODO: Probably do conditional check for this, it's only needed and only
     # works with python from homebrew.
     #
@@ -124,8 +124,29 @@ if [ $UID != 0 ]; then
     #   export VIRTUALENVWRAPPER_PYTHON=/usr/local/bin/python
     # fi
     log "virtualenvwrapper" \
-      && source "/usr/local/bin/virtualenvwrapper.sh"
+      && source "/usr/local/bin/virtualenvwrapper_lazy.sh"
+
+    workon() {
+      local activate="${HOME}/.virtualenvs/${1}/bin/activate"
+      if [ "$#" -eq 1 ] && [ -f "${activate}" ]; then
+        source "${activate}"
+      else
+        virtualenvwrapper_load;
+        workon "$@"
+      fi
+    }
+  else
+    workon() {
+      local activate="${HOME}/.virtualenvs/${1}/bin/activate"
+      if [ "$#" -eq 1 ] && [ -f "${activate}" ]; then
+        source "${activate}"
+      else
+        echo "script not found: ${activate}"
+        return 1
+      fi
+    }
   fi
+
 
   # Set flexsdk home
   [ -d "${HOME}/.opt/flex_sdk" ] \
