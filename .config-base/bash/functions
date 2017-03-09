@@ -165,30 +165,6 @@ rmpyc() {
   fi
 }
 
-bak() {
-  if [[ -e $1 ]]; then
-    cp "$1" "$1.backup-$(date +"%m-%d-%Y_%H%M%S")"
-  else
-    return 1
-  fi
-}
-
-bakdir() {
-  if [[ -d $1 ]]; then
-    cp -R "$1" "$1.backup-$(date +"%m-%d-%Y_%H%M%S")"
-  else
-    return 1
-  fi
-}
-
-bakmv() {
-  if [[ -e $1 ]]; then
-    mv "$1" "$1.backup-$(date +"%m-%d-%Y_%H%M%S")"
-  else
-    return 1
-  fi
-}
-
 wsdir-set() {
   hash wsname 2>/dev/null || return 0
   if [[ $(wsname -p) ]]; then

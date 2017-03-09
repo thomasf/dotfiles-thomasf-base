@@ -1,0 +1,54 @@
+#!/bin/bash
+
+set -e
+
+# set -x
+datestamp=$(date +"%m-%d-%Y_%H_%M_%S")
+
+cmdName=$(basename $0)
+
+backup_name() {
+  local orig=${1}
+  echo -n "${orig}-BACKUP-${datestamp}"
+}
+
+bak() {
+  if [[ -e $1 ]]; then
+    cp "$1" $(backup_name ${1})
+  else
+    return 1
+  fi
+}
+
+bakdir() {
+  if [[ -d $1 ]]; then
+   cp -R "$1" $(backup_name ${1})
+  else
+    return 1
+  fi
+}
+
+bakmv() {
+  if [[ -e $1 ]]; then
+   mv "$1" $(backup_name ${1})
+  else
+    return 1
+  fi
+}
+
+
+case ${cmdName} in
+  bak)
+    bak ${@}
+    ;;
+  bakdir)
+    bak ${@}
+    ;;
+  bakmv)
+    bak ${@}
+    ;;
+  *)
+    echo "Nothing to do for ${}"
+    exit 1
+    ;;
+esac
