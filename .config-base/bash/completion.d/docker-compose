@@ -18,7 +18,7 @@
 
 
 __docker_compose_q() {
-	docker-compose 2>/dev/null "${daemon_options[@]}" "$@"
+	docker-compose 2>/dev/null "${top_level_options[@]}" "$@"
 }
 
 # Transforms a multiline list of strings into a single line string
@@ -110,9 +110,17 @@ __docker_compose_services_stopped() {
 
 
 _docker_compose_build() {
+	case "$prev" in
+		--build-arg)
+			COMPREPLY=( $( compgen -e -- "$cur" ) )
+			__docker_compose_nospace
+			return
+			;;
+	esac
+
 	case "$cur" in
 		-*)
-			COMPREPLY=( $( compgen -W "--force-rm --help --no-cache --pull" -- "$cur" ) )
+			COMPREPLY=( $( compgen -W "--build-arg --force-rm --help --no-cache --pull" -- "$cur" ) )
 			;;
 		*)
 			__docker_compose_services_from_build
@@ -134,7 +142,7 @@ _docker_compose_bundle() {
 
 
 _docker_compose_config() {
-	COMPREPLY=( $( compgen -W "--help --quiet -q --services" -- "$cur" ) )
+	COMPREPLY=( $( compgen -W "--help --quiet -q --resolve-image-digests --services --volumes" -- "$cur" ) )
 }
 
 
@@ -160,14 +168,18 @@ _docker_compose_docker_compose() {
 			_filedir "y?(a)ml"
 			return
 			;;
-		$(__docker_compose_to_extglob "$daemon_options_with_args") )
+		--project-directory)
+			_filedir -d
+			return
+			;;
+		$(__docker_compose_to_extglob "$top_level_options_with_args") )
 			return
 			;;
 	esac
 
 	case "$cur" in
 		-*)
-			COMPREPLY=( $( compgen -W "$daemon_boolean_options  $daemon_options_with_args --help -h --verbose --version -v" -- "$cur" ) )
+			COMPREPLY=( $( compgen -W "$top_level_boolean_options  $top_level_options_with_args --help -h --verbose --version -v" -- "$cur" ) )
 			;;
 		*)
 			COMPREPLY=( $( compgen -W "${commands[*]}" -- "$cur" ) )
@@ -329,7 +341,7 @@ _docker_compose_ps() {
 _docker_compose_pull() {
 	case "$cur" in
 		-*)
-			COMPREPLY=( $( compgen -W "--help --ignore-pull-failures" -- "$cur" ) )
+			COMPREPLY=( $( compgen -W "--help --ignore-pull-failures --parallel" -- "$cur" ) )
 			;;
 		*)
 			__docker_compose_services_from_image
@@ -486,6 +498,10 @@ _docker_compose_unpause() {
 
 _docker_compose_up() {
 	case "$prev" in
+		--exit-code-from)
+			__docker_compose_services_all
+			return
+			;;
 		--timeout|-t)
 			return
 			;;
@@ -493,7 +509,7 @@ _docker_compose_up() {
 
 	case "$cur" in
 		-*)
-			COMPREPLY=( $( compgen -W "--exit-code-from --abort-on-container-exit --build -d --force-recreate --help --no-build --no-color --no-deps --no-recreate --timeout -t --remove-orphans" -- "$cur" ) )
+			COMPREPLY=( $( compgen -W "--abort-on-container-exit --build -d --exit-code-from --force-recreate --help --no-build --no-color --no-deps --no-recreate --timeout -t --remove-orphans" -- "$cur" ) )
 			;;
 		*)
 			__docker_compose_services_all
@@ -546,14 +562,15 @@ _docker_compose() {
 
 	# options for the docker daemon that have to be passed to secondary calls to
 	# docker-compose executed by this script
-	local daemon_boolean_options="
+	local top_level_boolean_options="
 		--skip-hostname-check
 		--tls
 		--tlsverify
 	"
-	local daemon_options_with_args="
+	local top_level_options_with_args="
 		--file -f
 		--host -H
+		--project-directory
 		--project-name -p
 		--tlscacert
 		--tlscert
@@ -567,19 +584,19 @@ _docker_compose() {
 	# search subcommand and invoke its handler.
 	# special treatment of some top-level options
 	local command='docker_compose'
-	local daemon_options=()
+	local top_level_options=()
 	local counter=1
 
 	while [ $counter -lt $cword ]; do
 		case "${words[$counter]}" in
-			$(__docker_compose_to_extglob "$daemon_boolean_options") )
+			$(__docker_compose_to_extglob "$top_level_boolean_options") )
 				local opt=${words[counter]}
-				daemon_options+=($opt)
+				top_level_options+=($opt)
 				;;
-			$(__docker_compose_to_extglob "$daemon_options_with_args") )
+			$(__docker_compose_to_extglob "$top_level_options_with_args") )
 				local opt=${words[counter]}
 				local arg=${words[++counter]}
-				daemon_options+=($opt $arg)
+				top_level_options+=($opt $arg)
 				;;
 			-*)
 				;;
