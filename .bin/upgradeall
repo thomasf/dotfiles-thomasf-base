@@ -110,7 +110,6 @@ upgrader-pip() {
       git-up \
       mkdocs \
       pyformat \
-      pyrg \
       tox \
       virtualenv \
   ;
