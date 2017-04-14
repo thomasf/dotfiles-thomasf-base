@@ -108,6 +108,8 @@ upgrader-pip() {
       docker-compose \
       git-goggles \
       git-up \
+      importmagic \
+      isort \
       mkdocs \
       pyformat \
       tox \
