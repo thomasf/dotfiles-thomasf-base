@@ -20,10 +20,8 @@ ALIASES = {
     # 'csu': 'createsuperuser',
     # 'cpw': 'changepassword',
 
-    # South
+    # Migrations
     'm': 'migrate',
-    'sm': 'schemamigration',
-    'dm': 'datamigration',
 
     # Haystack
     'ix': 'update_index',
@@ -35,7 +33,15 @@ ALIASES = {
     'rp': 'runserver_plus',
     'url': 'show_urls',
     'gm': 'graph_models',
-    'rs': 'runscript'
+    'rs': 'runscript',
+
+    # custom local commands
+    'k': 'kill_runservers',
+}
+
+
+CALLS = {
+    'kill_runservers': ['pkill', '-f', 'manage.py runserver'],
 }
 
 
@@ -48,11 +54,12 @@ def run(command=None, *arguments):
     :param arguments: A list of strings describing arguments to the command.
     """
 
-    # if command is None:
-    #     sys.exit('django-shortcuts: No argument was supplied, please specify one.')
-
     if command in ALIASES:
         command = ALIASES[command]
+
+    if command in CALLS:
+        print(" ".join(CALLS[command]))
+        return call(CALLS[command])
 
     if command == 'startproject':
         return call('django-admin.py startproject %s' % ' '.join(arguments), shell=True)
@@ -63,7 +70,8 @@ def run(command=None, *arguments):
         if base_dir != script_path:
             script_path = base_dir
         else:
-            sys.exit('django-shortcuts: No \'manage.py\' script found in this directory or its parents.')
+            sys.exit(
+                'django-shortcuts: No \'manage.py\' script found in this directory or its parents.')
 
     return call('%(python)s %(script_path)s %(command)s %(arguments)s' % {
         'python': sys.executable,
@@ -76,6 +84,7 @@ def run(command=None, *arguments):
 def main():
     """Entry-point function."""
     sys.exit(run(*sys.argv[1:]))
+
 
 if __name__ == '__main__':
     main()
