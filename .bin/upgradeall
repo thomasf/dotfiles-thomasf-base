@@ -97,24 +97,45 @@ upgrader-mu(){
   sudo make install
 }
 
+recreate-pip() {
+  def_dir="${HOME}/.virtualenvs/default"
+  def2_dir="${HOME}/.virtualenvs/default2"
+  rm -rf "${def_dir}"
+  rm -rf "${def2_dir}"
+  virtualenv --system-site-packages -p python3.6 "${def_dir}"
+  virtualenv --system-site-packages -p python2 "${def2_dir}"
+}
+
 upgrader-pip() {
   deactivate || true
-  workon default || true
-  pip install --upgrade \
-      autopep8 \
-      bumpversion \
-      detox \
-      devpi-client \
-      docker-compose \
-      git-goggles \
-      git-up \
-      importmagic \
-      isort \
-      mkdocs \
-      pyformat \
-      tox \
-      virtualenv \
-  ;
+  pip3-default install --upgrade \
+               autopep8 \
+               bumpversion \
+               detox \
+               devpi-client \
+               docker-compose \
+               flake8 \
+               git-goggles \
+               git-up \
+               importmagic \
+               ipdb \
+               ipython \
+               isort \
+               jedi \
+               mkdocs \
+               pyformat \
+               tox \
+               twine \
+               virtualenv \
+               virtualenvwrapper \
+   ;
+
+   pip2-default install --upgrade \
+                ansible \
+                fabric \
+                jedi \
+                platformio \
+     ;
 }
 
 upgrader-npm() {
@@ -147,6 +168,10 @@ cmd=${1}
 case $cmd in
   goget|dust|compton|mu|npm|pip)
     upgrader-${cmd}
+    ;;
+  recreate-pip)
+    recreate-pip
+    upgrader-pip
     ;;
   all)
     runCmd "sudo apt-get update ; sudo apt-get dist-upgrade"
