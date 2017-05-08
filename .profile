@@ -32,6 +32,7 @@ ppath ~/.opt/depot_tools
 ppath ~/.cabal/bin
 
 # Misc User home path prepends
+ppath ~/.virtualenvs/default2/bin
 ppath ~/.virtualenvs/default/bin
 ppath ~/.rvm/bin
 ppath ~/.cask/bin
