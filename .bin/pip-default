@@ -1,0 +1,25 @@
+#!/bin/sh
+
+set -e
+
+cmdName=$(basename $0)
+
+case ${cmdName} in
+  pip3-default|pip-default)
+    envname=default
+    pip_cmd=pip3
+    ;;
+  pip2-default)
+    envname=default2
+    pip_cmd=pip2
+    ;;
+  *)
+    echo "Nothing to do for ${}"
+    exit 1
+    ;;
+esac
+
+
+BINDIR="${HOME}/.virtualenvs/${envname}/bin"
+. "${BINDIR}/activate"
+exec "${BINDIR}/${pip_cmd}" "$@"
