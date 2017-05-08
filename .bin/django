@@ -37,11 +37,13 @@ ALIASES = {
 
     # custom local commands
     'k': 'kill_runservers',
+    'kk': 'kill_manages',
 }
 
 
 CALLS = {
     'kill_runservers': ['pkill', '-f', 'manage.py runserver'],
+    'kill_manages': ['pkill', '-f', 'manage.py'],
 }
 
 
