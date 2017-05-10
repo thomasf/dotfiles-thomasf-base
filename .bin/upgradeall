@@ -115,7 +115,6 @@ upgrader-pip() {
                devpi-client \
                docker-compose \
                flake8 \
-               git-goggles \
                git-up \
                importmagic \
                ipdb \
@@ -134,6 +133,8 @@ upgrader-pip() {
                 ansible \
                 fabric \
                 jedi \
+                git-goggles \
+                termcolor \
                 platformio \
      ;
 }
