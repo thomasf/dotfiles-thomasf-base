@@ -183,7 +183,7 @@ shopt -s histappend
 export HISTCONTROL=ignoredups
 export HISTSIZE=5000
 export HISTTIMEFORMAT='%F %T '
-export HISTIGNORE="&:[ \t]*:ls:cd*:[bf]g:exit:pwd:clear:reset:history*:sudo reboot*:sudo shutdown*?"
+export HISTIGNORE="   *:ls:cd*:[bf]g:exit:pwd:clear:reset:history*:sudo reboot*:sudo shutdown*?"
 
 #
 # ------------------------------------------------------------------------------
