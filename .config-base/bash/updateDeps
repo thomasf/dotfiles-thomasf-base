@@ -44,6 +44,5 @@ dl_bin "spark" "https://raw.github.com/holman/spark/master/spark" &
 dl_bin "pamixer" "https://raw.github.com/mk-fg/pulseaudio-mixer-cli/master/pa-mixer-mk2.py" &
 dl_bin "git-ls-dir" "https://raw.github.com/aspiers/git-config/master/bin/git-ls-dir" &
 dl_bin "recollfs" "https://raw.githubusercontent.com/pidlug/recollfs/master/recollfs" &
-dl_bin "docker-gc" "https://raw.githubusercontent.com/spotify/docker-gc/master/docker-gc" &
 
 dl "z" "https://raw.github.com/rupa/z/master/z.sh" &
