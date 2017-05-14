@@ -130,6 +130,7 @@ upgrader-pip() {
    ;
 
    pip2-default install --upgrade \
+                wakatime \
                 ansible \
                 fabric \
                 jedi \
