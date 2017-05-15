@@ -3,3 +3,5 @@
 pip install ipython
 pip install ipdb
 pip install jedi
+pip install importmagic
+pip install epc
