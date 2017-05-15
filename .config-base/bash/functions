@@ -19,30 +19,6 @@ dl() {
   curl -O -L "$@"
 }
 
-# h displayes the bash history with fuzzy match/select.
-# NOTE: h relies on a bunch of tools being installed.
-h() {
-  local line=''
-  line="$(history | selectline)"
-  line=$(echo $line | python -c "import sys;[sys.stdout.write(' '.join(line.split(' ')[:1])) for line in sys.stdin]")
-  line=$(history -p !$line)
-  if [[ "$line" !=  "!" ]]; then
-    if [ -n "$DISPLAY" ] && [ $(which xdotool) ] && [ $(which xsel) ] ; then
-      echo -n $line | xsel --clipboard
-      ( # this subshell silences job info output
-        ( # this subshell is the background job
-          sleep 0.4
-          xdotool keydown ctrl key v keyup ctrl 2>/dev/null
-        ) &
-      )
-    elif [ $(which pbcopy) ]; then
-      echo -n $line | pbcopy
-    else
-      echo $line
-    fi
-  fi
-}
-
 alias df='df -h -T'
 
 __exec_in_dir() {
