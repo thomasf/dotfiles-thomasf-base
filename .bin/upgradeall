@@ -108,18 +108,19 @@ recreate-pip() {
 
 upgrader-pip() {
   deactivate || true
+
+  # isort needs to be installed into the virtualenv of the procject
+
   pip3-default install --upgrade \
                autopep8 \
                bumpversion \
                detox \
-               devpi-client \
                docker-compose \
                flake8 \
                git-up \
                importmagic \
                ipdb \
                ipython \
-               isort \
                jedi \
                mkdocs \
                pyformat \
@@ -127,6 +128,8 @@ upgrader-pip() {
                twine \
                virtualenv \
                virtualenvwrapper \
+               setuptools_scm \
+               requests \
    ;
 
    pip2-default install --upgrade \
@@ -137,6 +140,7 @@ upgrader-pip() {
                 git-goggles \
                 termcolor \
                 platformio \
+                devpi-client \
      ;
 }
 
