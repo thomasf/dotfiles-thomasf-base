@@ -53,10 +53,6 @@ read any;" &
 
 # upgrader-goget installs variout things using go get.
 upgrader-goget() {
-  (
-    echo UPDATING yt-download
-    youtube-dl --update
-  ) &
   echo UPDATING go-tools
   GOPATH=${HOME}
   export GOPATH;
@@ -124,12 +120,13 @@ upgrader-pip() {
                jedi \
                mkdocs \
                pyformat \
+               requests \
+               setuptools_scm \
                tox \
                twine \
                virtualenv \
                virtualenvwrapper \
-               setuptools_scm \
-               requests \
+               youtube_dl \
    ;
 
    pip2-default install --upgrade \
