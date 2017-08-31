@@ -2,8 +2,19 @@
 #
 #
 
+# colors
+reset="$(tput sgr0 2>/dev/null||echo -n)"
+red="$(tput setaf 1 2>/dev/null||echo -n)"
+green="$(tput setaf 2  2>/dev/null||echo -n)"
+yellow="$(tput setaf 3  2>/dev/null||echo -n)"
+magenta="$(tput setaf 5  2>/dev/null||echo -n)"
+
 set -e
-set -x
+# set -x
+
+ts() {
+  echo "${reset}[$(date +%T)] ${@}"
+}
 
 
 # cdo cd's into ~/.opt/$1
@@ -53,24 +64,30 @@ read any;" &
 
 # upgrader-goget installs variout things using go get.
 upgrader-goget() {
+  local out
   echo UPDATING go-tools
   GOPATH=${HOME}
   export GOPATH;
-  go get -v -u \
+  for l in  \
      github.com/github/hub \
+     github.com/golang/dep/cmd/dep \
      github.com/golang/lint/golint \
      github.com/jstemmer/gotags \
      github.com/junegunn/fzf/... \
      github.com/kardianos/govendor/... \
      github.com/monochromegane/the_platinum_searcher/cmd/... \
+     github.com/motemen/ghq/ \
      github.com/nsf/gocode \
      github.com/rogpeppe/godef \
-     github.com/shurcooL/Go-Package-Store \
+     github.com/shurcooL/Go-Package-Store/cmd/... \
      github.com/shurcooL/markdownfmt \
      github.com/smartystreets/goconvey \
      github.com/sosedoff/pgweb \
      golang.org/x/tools/cmd/... \
-  ;
+     ; do
+    ts "${green}${l}${reset}"
+    out=`go get -u -v ${l} 2>&1` || echo -e "\n${red}FAILED ${l}\n${yellow}${out}${reset}\n"
+  done
 }
 
 upgrader-dunst() {
@@ -169,7 +186,8 @@ upgrader-npm() {
 
 dp() {
   for i in ${@}; do
-   docker pull ${i}
+    ts "${green}${i}${reset}"
+    docker pull ${i}
   done
 }
 
@@ -201,8 +219,10 @@ case $cmd in
     runCmd "${HOME}/.emacs.d/installDeps emacs"
     runCmd "hsadmin pull"
     runCmd "$0 goget" &
+    runCmd "$0 pip" &
     ;;
   *)
     echo "$0 all goget dust compton mu npm pip"
+    ;;
 esac
 
