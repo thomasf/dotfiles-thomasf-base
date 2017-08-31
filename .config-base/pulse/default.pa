@@ -13,19 +13,10 @@
 # General Public License for more details.
 #
 # You should have received a copy of the GNU Lesser General Public License
-# along with PulseAudio; if not, write to the Free Software Foundation,
-# Inc., 59 Temple Place, Suite 330, Boston, MA 02111-1307 USA.
+# along with PulseAudio; if not, see <http://www.gnu.org/licenses/>.
 
 # This startup script is used only if PulseAudio is started per-user
 # (i.e. not in system mode)
-
-.nofail
-
-### Load something into the sample cache
-#load-sample-lazy x11-bell /usr/share/sounds/gtk-events/activate.wav
-#load-sample-lazy pulse-hotplug /usr/share/sounds/startup3.wav
-#load-sample-lazy pulse-coldplug /usr/share/sounds/startup3.wav
-#load-sample-lazy pulse-access /usr/share/sounds/generic.wav
 
 .fail
 
@@ -37,6 +28,9 @@ load-module module-card-restore
 ### Automatically augment property information from .desktop files
 ### stored in /usr/share/application
 load-module module-augment-properties
+
+### Should be after module-*-restore but before module-*-detect
+load-module module-switch-on-port-available
 
 ### Load audio drivers statically
 ### (it's probably better to not load these drivers manually, but instead
@@ -52,18 +46,22 @@ load-module module-augment-properties
 .ifexists module-udev-detect.so
 load-module module-udev-detect
 .else
-### Use the static hardware detection module (for systems that lack udev/hal support)
+### Use the static hardware detection module (for systems that lack udev support)
 load-module module-detect
 .endif
 
 ### Automatically connect sink and source if JACK server is present
 .ifexists module-jackdbus-detect.so
 .nofail
-load-module module-jackdbus-detect
+load-module module-jackdbus-detect channels=2
 .fail
 .endif
 
 ### Automatically load driver modules for Bluetooth hardware
+.ifexists module-bluetooth-policy.so
+load-module module-bluetooth-policy
+.endif
+
 .ifexists module-bluetooth-discover.so
 load-module module-bluetooth-discover
 .endif
@@ -120,12 +118,15 @@ load-module module-suspend-on-idle
 .ifexists module-console-kit.so
 load-module module-console-kit
 .endif
+.ifexists module-systemd-login.so
+load-module module-systemd-login
+.endif
 
 ### Enable positioned event sounds
 load-module module-position-event-sounds
 
-### Cork music streams when a phone stream is active
-#load-module module-cork-music-on-phone
+### Cork music/video streams when a phone stream is active
+#load-module module-role-cork
 
 ### Modules to allow autoloading of filters (such as echo cancellation)
 ### on demand. module-filter-heuristics tries to determine what filters
@@ -133,29 +134,6 @@ load-module module-position-event-sounds
 ### loading modules and rerouting streams.
 load-module module-filter-heuristics
 load-module module-filter-apply
-
-### Load DBus protocol
-.ifexists module-dbus-protocol.so
-load-module module-dbus-protocol
-.endif
-
-# X11 modules should not be started from default.pa so that one daemon
-# can be shared by multiple sessions.
-
-### Load X11 bell module
-#load-module module-x11-bell sample=bell-windowing-system
-
-### Register ourselves in the X11 session manager
-#load-module module-x11-xsmp
-
-### Publish connection data in the X11 root window
-#.ifexists module-x11-publish.so
-#.nofail
-#load-module module-x11-publish
-#.fail
-#.endif
-
-load-module module-switch-on-port-available
 
 ### Make some devices default
 #set-default-sink output
