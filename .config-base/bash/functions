@@ -426,7 +426,7 @@ mkcd() {
 }
 
 # Change directory to homesync directory
-[[ -d ~/.config/dotfiles ]] && alias cdhs='builtin cd ~/.config/dotfiles'
+[[ -d ~/src/dotfiles ]] && alias cdhs='builtin cd ~/src/dotfiles'
 
 # Disk usage - recursive for each child folder
 dudir() {

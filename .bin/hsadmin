@@ -11,7 +11,13 @@
 
 set -e
 
-base="${HOME}/.config/dotfiles/"
+base="${HOME}/src/dotfiles/"
+
+if [ -d "${HOME}/.config/dotfiles/" ]; then
+  echo "migration needed: ${HOME}/.config/dotfiles/ must be moved to ${base}"
+  exit 1
+fi
+
 
 if [ $(which dotfiles) ]; then
   dotfiles=$(which dotfiles)
