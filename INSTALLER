@@ -43,6 +43,8 @@ gc advice.implicitidentity "false"
 gc advice.detachedhead "false"
 
 # set up aliases
+gc alias.b "for-each-ref --sort=committerdate refs/heads/ --format='%(align:18)%(color:green)%(committerdate:relative)%(color:reset)%(end)%(color:cyan)%(align:18)%(authorname)%(end)%(color:reset) %(color:yellow)%(refname:short)%(color:reset) %(color:blue)-%(color:reset) %(contents:subject)'"
+
 gc alias.lg "log --stat --ignore-space-change --pretty=format:'%C(yellow)%h%Creset %C(green)%ad%Creset %C(cyan)%ae%Creset %C(blue)%s%Creset'"
 gc alias.lgv "log -p --pretty=format:'%C(yellow)%h%Creset %C(cyan)%an <%ae>%Creset %Cgreen%cr%Creset %C(magenta)%s%Creset%C(yellow)%d%Creset'"
 gc alias.lgt "log --graph --all --pretty=format:'%C(yellow)%h%Creset %C(cyan)%ae%Creset %Cgreen%cr%Creset %s%C(yellow)%d%Creset' --abbrev-commit"
