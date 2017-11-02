@@ -149,7 +149,7 @@ _docker_compose_config() {
 _docker_compose_create() {
 	case "$cur" in
 		-*)
-			COMPREPLY=( $( compgen -W "--force-recreate --help --no-build --no-recreate" -- "$cur" ) )
+			COMPREPLY=( $( compgen -W "--build --force-recreate --help --no-build --no-recreate" -- "$cur" ) )
 			;;
 		*)
 			__docker_compose_services_all
@@ -179,7 +179,7 @@ _docker_compose_docker_compose() {
 
 	case "$cur" in
 		-*)
-			COMPREPLY=( $( compgen -W "$top_level_boolean_options  $top_level_options_with_args --help -h --verbose --version -v" -- "$cur" ) )
+			COMPREPLY=( $( compgen -W "$top_level_boolean_options $top_level_options_with_args --help -h --no-ansi --verbose --version -v" -- "$cur" ) )
 			;;
 		*)
 			COMPREPLY=( $( compgen -W "${commands[*]}" -- "$cur" ) )
@@ -341,7 +341,7 @@ _docker_compose_ps() {
 _docker_compose_pull() {
 	case "$cur" in
 		-*)
-			COMPREPLY=( $( compgen -W "--help --ignore-pull-failures --parallel" -- "$cur" ) )
+			COMPREPLY=( $( compgen -W "--help --ignore-pull-failures --parallel --quiet" -- "$cur" ) )
 			;;
 		*)
 			__docker_compose_services_from_image
@@ -518,7 +518,7 @@ _docker_compose_up() {
 
 	case "$cur" in
 		-*)
-			COMPREPLY=( $( compgen -W "--abort-on-container-exit --build -d --exit-code-from --force-recreate --help --no-build --no-color --no-deps --no-recreate --remove-orphans --scale --timeout -t" -- "$cur" ) )
+			COMPREPLY=( $( compgen -W "--abort-on-container-exit --build -d --exit-code-from --force-recreate --help --no-build --no-color --no-deps --no-recreate --no-start --remove-orphans --scale --timeout -t" -- "$cur" ) )
 			;;
 		*)
 			__docker_compose_services_all
@@ -569,8 +569,10 @@ _docker_compose() {
 		version
 	)
 
-	# options for the docker daemon that have to be passed to secondary calls to
-	# docker-compose executed by this script
+	# Options for the docker daemon that have to be passed to secondary calls to
+	# docker-compose executed by this script.
+	# Other global otions that are not relevant for secondary calls are defined in
+	# `_docker_compose_docker_compose`.
 	local top_level_boolean_options="
 		--skip-hostname-check
 		--tls
