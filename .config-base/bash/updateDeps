@@ -23,7 +23,7 @@ dl_completion "git" "https://raw.github.com/git/git/master/contrib/completion/gi
 dl_completion "ipython" "https://github.com/ipython/ipython/raw/master/examples/IPython%20Kernel/ipython-completion.bash" &
 dl_completion "maven" "https://raw.github.com/juven/maven-bash-completion/master/bash_completion.bash" &
 dl_completion "vagrant" "https://raw.github.com/kura/vagrant-bash-completion/master/etc/bash_completion.d/vagrant" &
-dl_completion "docker" "https://raw.github.com/dotcloud/docker/master/contrib/completion/bash/docker" &
+dl_completion "docker" "https://raw.githubusercontent.com/docker/cli/master/contrib/completion/bash/docker" &
 dl_completion "go" "https://raw.githubusercontent.com/thomasf/go-bash-completion/master/go-bash-completion.bash" &
 dl_completion "docker-compose" "https://raw.githubusercontent.com/docker/compose/master/contrib/completion/bash/docker-compose" &
 dl_completion "ansible" "https://raw.githubusercontent.com/dysosmus/ansible-completion/master/ansible-completion.bash" &
