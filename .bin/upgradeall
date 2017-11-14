@@ -115,9 +115,17 @@ recreate-pip() {
   def2_dir="${HOME}/.virtualenvs/default2"
   rm -rf "${def_dir}"
   rm -rf "${def2_dir}"
+
   py3=python3
-  [ `which python3.5` ] && py3=python3.5
-  [ `which python3.6` ] && py3=python3.6
+  if command -v python3.6 >/dev/null 2>&1; then
+    py3=$(command -v python3.6)
+  elif command -v python3.5 >/dev/null 2>&1; then
+    py3=$(command -v python3.5)
+  elif command -v python3 >/dev/null 2>&1; then
+    py3=$(command -v python3)
+  elif command -v python >/dev/null 2>&1; then
+    py3=$(command -v python)
+  fi
   virtualenv --system-site-packages -p ${py3} "${def_dir}"
   virtualenv --system-site-packages -p python2 "${def2_dir}"
 }

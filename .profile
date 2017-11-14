@@ -6,9 +6,28 @@
 
 #set -x
 
+# try to find a suitable python interpreter for virtualenv
+if command -v python3.6 >/dev/null 2>&1; then
+  VIRTUALENV_PYTHON=$(command -v python3.6)
+  export VIRTUALENV_PYTHON
+elif command -v python3.5 >/dev/null 2>&1; then
+  VIRTUALENV_PYTHON=$(command -v python3.5)
+  export VIRTUALENV_PYTHON
+elif command -v python3 >/dev/null 2>&1; then
+  VIRTUALENV_PYTHON=$(command -v python3)
+  export VIRTUALENV_PYTHON
+elif command -v python >/dev/null 2>&1; then
+  VIRTUALENV_PYTHON=$(command -v python)
+  export VIRTUALENV_PYTHON
+fi
+
 # Prepend paths
 ppath() {
  [ -d "${1}" ] && PATH="${1}:${PATH}"
+}
+# Append paths
+apath() {
+ [ -d "${1}" ] && PATH="${PATH}:${1}"
 }
 
 # general global path prepends
@@ -32,14 +51,14 @@ ppath ~/.opt/depot_tools
 ppath ~/.cabal/bin
 
 # Misc User home path prepends
-ppath ~/.virtualenvs/default2/bin
-ppath ~/.virtualenvs/default/bin
 ppath ~/.rvm/bin
 ppath ~/.cask/bin
 ppath ~/.rbenv/bin
 ppath ~/.npm-global/bin
 ppath ~/.local/bin
 ppath ~/.cargo/bin
+apath ~/.virtualenvs/default2/bin
+ppath ~/.virtualenvs/default/bin
 
 # osx User home path prepends
 ppath ~/Library/Haskell/bin
