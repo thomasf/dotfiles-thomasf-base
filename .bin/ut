@@ -1,0 +1,95 @@
+#!/bin/bash
+
+set -e
+# set -x
+
+# usage: ut [filename.d64/prg] [filename2.d64/prg]...
+# if started without an argument https://github.com/junegunn/fzf will be invoked
+# and show a recrursive list of all prg/d64s under current directory,
+# tab selects multiple entries, files loads in order of selection.
+
+
+u2ip=${u2ip:-192.168.1.251}
+
+u() {
+  1541u2 ${u2ip} "${@}"
+}
+
+# resets the c64 and activate the fastloader
+reset_fastload() {
+  u -e "reset-c64" -e "send"
+  sleep 1.2
+  u -e "keys 136" -e "send" # f7
+  sleep 0.3
+}
+
+# reset, activate fastloader and load *
+reset_run() {
+  reset_fastload
+  u -e "keys 133" -e "send" # f1
+  sleep 0.3
+  u -e "keys 13" -e "send" # enter
+}
+
+# cycl
+action() {
+  local filename=${1}
+  local act="nop"
+  while [ "$act" != "0" ]; do
+    read -p "enter=next r=reset+load+run x=reset v=vice l=reload? " act
+    case ${act} in
+      l)
+        load ${filename}
+        ;;
+      v)
+        x64sc ${filename} >/dev/null 2>/dev/null &
+        ;;
+      r)
+        reset_run
+        ;;
+      x)
+        reset_fastload
+        ;;
+      *)
+        act="0"
+        echo ""
+        ;;
+    esac
+  done
+}
+
+# run directly if .prg, mount if d64
+load() {
+  local filename=${1}
+  local ext="${filename##*.}"
+  ext="${ext,,}"
+  case ${ext} in
+    d64)
+      echo "MOUNT ${filename}"
+      c1541 -attach "${filename}" -dir
+      u -c d64:"${filename}"
+      ;;
+    prg)
+      echo "RUN ${filename}"
+      u -c run:"${filename}"
+      ;;
+    *)
+      echo "Nothing to do for $filename"
+      exit 1
+      ;;
+  esac
+}
+
+if [ "$#" -lt 1 ]; then
+  filenames=$(find . -iname \*.d64 -or -iname \*.prg | fzf --reverse -m)
+  IFS=$'\n'
+  for filename in ${filenames}; do
+    load ${filename}
+    action ${filename}
+  done
+else
+  for filename in "${@}"; do
+    load "${filename}"
+    action "${filename}"
+  done
+fi
