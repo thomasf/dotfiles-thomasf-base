@@ -2,7 +2,7 @@
 
 # bash completion for Node Version Manager (NVM)
 
-if ! nvm &> /dev/null; then
+if ! command -v nvm &> /dev/null; then
     return
 fi
 
@@ -95,4 +95,3 @@ if [[ -n ${ZSH_VERSION-} ]]; then
 fi
 
 complete -o default -F __nvm nvm
-
