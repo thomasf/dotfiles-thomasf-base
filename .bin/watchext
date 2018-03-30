@@ -9,7 +9,7 @@ case $cmd in
     ;;
   watchdjangotest)
     lookfor="py"
-    runcmd="python manage.py test ${@}"
+    runcmd="python manage.py test --keepdb ${@}"
     ;;
   *)
     lookfor="$1"
