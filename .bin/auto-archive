@@ -104,26 +104,51 @@ class AutoArchiver:
         return archive_path_str
 
 
-log = setup_logger(logging.INFO)
+log = setup_logger(logging.DEBUG)
 
 
 home = AutoArchiver(
     "~",
+    archive_path='~/auto-archive/home',
     exclude=[
         ".*",
-        "auto-archive", "Applications",
+        "Arduino",
+        "as-downloads",
+        "Applications",
+        "auto-archive",
+        "bin",
+        "Bitwig Studio",
         "books",
         "Copy",
-        "Desktop", "Documents", "Downloads", "Dropbox",
+        "Desktop",
+        "Documents",
+        "Downloads",
+        "Dropbox",
         "Library",
-        "Media", "Movies", "Music", "media", "mnt",
+        "Media",
+        "media",
+        "mnt",
+        "Movies",
+        "Music",
         "notes",
-        "Pictures", "Programming", "Projects", "Public",
-        "programming", "public_html",
+        "Pictures",
+        "pkg",
+        "sdk",
+        "pprof",
+        "Programming",
+        "programming",
+        "Projects",
+        "Public",
+        "public_html",
+        "repos",
+        "src",
+        "temp",
+        "test",
+        "tmp",
         "Ubuntu One",
-        "Videos", "VirtualBox VMs",
-        "repos", "src", "bin", "pkg"
-        "temp", "test", "tmp"
+        "Videos",
+        "VirtualBox VMs",
+        "node_cache",
     ])
 home.run()
 
@@ -131,5 +156,8 @@ home.run()
 # browser_downloads.run()
 
 downloads = AutoArchiver(
-    "~/Downloads", exclude=["sorted", "bittorrent", "seed"])
+    "~/Downloads",
+    archive_path='~/auto-archive/downloads',
+    exclude=["sorted", "bittorrent", "seed"],
+)
 downloads.run()
