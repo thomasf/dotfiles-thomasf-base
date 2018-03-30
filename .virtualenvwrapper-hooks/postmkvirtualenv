@@ -5,3 +5,5 @@ pip install ipdb
 pip install jedi
 pip install importmagic
 pip install epc
+pip install isort
+pip install flake8
