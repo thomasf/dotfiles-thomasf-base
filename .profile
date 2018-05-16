@@ -57,8 +57,8 @@ ppath ~/.rbenv/bin
 ppath ~/.npm-global/bin
 ppath ~/.local/bin
 ppath ~/.cargo/bin
-apath ~/.virtualenvs/default2/bin
-ppath ~/.virtualenvs/default/bin
+# apath ~/.virtualenvs/default2/bin
+# ppath ~/.virtualenvs/default/bin
 
 # osx User home path prepends
 ppath ~/Library/Haskell/bin

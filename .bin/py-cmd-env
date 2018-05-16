@@ -1,0 +1,65 @@
+#!/bin/sh
+
+set -e
+# set -x
+
+py_v="3"
+cmd="NO_COMMAND"
+bn=$(basename ${0})
+env_name=${bn}
+
+case ${bn} in
+  autopep8|flake8|twine|mkdocs|wakatime|pyformat|docker-compose|pipenv)
+    packages=${bn}
+    ;;
+  platformio|pio)
+    py_v="2"
+    packages=platformio
+    env_name=platformio
+    ;;
+  tox|detox)
+    packages="tox detox"
+    env_name=tox
+    ;;
+  git-goggles)
+    py_v="2"
+    packages="git-goggles termcolor"
+    ;;
+  youtube-dl)
+    packages=youtube_dl
+    ;;
+  devpi)
+    packages=devpi-client
+    ;;
+  *)
+    echo "Nothing to do for ${0}"
+    exit 1
+    ;;
+esac
+
+
+envs_root="${HOME}/.virtualenvs-cmd"
+env_path="${envs_root}/${env_name}"
+cmd_path="${env_path}/bin/${bn}"
+
+if [ ! -e "${cmd_path}" ]; then
+  deactivate 2>/dev/null || true
+  mkdir -p ${envs_root}
+  case ${py_v} in
+    3*)
+      python3 -mvenv --clear "${env_path}"
+      ;;
+    2*)
+      virtualenv -p python2 "${env_path}"
+      ;;
+    *)
+      echo "Nothing to do for ${py_v}"
+      exit 1
+      ;;
+  esac
+  ${env_path}/bin/pip install wheel
+  ${env_path}/bin/pip install ${packages}
+  echo ${packages} > "${env_path}/requirements.txt"
+fi
+
+exec ${cmd_path} ${@}
