@@ -84,6 +84,7 @@ upgrader-goget() {
      github.com/smartystreets/goconvey \
      github.com/sosedoff/pgweb \
      golang.org/x/tools/cmd/... \
+     github.com/sourcegraph/go-langserver \
      ; do
     ts "${green}${l}${reset}"
     out=`go get -u -v ${l} 2>&1` || echo -e "\n${red}FAILED ${l}\n${yellow}${out}${reset}\n"
