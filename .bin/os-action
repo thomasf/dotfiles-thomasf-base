@@ -13,7 +13,7 @@
 # - /etc/acpi/hibernate.sh
 
 if [ -n "$DISPLAY" ]; then
-  sudocmd="gksudo"
+  sudocmd="sudo"
 else
   sudocmd="sudo"
 fi
