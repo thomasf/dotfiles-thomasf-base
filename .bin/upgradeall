@@ -161,9 +161,9 @@ dp() {
 
 upgrader-docker() {
   dp golang:{1.8,1.8.3}
-  dp python:{2.7,3.5,3.6}{,-alpine}
-  dp golang:{1.8,1.8.3}{,-alpine}
-  dp ubuntu:{16.04,17.04}
+  dp python:{2.7,3.5,3.6,3.7}{,-alpine}
+  dp golang:{1.8,1.8.3,1.9,1.10}{,-alpine}
+  dp ubuntu:{16.04,17.04,18.04}
   dp redis:{3,3.2}
   dp postgres:{9.5,9.6}
   dp plugins/{docker,slack,git,s3,drone-git}
