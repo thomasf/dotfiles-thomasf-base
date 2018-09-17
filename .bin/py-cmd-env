@@ -9,7 +9,7 @@ bn=$(basename ${0})
 env_name=${bn}
 
 case ${bn} in
-  autopep8|flake8|twine|mkdocs|wakatime|pyformat|docker-compose|pipenv)
+  autopep8|flake8|twine|mkdocs|wakatime|pyformat|docker-compose|pipenv|linode-cli)
     packages=${bn}
     ;;
   platformio|pio)
@@ -30,6 +30,10 @@ case ${bn} in
     ;;
   devpi)
     packages=devpi-client
+    ;;
+  pyls)
+    packages="python-language-server"
+    env_name="python-language-server"
     ;;
   *)
     echo "Nothing to do for ${0}"
