@@ -32,7 +32,7 @@ case ${bn} in
     packages=devpi-client
     ;;
   pyls)
-    packages="python-language-server"
+    packages="python-language-server[all] pyls-isort pyls-mypy"
     env_name="python-language-server"
     ;;
   *)
