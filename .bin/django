@@ -74,9 +74,12 @@ def run(command=None, *arguments):
         else:
             sys.exit(
                 'django-shortcuts: No \'manage.py\' script found in this directory or its parents.')
+    cmd = sys.executable
+    if  os.path.exists(os.path.join(script_path, 'Pipfile')):
+        cmd = "pipenv run python "
 
     return call('%(python)s %(script_path)s %(command)s %(arguments)s' % {
-        'python': sys.executable,
+        'python': cmd,
         'script_path': os.path.join(script_path, 'manage.py'),
         'command': command or '',
         'arguments': ' '.join(arguments)
