@@ -10,7 +10,7 @@
 # vcprompt is used if installed, otherwise __git_ps1 will be tried as well.
 # Install vcsprompt -> hg clone https://bitbucket.org/mitsuhiko/vcprompt
 
-source ~/.config-base/bash/common
+source "${HOME}/.config-base/bash/common"
 
 export GIT_PS1_SHOWDIRTYSTATE="yes"
 export GIT_PS1_SHOWUPSTREAM="no"
@@ -54,8 +54,10 @@ __prompt_fn() {
   hash tput 2>/dev/null &&
     w=$(tput cols)
 
-  local HH=`date +%H`
-  local MM=`date +%M`
+  local HH
+  local MM
+  HH=$(date +%H)
+  MM=$(date +%M)
 
   local UCOLOR="${cyan}"
   local UNAME
@@ -116,7 +118,7 @@ __prompt_fn() {
 
   local PWD
   local PADDING=5
-  local pwdw=$(( ${w} - ${PADDING} - ${#LAST} - ${#VCS}  - ${#VENV} - ${#RVM} ))
+  local pwdw=$(( w - PADDING - ${#LAST} - ${#VCS}  - ${#VENV} - ${#RVM} ))
   PWD=$(__dir_chomp  "$(pwd)" $pwdw)
 
   # Select host name color based on HOST_TAGS environment variable
@@ -155,7 +157,7 @@ __prompt_command() {
     *)
       __pwd_logger;
       history -a;
-      [ -n ${DARKMODE} ] && __darkmode_switcher
+      [ -n "${DARKMODE}" ] && __darkmode_switcher
       echo -ne '\a'
       ;;
   esac
