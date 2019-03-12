@@ -38,12 +38,16 @@ ALIASES = {
     # custom local commands
     'k': 'kill_runservers',
     'kk': 'kill_manages',
+    'wr': 'watchexec_run',
 }
 
 
 CALLS = {
     'kill_runservers': ['pkill', '-f', 'manage.py runserver'],
     'kill_manages': ['pkill', '-f', 'manage.py'],
+    'watchexec_run': ['watchexec', '--clear', '--watch', '.',
+                      '--restart', '--exts',  '.py,.html',
+                      '--', 'django', 'r', '--noreload'],
 }
 
 
