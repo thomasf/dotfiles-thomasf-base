@@ -9,7 +9,7 @@ bn=$(basename ${0})
 env_name=${bn}
 
 case ${bn} in
-  autopep8|flake8|twine|mkdocs|wakatime|pyformat|docker-compose|pipenv|linode-cli)
+  autopep8|flake8|twine|mkdocs|wakatime|pyformat|docker-compose|pipenv|linode-cli|autoflake)
     packages=${bn}
     ;;
   platformio|pio)
@@ -66,4 +66,4 @@ if [ ! -e "${cmd_path}" ]; then
   echo ${packages} > "${env_path}/requirements.txt"
 fi
 
-exec ${cmd_path} ${@}
+exec ${cmd_path} "$@"
