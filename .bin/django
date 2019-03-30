@@ -1,35 +1,59 @@
 #!/usr/bin/env python
 
+import atexit
 import os
+import shutil
+import signal
+import subprocess
 import sys
-from subprocess import call
+import tempfile
+from inspect import getframeinfo, stack
+from os.path import abspath, dirname
+from os.path import join as joinpath
+
+verbose = False
+
+argv = sys.argv
+if len(argv) > 1 and argv[1] == "-v":
+    verbose = True
+    argv = (argv[0],) + tuple(argv[2:])
+else:
+    sys.tracebacklimit = 0
+
+has_setpgrp = sys.platform in ['linux', 'linux2']
+
+
+def log(*msg):
+    if verbose:
+        caller = getframeinfo(stack()[1][0])
+        strs = [str(i) for i in msg]
+        print("{:4}: {}".format(caller.lineno, " ".join(strs)))
+
+
+log("args after -v", argv)
 
 ALIASES = {
     # Django
     'c': 'collectstatic',
     'r': 'runserver',
-    'sd': 'syncdb',
-    't': 'test',
+    # 'sd': 'syncdb',
+    't': ('test', '-k'),
 
     # Shell
     'd': 'dbshell',
     's': 'shell',
-    'sp': 'shell_plus --ipython',
-
-    # Auth
-    # 'csu': 'createsuperuser',
-    # 'cpw': 'changepassword',
+    'sp': ('shell_plus', '--ipython'),
 
     # Migrations
     'm': 'migrate',
 
     # Haystack
-    'ix': 'update_index',
-    'rix': 'rebuild_index',
+    # 'ix': 'update_index',
+    # 'rix': 'rebuild_index',
 
     # Django Extensions
-    'sk': 'generate_secret_key',
-    'rdb': 'reset_db',
+    # 'sk': 'generate_secret_key',
+    # 'rdb': 'reset_db',
     'rp': 'runserver_plus',
     'url': 'show_urls',
     'gm': 'graph_models',
@@ -39,62 +63,268 @@ ALIASES = {
     'k': 'kill_runservers',
     'kk': 'kill_manages',
     'wr': 'watchexec_run',
+    'wt': 'watchexec_test',
+    'wl': 'watchexec_lint',
 }
+
+for k in ALIASES:
+    if isinstance(ALIASES[k], str):
+        ALIASES[k] = (ALIASES[k],)
+
+
+def kill_runservers(ctx):
+    return (
+        ('pkill', '-f', 'manage.py runserver'),
+    )
+
+
+def kill_manages(ctx):
+    return (
+        ('pkill', '-f', 'manage.py'),
+    )
+
+
+def watchexec_run(ctx):
+    return (
+        ('watchexec', '--watch', ctx.project_root, '-s', 'SIGKILL',
+         '--restart', '--exts', '.py,.html,.env',
+         '--') + ctx.env_cmd + ctx.python_cmd + ctx.manage_py + ('runserver', '--noreload') + ctx.args[1:],
+    )
+
+
+def watchexec_test(ctx):
+    return (
+        ('watchexec', '--clear',
+         '--watch', ctx.project_root, '--exts', '.py,.html,.env,.json',
+         '--') + ctx.env_cmd + ctx.python_cmd + ctx.manage_py + ('test', '--keepdb') + ctx.args[1:],
+    )
+
+
+def watchexec_lint(ctx):
+    return (
+        ('watchexec', '--clear', '--watch', ctx.project_root, '-s', 'SIGKILL',
+         '--exts', '.py',
+         '--', sys.argv[0], 'lint'),
+    )
+
+
+def fmt(ctx):
+    commands = tuple()
+    if ctx.has_file('.isort.cfg'):
+        commands += (ctx.env_cmd + ('isort',
+                                    '-q',
+                                    '-sp',
+                                    ctx.rootfile(".isort.cfg"),
+                                    '-y',
+                                    '-rc',
+                                    ctx.project_root)),
+    if ctx.has_file(".flake8rc"):
+        commands += (ctx.env_cmd + ('autopep8',
+                                    '--ignore-local-config',
+                                    '--global-config',
+                                    ctx.rootfile(".flake8rc"),
+                                    '--exclude',
+                                    '*/migrations/*',
+                                    '-a',
+                                    '-r',
+                                    '--in-place',
+                                    ctx.project_root)
+                     ),
+    if len(commands) == 0:
+        print(".isort.cfg or .flake8rc was not found")
+        sys.exit(1)
+    return commands
+
+
+def lint(ctx):
+    commands = tuple()
+    if ctx.has_file(".isort.cfg"):
+        log("isort config detected")
+        commands += ctx.env_cmd + ('isort',
+                                   '-q',
+                                   '-sp',
+                                   ctx.rootfile(".isort.cfg"),
+                                   '-df',
+                                   '-c',
+                                   '-rc',
+                                   ctx.project_root),
+    if ctx.has_file(".flake8rc"):
+        log("flake8 config detected")
+        commands += (ctx.env_cmd + ('flake8',
+                                    '--config',
+                                    ctx.rootfile('.flake8rc'),
+                                    ctx.project_root)),
+    if len(commands) == 0:
+        print(".isort.cfg or .flake8rc was not found")
+        sys.exit(1)
+    return commands
+
+
+def fml(ctx):
+    return (
+        (sys.argv[0], "fmt"),
+        (sys.argv[0], "lint"),
+    )
+
+
+def pg_dump(env_cmd, python_cmd, project_root, manage_py, *args):
+    if len(args) == 0:
+        print("usage: pg_dump filename.sql")
+        sys.exit(1)
+    dst_file = abspath(args[0])
+    log("dst_file", dst_file)
+    dst_dir = dirname(dst_file)
+    log("dst_dir", dst_dir)
+    log(env_cmd, python_cmd, project_root, manage_py, args)
+    container = subprocess.check_output(
+        ['docker-compose', 'ps', '-q', 'postgres'], stderr=sys.stderr).strip()
+    log("pg container:", container)
+
+    f = tempfile.NamedTemporaryFile(
+        delete=False,
+        prefix="pg-",
+        suffix=".sql",
+        dir=dst_dir)
+    log("tempfile:", f.name)
+    try:
+        command = ['docker', 'exec', container, 'sh',
+                   '-c', "echo pg_dump -U $POSTGRES_USER"]
+        log("command: ", command)
+        proc = subprocess.Popen(command, stdout=f, stderr=sys.stderr)
+        proc.wait()
+        f.close()
+        log("move", f.name, dst_file)
+        shutil.move(f.name, dst_file)
+    finally:
+        try:
+            f.close()
+        except Exception:
+            pass
+        try:
+            os.unlink(f.name)
+        except Exception:
+            pass
+    log("done")
+    sys.exit(0)
 
 
 CALLS = {
-    'kill_runservers': ['pkill', '-f', 'manage.py runserver'],
-    'kill_manages': ['pkill', '-f', 'manage.py'],
-    'watchexec_run': ['watchexec', '--clear', '--watch', '.',
-                      '--restart', '--exts',  '.py,.html',
-                      '--', 'django', 'r', '--noreload'],
+    "kill_runservers": kill_runservers,
+    'kill_manages': kill_manages,
+    'watchexec_run': watchexec_run,
+    'watchexec_test': watchexec_test,
+    'watchexec_lint': watchexec_lint,
+    'lint': lint,
+    'fmt': fmt,
+    'fml': fml,
+    'pg_dump': pg_dump,
 }
 
+stderr = None
+if 'DJANGO_AUTO_COMPLETE' in os.environ:
+    CALLS = {}
+    stderr = open(os.devnull, 'w')
 
-def run(command=None, *arguments):
+
+class Context(object):
+    def __init__(self, env_cmd, python_cmd, project_root, manage_py, args):
+        self.env_cmd = env_cmd
+        self.python_cmd = python_cmd
+        self.project_root = project_root
+        self.manage_py = manage_py
+        self.args = args
+
+    def rootfile(self, filename):
+        return joinpath(self.project_root, filename)
+
+    def has_file(self, filename):
+        return os.path.exists(self.rootfile(filename))
+
+
+def run(*args):
     """
     Run the given command.
 
     Parameters:
     :param command: A string describing a command.
-    :param arguments: A list of strings describing arguments to the command.
+    :param args: A list of strings describing args to the command.
     """
 
-    if command in ALIASES:
-        command = ALIASES[command]
+    log("start:", args)
+    if len(args) > 0 and args[0] in ALIASES:
+        args = ALIASES[args[0]] + args[1:]
+        log("found alias:", args)
 
-    if command in CALLS:
-        print(" ".join(CALLS[command]))
-        return call(CALLS[command])
-
-    if command == 'startproject':
-        return call('django-admin.py startproject %s' %
-                    ' '.join(arguments), shell=True)
-
-    script_path = os.getcwd()
-    while not os.path.exists(os.path.join(script_path, 'manage.py')):
-        base_dir = os.path.dirname(script_path)
-        if base_dir != script_path:
-            script_path = base_dir
+    project_root = os.getcwd()
+    while not os.path.exists(joinpath(project_root, 'manage.py')):
+        base_dir = os.path.dirname(project_root)
+        if base_dir != project_root:
+            project_root = base_dir
         else:
             sys.exit(
                 'django-shortcuts: No \'manage.py\' script'
                 ' found in this directory or its parents.')
-    cmd = sys.executable
-    if os.path.exists(os.path.join(script_path, 'Pipfile')):
-        cmd = "pipenv run python "
+    log("project root", project_root)
+    manage_py = (joinpath(project_root, 'manage.py'),)
 
-    return call('%(python)s %(script_path)s %(command)s %(arguments)s' % {
-        'python': cmd,
-        'script_path': os.path.join(script_path, 'manage.py'),
-        'command': command or '',
-        'arguments': ' '.join(arguments)
-    }, shell=True)
+    python_cmd = (sys.executable,)
+    env_cmd = tuple()
+    if os.path.exists(joinpath(project_root, 'Pipfile')):
+        env_cmd = ("pipenv", "run")
+        python_cmd = ('python',)
+    log("env_cmd:", env_cmd)
+    log("pyton:", python_cmd)
+
+    if len(args) > 0 and args[0] in CALLS:
+        ctx = Context(env_cmd, python_cmd, project_root, manage_py, args)
+        commands = CALLS[args[0]](ctx)
+        if len(args) == 1:
+            args = tuple()
+        else:
+            args = args[1:]
+    else:
+        commands = (env_cmd + python_cmd + manage_py + args,)
+
+    log("commands", commands)
+
+    cmd_env = os.environ.copy()
+    if 'ENV_FILE' in cmd_env:
+        log("ENV_FILE is set, will not override:", cmd_env['ENV_FILE'])
+    else:
+        dev_envfile = joinpath(project_root, "dev.env")
+        if os.path.exists(dev_envfile):
+            cmd_env['ENV_FILE'] = dev_envfile
+            log("set ENV_FILE: ", dev_envfile)
+
+    if len(commands) > 1:
+        failed = 0
+        for cmd in commands:
+            log("command", cmd)
+            ex = subprocess.call(cmd, env=cmd_env, stderr=stderr)
+            if ex is not 0:
+                failed = ex
+        return failed
+    else:
+        log("command", commands[0])
+        log("starting subprocess")
+        ret = subprocess.call(commands[0], env=cmd_env, stderr=stderr)
+        log("subprocess ended with exit code {}".format(ret))
+        return ret
 
 
 def main():
     """Entry-point function."""
-    sys.exit(run(*sys.argv[1:]))
+    if has_setpgrp:
+        os.setpgrp()
+
+        def killer(sig, frame):
+            os.killpg(0, signal.SIGKILL)
+        signal.signal(signal.SIGINT, killer)
+    try:
+        sys.exit(run(*argv[1:]))
+    except Exception:
+        if has_setpgrp:
+            os.killpg(0, signal.SIGKILL)
 
 
 if __name__ == '__main__':
