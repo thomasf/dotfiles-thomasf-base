@@ -124,7 +124,7 @@ def fmt(ctx):
                                     '--global-config',
                                     ctx.rootfile(".flake8rc"),
                                     '--exclude',
-                                    '*/migrations/*',
+                                    '*/migrations/*,*/node_modules/*',
                                     '-a',
                                     '-r',
                                     '--in-place',
