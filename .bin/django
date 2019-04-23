@@ -1,5 +1,28 @@
 #!/usr/bin/env python
 
+"""Django manage wrapper.
+
+The additional utiltiy commands are modeled to work on very specific project
+layouts so they probably won't just work OOTB for any general django project.
+
+Pipenv is supported, if a 'Pipfile' is located in the same directory as
+'manage.py', all commands will be exedcuted using 'pipenv run'.
+
+The 'lint' command requires isort and flake8 to be installed and
+'.isort.cfg'/'.flake8rc' to be present in the project root. Note that isort
+MUST be installed inside the same virtual environment as the project to be able
+to detect modules correctly.
+
+The 'fmt' command requires isort and autopep8 to be installed and
+'.isort.cfg'/'.flake8rc' to be present in the project root. Note that isort
+MUST be installed inside the same virtual environment as the project to be able
+to detect modules correctly.
+
+Look at the ALIASES and CALLS variables below to see which shortcut and custom
+commands are available (extends the set of normal management commands).
+
+"""
+
 import atexit
 import os
 import shutil
@@ -73,12 +96,14 @@ for k in ALIASES:
 
 
 def kill_runservers(ctx):
+    # this command probably only works in linux os'es
     return (
         ('pkill', '-f', 'manage.py runserver'),
     )
 
 
 def kill_manages(ctx):
+    # this command probably only works in linux os'es
     return (
         ('pkill', '-f', 'manage.py'),
     )
