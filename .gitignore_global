@@ -9,6 +9,7 @@ TAGS
 #### Python
 *.pot
 *.py[co]
+/.mypy_cache
 
 #### Java
 *.class
