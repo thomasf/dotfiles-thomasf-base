@@ -1,27 +1,5 @@
 #!/usr/bin/env python
 
-"""Django manage wrapper.
-
-The additional utiltiy commands are modeled to work on very specific project
-layouts so they probably won't just work OOTB for any general django project.
-
-Pipenv is supported, if a 'Pipfile' is located in the same directory as
-'manage.py', all commands will be exedcuted using 'pipenv run'.
-
-The 'lint' command requires isort and flake8 to be installed and
-'.isort.cfg'/'.flake8rc' to be present in the project root. Note that isort
-MUST be installed inside the same virtual environment as the project to be able
-to detect modules correctly.
-
-The 'fmt' command requires isort and autopep8 to be installed and
-'.isort.cfg'/'.flake8rc' to be present in the project root. Note that isort
-MUST be installed inside the same virtual environment as the project to be able
-to detect modules correctly.
-
-Look at the ALIASES and CALLS variables below to see which shortcut and custom
-commands are available (extends the set of normal management commands).
-
-"""
 
 import atexit
 import os
@@ -33,6 +11,15 @@ import tempfile
 from inspect import getframeinfo, stack
 from os.path import abspath, dirname
 from os.path import join as joinpath
+
+helptext = """Django manage wrapper.
+
+The additional utiltiy commands are modeled to work on very specific project
+layouts so they probably won't just work OOTB for any general django project.
+
+Pipenv is supported, if a 'Pipfile' is located in the same directory as
+'manage.py', all commands will be exedcuted using 'pipenv run'.
+"""
 
 verbose = False
 
@@ -96,10 +83,13 @@ for k in ALIASES:
 
 
 def kill_runservers(ctx):
-    # this command probably only works in linux os'es
+    #
     return (
         ('pkill', '-f', 'manage.py runserver'),
     )
+
+
+kill_runservers.help = "Kill all processes matching 'manage.py runserver' this command probably only works in linux os'es."
 
 
 def kill_manages(ctx):
@@ -107,6 +97,9 @@ def kill_manages(ctx):
     return (
         ('pkill', '-f', 'manage.py'),
     )
+
+
+kill_manages.help = "Kill all processes matching 'manage.py', this command probably only works in linux os'es."
 
 
 def watchexec_run(ctx):
@@ -118,6 +111,9 @@ def watchexec_run(ctx):
     )
 
 
+watchexec_run.help = "runserver with --noreload and reloading instead controlled by watchexec."
+
+
 def watchexec_test(ctx):
     return (
         ('watchexec', '--clear',
@@ -126,12 +122,18 @@ def watchexec_test(ctx):
     )
 
 
+watchexec_test.help = "test with auto reloading controlled by watchexec."
+
+
 def watchexec_lint(ctx):
     return (
         ('watchexec', '--clear', '--watch', ctx.project_root, '-s', 'SIGKILL',
          '--exts', '.py',
          '--', sys.argv[0], 'lint'),
     )
+
+
+watchexec_lint.help = "the 'lint' custom command with auto triggering controlled by watchexec."
 
 
 def fmt(ctx):
@@ -162,6 +164,9 @@ def fmt(ctx):
     return commands
 
 
+fmt.help = "Runs isort/autopep8 to format python code, requires .flake8rc and .isort.cfg in project root to work."
+
+
 def lint(ctx):
     commands = tuple()
     if ctx.has_file(".isort.cfg"):
@@ -186,11 +191,17 @@ def lint(ctx):
     return commands
 
 
+lint.help = "Runs isort/flake8 to lint python code, requires .flake8rc and .isort.cfg in project root to work."
+
+
 def fml(ctx):
     return (
         (sys.argv[0], "fmt"),
         (sys.argv[0], "lint"),
     )
+
+
+fml.help = "Run custom command 'fmt' followed by 'lint'"
 
 
 def pg_dump(env_cmd, python_cmd, project_root, manage_py, *args):
@@ -234,6 +245,8 @@ def pg_dump(env_cmd, python_cmd, project_root, manage_py, *args):
     log("done")
     sys.exit(0)
 
+
+pg_dump.help = "create postgres sql dump file, expects a docker-compose setup where the postgres container is named 'postgres'"
 
 CALLS = {
     "kill_runservers": kill_runservers,
@@ -341,6 +354,15 @@ def run(*args):
 
 def main():
     """Entry-point function."""
+    if len(argv) > 1 and argv[1] == "-h":
+        print(helptext)
+        print("\nAliases:")
+        for k in ALIASES:
+            print("{}\t{}".format(k, " ".join(ALIASES[k])))
+        print("\nCustom commands:")
+        for k in CALLS:
+            print("{:16}\t{}".format(k, CALLS[k].help))
+
     if has_setpgrp:
         os.setpgrp()
 
