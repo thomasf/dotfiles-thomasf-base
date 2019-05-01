@@ -15,7 +15,7 @@ from os.path import join as joinpath
 helptext = """Django manage wrapper.
 
 The additional utiltiy commands are modeled to work on very specific project
-layouts so they probably won't just work OOTB for any general django project.
+structures so they probably won't just work OOTB for any general django project.
 
 Pipenv is supported, if a 'Pipfile' is located in the same directory as
 'manage.py', all commands will be exedcuted using 'pipenv run'.
@@ -351,24 +351,27 @@ def run(*args):
         log("subprocess ended with exit code {}".format(ret))
         return ret
 
+def print_help():
+    print(helptext)
+    print("\nAliases:")
+    for k in ALIASES:
+        print("{}\t{}".format(k, " ".join(ALIASES[k])))
+    print("\nCustom commands:")
+    for k in CALLS:
+        print("{:16}\t{}".format(k, CALLS[k].help))
+
 
 def main():
     """Entry-point function."""
     if len(argv) > 1 and argv[1] == "-h":
-        print(helptext)
-        print("\nAliases:")
-        for k in ALIASES:
-            print("{}\t{}".format(k, " ".join(ALIASES[k])))
-        print("\nCustom commands:")
-        for k in CALLS:
-            print("{:16}\t{}".format(k, CALLS[k].help))
+        print_help()
 
     if has_setpgrp:
         os.setpgrp()
-
         def killer(sig, frame):
             os.killpg(0, signal.SIGKILL)
         signal.signal(signal.SIGINT, killer)
+
     try:
         sys.exit(run(*argv[1:]))
     except Exception:
