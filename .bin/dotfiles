@@ -24,6 +24,10 @@ except ImportError:
     import configparser
 from optparse import OptionParser, OptionGroup
 
+import warnings
+warnings.filterwarnings("ignore",category=DeprecationWarning)
+
+
 __version__ = '0.6.4'
 
 #############
