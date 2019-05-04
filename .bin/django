@@ -351,6 +351,7 @@ def run(*args):
         log("subprocess ended with exit code {}".format(ret))
         return ret
 
+
 def print_help():
     print(helptext)
     print("\nAliases:")
@@ -368,6 +369,7 @@ def main():
 
     if has_setpgrp:
         os.setpgrp()
+
         def killer(sig, frame):
             os.killpg(0, signal.SIGKILL)
         signal.signal(signal.SIGINT, killer)
