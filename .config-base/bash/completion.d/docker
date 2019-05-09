@@ -1,10 +1,12 @@
 #!/usr/bin/env bash
-# shellcheck disable=SC2016,SC2119,SC2155
+# shellcheck disable=SC2016,SC2119,SC2155,SC2206,SC2207
 #
 # Shellcheck ignore list:
 #  - SC2016: Expressions don't expand in single quotes, use double quotes for that.
 #  - SC2119: Use foo "$@" if function's $1 should mean script's $1.
 #  - SC2155: Declare and assign separately to avoid masking return values.
+#  - SC2206: Quote to prevent word splitting, or split robustly with mapfile or read -a.
+#  - SC2207: Prefer mapfile or read -a to split command output (or quote to avoid splitting).
 #
 # You can find more details for each warning at the following page:
 #    https://github.com/koalaman/shellcheck/wiki/<SCXXXX>
@@ -1200,6 +1202,41 @@ _docker_build() {
 }
 
 
+_docker_builder() {
+	local subcommands="
+		prune
+	"
+	__docker_subcommands "$subcommands" && return
+
+	case "$cur" in
+		-*)
+			COMPREPLY=( $( compgen -W "--help" -- "$cur" ) )
+			;;
+		*)
+			COMPREPLY=( $( compgen -W "$subcommands" -- "$cur" ) )
+			;;
+	esac
+}
+
+_docker_builder_prune() {
+	case "$prev" in
+		--filter)
+			COMPREPLY=( $( compgen -S = -W "description id inuse parent private shared type until unused-for" -- "$cur" ) )
+			__docker_nospace
+			return
+			;;
+		--keep-storage)
+			return
+			;;
+	esac
+
+	case "$cur" in
+		-*)
+			COMPREPLY=( $( compgen -W "--all -a --filter --force -f --help --keep-storage" -- "$cur" ) )
+			;;
+	esac
+}
+
 _docker_checkpoint() {
 	local subcommands="
 		create
@@ -2075,8 +2112,8 @@ _docker_container_run_and_create() {
 			return
 			;;
 		--security-opt)
-			COMPREPLY=( $( compgen -W "apparmor= label= no-new-privileges seccomp=" -- "$cur") )
-			if [ "${COMPREPLY[*]}" != "no-new-privileges" ] ; then
+			COMPREPLY=( $( compgen -W "apparmor= label= no-new-privileges seccomp= systempaths=unconfined" -- "$cur") )
+			if [[ ${COMPREPLY[*]} = *= ]] ; then
 				__docker_nospace
 			fi
 			return
@@ -2229,6 +2266,7 @@ _docker_container_update() {
 		--memory -m
 		--memory-reservation
 		--memory-swap
+		--pids-limit
 		--restart
 	"
 
@@ -2579,36 +2617,15 @@ _docker_daemon() {
 			return
 			;;
 		--storage-driver|-s)
-			COMPREPLY=( $( compgen -W "aufs btrfs devicemapper overlay overlay2 vfs zfs" -- "$(echo "$cur" | tr '[:upper:]' '[:lower:]')" ) )
+			COMPREPLY=( $( compgen -W "aufs btrfs overlay2 vfs zfs" -- "$(echo "$cur" | tr '[:upper:]' '[:lower:]')" ) )
 			return
 			;;
 		--storage-opt)
 			local btrfs_options="btrfs.min_space"
-			local devicemapper_options="
-				dm.basesize
-				dm.blkdiscard
-				dm.blocksize
-				dm.directlvm_device
-				dm.fs
-				dm.libdm_log_level
-				dm.loopdatasize
-				dm.loopmetadatasize
-				dm.min_free_space
-				dm.mkfsarg
-				dm.mountopt
-				dm.override_udev_sync_check
-				dm.thinpooldev
-				dm.thinp_autoextend_percent
-				dm.thinp_autoextend_threshold
-				dm.thinp_metapercent
-				dm.thinp_percent
-				dm.use_deferred_deletion
-				dm.use_deferred_removal
-			"
 			local overlay2_options="overlay2.size"
 			local zfs_options="zfs.fsname"
 
-			local all_options="$btrfs_options $devicemapper_options $overlay2_options $zfs_options"
+			local all_options="$btrfs_options $overlay2_options $zfs_options"
 
 			case $(__docker_value_of_option '--storage-driver|-s') in
 				'')
@@ -2616,9 +2633,6 @@ _docker_daemon() {
 					;;
 				btrfs)
 					COMPREPLY=( $( compgen -W "$btrfs_options" -S = -- "$cur" ) )
-					;;
-				devicemapper)
-					COMPREPLY=( $( compgen -W "$devicemapper_options" -S = -- "$cur" ) )
 					;;
 				overlay2)
 					COMPREPLY=( $( compgen -W "$overlay2_options" -S = -- "$cur" ) )
@@ -2678,6 +2692,68 @@ _docker_deploy() {
 _docker_diff() {
 	_docker_container_diff
 }
+
+
+_docker_engine() {
+	local subcommands="
+		activate
+		check
+		update
+	"
+	__docker_subcommands "$subcommands" && return
+
+	case "$cur" in
+		-*)
+			COMPREPLY=( $( compgen -W "--help" -- "$cur" ) )
+			;;
+		*)
+			COMPREPLY=( $( compgen -W "$subcommands" -- "$cur" ) )
+			;;
+	esac
+}
+
+_docker_engine_activate() {
+	case "$prev" in
+		--containerd|--engine-image|--format|--license|--registry-prefix|--version)
+			return
+			;;
+	esac
+
+	case "$cur" in
+		-*)
+			COMPREPLY=( $( compgen -W "--containerd --display-only --engine-image --format --help --license --quiet --registry-prefix --version" -- "$cur" ) )
+			;;
+	esac
+}
+
+_docker_engine_check() {
+	case "$prev" in
+		--containerd|--engine-image|--format|--registry-prefix)
+			return
+			;;
+	esac
+
+	case "$cur" in
+		-*)
+			COMPREPLY=( $( compgen -W "--containerd --downgrades --engine-image --format --help --pre-releases --quiet -q --registry-prefix --upgrades" -- "$cur" ) )
+			;;
+	esac
+}
+
+_docker_engine_update() {
+	case "$prev" in
+		--containerd|--engine-image|--registry-prefix|--version)
+			return
+			;;
+	esac
+
+	case "$cur" in
+		-*)
+			COMPREPLY=( $( compgen -W "--containerd --engine-image --help --registry-prefix --version" -- "$cur" ) )
+			;;
+	esac
+}
+
 
 _docker_events() {
 	_docker_system_events
@@ -2763,7 +2839,6 @@ _docker_image_build() {
 	"
 
 	local boolean_options="
-		--compress
 		--disable-content-trust=false
 		--force-rm
 		--help
@@ -2772,14 +2847,33 @@ _docker_image_build() {
 		--quiet -q
 		--rm
 	"
+
 	if __docker_server_is_experimental ; then
 		options_with_args+="
 			--platform
 		"
 		boolean_options+="
 			--squash
-			--stream
 		"
+	fi
+
+	if [ "$DOCKER_BUILDKIT" = "1" ] ; then
+		options_with_args+="
+			--output -o
+			--platform
+			--progress
+			--secret
+			--ssh
+		"
+	else
+		boolean_options+="
+			--compress
+		"
+		if __docker_server_is_experimental ; then
+			boolean_options+="
+				--stream
+			"
+		fi
 	fi
 
 	local all_options="$options_with_args $boolean_options"
@@ -2824,6 +2918,10 @@ _docker_image_build() {
 					fi
 					;;
 			esac
+			return
+			;;
+		--progress)
+			COMPREPLY=( $( compgen -W "auto plain tty" -- "$cur" ) )
 			return
 			;;
 		--tag|-t)
@@ -3331,6 +3429,10 @@ _docker_network_inspect() {
 _docker_network_ls() {
 	local key=$(__docker_map_key_of_current_option '--filter|-f')
 	case "$key" in
+		dangling)
+			COMPREPLY=( $( compgen -W "false true" -- "${cur##*=}" ) )
+			return
+			;;
 		driver)
 			__docker_complete_plugins_bundled --cur "${cur##*=}" --type Network --add macvlan
 			return
@@ -3355,7 +3457,7 @@ _docker_network_ls() {
 
 	case "$prev" in
 		--filter|-f)
-			COMPREPLY=( $( compgen -S = -W "driver id label name scope type" -- "$cur" ) )
+			COMPREPLY=( $( compgen -S = -W "dangling driver id label name scope type" -- "$cur" ) )
 			__docker_nospace
 			return
 			;;
@@ -3694,6 +3796,7 @@ _docker_service_update_and_create() {
 			--placement-pref
 			--publish -p
 			--secret
+			--sysctl
 		"
 
 		case "$prev" in
@@ -3744,6 +3847,8 @@ _docker_service_update_and_create() {
 			--rollback
 			--secret-add
 			--secret-rm
+			--sysctl-add
+			--sysctl-rm
 		"
 
 		boolean_options="$boolean_options
@@ -5346,9 +5451,11 @@ _docker() {
 	shopt -s extglob
 
 	local management_commands=(
+		builder
 		config
 		container
 		context
+		engine
 		image
 		network
 		node
