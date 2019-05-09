@@ -9,7 +9,7 @@ bn=$(basename ${0})
 env_name=${bn}
 
 case ${bn} in
-  autopep8|flake8|twine|mkdocs|wakatime|pyformat|docker-compose|pipenv|linode-cli|autoflake)
+  autopep8|flake8|twine|mkdocs|wakatime|pyformat|docker-compose|pipenv|linode-cli|autoflake|poetry)
     packages=${bn}
     ;;
   platformio|pio)
