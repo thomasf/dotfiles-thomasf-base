@@ -46,7 +46,7 @@ ALIASES = {
     # Django
     'c': 'collectstatic',
     'r': 'runserver',
-    # 'sd': 'syncdb',
+    'rs': ('runserver', '--noreload', '--nothreading'),
     't': ('test', '-k'),
 
     # Shell
@@ -62,12 +62,10 @@ ALIASES = {
     # 'rix': 'rebuild_index',
 
     # Django Extensions
-    # 'sk': 'generate_secret_key',
-    # 'rdb': 'reset_db',
     'rp': 'runserver_plus',
     'url': 'show_urls',
     'gm': 'graph_models',
-    'rs': 'runscript',
+
 
     # custom local commands
     'k': 'kill_runservers',
