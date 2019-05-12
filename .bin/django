@@ -30,7 +30,7 @@ if len(argv) > 1 and argv[1] == "-v":
 else:
     sys.tracebacklimit = 0
 
-has_setpgrp = sys.platform in ['linux', 'linux2']
+has_setpgrp = sys.platform in ["linux", "linux2"]
 
 
 def log(*msg):
@@ -44,35 +44,29 @@ log("args after -v", argv)
 
 ALIASES = {
     # Django
-    'c': 'collectstatic',
-    'r': 'runserver',
-    'rs': ('runserver', '--noreload', '--nothreading'),
-    't': ('test', '-k'),
-
+    "c": "collectstatic",
+    "r": "runserver",
+    "rs": ("runserver", "--noreload", "--nothreading"),
+    "t": ("test", "-k"),
     # Shell
-    'd': 'dbshell',
-    's': 'shell',
-    'sp': ('shell_plus', '--ipython'),
-
+    "d": "dbshell",
+    "s": "shell",
+    "sp": ("shell_plus", "--ipython"),
     # Migrations
-    'm': 'migrate',
-
+    "m": "migrate",
     # Haystack
     # 'ix': 'update_index',
     # 'rix': 'rebuild_index',
-
     # Django Extensions
-    'rp': 'runserver_plus',
-    'url': 'show_urls',
-    'gm': 'graph_models',
-
-
+    "rp": "runserver_plus",
+    "url": "show_urls",
+    "gm": "graph_models",
     # custom local commands
-    'k': 'kill_runservers',
-    'kk': 'kill_manages',
-    'wr': 'watchexec_run',
-    'wt': 'watchexec_test',
-    'wl': 'watchexec_lint',
+    "k": "kill_runservers",
+    "kk": "kill_manages",
+    "wr": "watchexec_run",
+    "wt": "watchexec_test",
+    "wl": "watchexec_lint",
 }
 
 for k in ALIASES:
@@ -81,10 +75,7 @@ for k in ALIASES:
 
 
 def kill_runservers(ctx):
-    #
-    return (
-        ('pkill', '-f', 'manage.py runserver'),
-    )
+    return (("pkill", "-f", "manage.py runserver"),)
 
 
 kill_runservers.help = "Kill all processes matching 'manage.py runserver' this command probably only works in linux os'es."
@@ -92,9 +83,7 @@ kill_runservers.help = "Kill all processes matching 'manage.py runserver' this c
 
 def kill_manages(ctx):
     # this command probably only works in linux os'es
-    return (
-        ('pkill', '-f', 'manage.py'),
-    )
+    return (("pkill", "-f", "manage.py"),)
 
 
 kill_manages.help = "Kill all processes matching 'manage.py', this command probably only works in linux os'es."
@@ -102,21 +91,46 @@ kill_manages.help = "Kill all processes matching 'manage.py', this command proba
 
 def watchexec_run(ctx):
     return (
-        ('watchexec', '--watch', ctx.project_root, '-s', 'SIGKILL',
-         '--restart',
-         '--exts', '.py,.html,.env',
-         '--') + ctx.env_cmd + ctx.python_cmd + ctx.manage_py + ('runserver', '--noreload') + ctx.args[1:],
+        (
+            "watchexec",
+            "--watch",
+            ctx.project_root,
+            "-s",
+            "SIGKILL",
+            "--restart",
+            "--exts",
+            ".py,.html,.env",
+            "--",
+        )
+        + ctx.env_cmd
+        + ctx.python_cmd
+        + ctx.manage_py
+        + ("runserver", "--noreload")
+        + ctx.args[1:],
     )
 
 
-watchexec_run.help = "runserver with --noreload and reloading instead controlled by watchexec."
+watchexec_run.help = (
+    "runserver with --noreload and reloading instead controlled by watchexec."
+)
 
 
 def watchexec_test(ctx):
     return (
-        ('watchexec', '--clear',
-         '--watch', ctx.project_root, '--exts', '.py,.html,.env,.json',
-         '--') + ctx.env_cmd + ctx.python_cmd + ctx.manage_py + ('test', '--keepdb') + ctx.args[1:],
+        (
+            "watchexec",
+            "--clear",
+            "--watch",
+            ctx.project_root,
+            "--exts",
+            ".py,.html,.env,.json",
+            "--",
+        )
+        + ctx.env_cmd
+        + ctx.python_cmd
+        + ctx.manage_py
+        + ("test", "--keepdb")
+        + ctx.args[1:],
     )
 
 
@@ -125,37 +139,62 @@ watchexec_test.help = "test with auto reloading controlled by watchexec."
 
 def watchexec_lint(ctx):
     return (
-        ('watchexec', '--clear', '--watch', ctx.project_root, '-s', 'SIGKILL',
-         '--exts', '.py',
-         '--', sys.argv[0], 'lint'),
+        (
+            "watchexec",
+            "--clear",
+            "--watch",
+            ctx.project_root,
+            "-s",
+            "SIGKILL",
+            "--exts",
+            ".py",
+            "--",
+            sys.argv[0],
+            "lint",
+        ),
     )
 
 
-watchexec_lint.help = "the 'lint' custom command with auto triggering controlled by watchexec."
+watchexec_lint.help = (
+    "the 'lint' custom command with auto triggering controlled by watchexec."
+)
 
 
 def fmt(ctx):
     commands = tuple()
-    if ctx.has_file('.isort.cfg'):
-        commands += (ctx.env_cmd + ('isort',
-                                    '-q',
-                                    '-sp',
-                                    ctx.rootfile(".isort.cfg"),
-                                    '-y',
-                                    '-rc',
-                                    ctx.project_root)),
+    if ctx.has_file(".isort.cfg"):
+        commands += (
+            (
+                ctx.env_cmd
+                + (
+                    "isort",
+                    "-q",
+                    "-sp",
+                    ctx.rootfile(".isort.cfg"),
+                    "-y",
+                    "-rc",
+                    ctx.project_root,
+                )
+            ),
+        )
     if ctx.has_file(".flake8rc"):
-        commands += (ctx.env_cmd + ('autopep8',
-                                    '--ignore-local-config',
-                                    '--global-config',
-                                    ctx.rootfile(".flake8rc"),
-                                    '--exclude',
-                                    '*/migrations/*,*/node_modules/*',
-                                    '-a',
-                                    '-r',
-                                    '--in-place',
-                                    ctx.project_root)
-                     ),
+        commands += (
+            (
+                ctx.env_cmd
+                + (
+                    "autopep8",
+                    "--ignore-local-config",
+                    "--global-config",
+                    ctx.rootfile(".flake8rc"),
+                    "--exclude",
+                    "*/migrations/*,*/node_modules/*",
+                    "-a",
+                    "-r",
+                    "--in-place",
+                    ctx.project_root,
+                )
+            ),
+        )
     if len(commands) == 0:
         print(".isort.cfg or .flake8rc was not found")
         sys.exit(1)
@@ -169,20 +208,27 @@ def lint(ctx):
     commands = tuple()
     if ctx.has_file(".isort.cfg"):
         log("isort config detected")
-        commands += ctx.env_cmd + ('isort',
-                                   '-q',
-                                   '-sp',
-                                   ctx.rootfile(".isort.cfg"),
-                                   '-df',
-                                   '-c',
-                                   '-rc',
-                                   ctx.project_root),
+        commands += (
+            ctx.env_cmd
+            + (
+                "isort",
+                "-q",
+                "-sp",
+                ctx.rootfile(".isort.cfg"),
+                "-df",
+                "-c",
+                "-rc",
+                ctx.project_root,
+            ),
+        )
     if ctx.has_file(".flake8rc"):
         log("flake8 config detected")
-        commands += (ctx.env_cmd + ('flake8',
-                                    '--config',
-                                    ctx.rootfile('.flake8rc'),
-                                    ctx.project_root)),
+        commands += (
+            (
+                ctx.env_cmd
+                + ("flake8", "--config", ctx.rootfile(".flake8rc"), ctx.project_root)
+            ),
+        )
     if len(commands) == 0:
         print(".isort.cfg or .flake8rc was not found")
         sys.exit(1)
@@ -193,10 +239,7 @@ lint.help = "Runs isort/flake8 to lint python code, requires .flake8rc and .isor
 
 
 def fml(ctx):
-    return (
-        (sys.argv[0], "fmt"),
-        (sys.argv[0], "lint"),
-    )
+    return ((sys.argv[0], "fmt"), (sys.argv[0], "lint"))
 
 
 fml.help = "Run custom command 'fmt' followed by 'lint'"
@@ -213,18 +256,23 @@ def pg_dump(env_cmd, python_cmd, project_root, manage_py, *args):
     log("dst_dir", dst_dir)
     log(env_cmd, python_cmd, project_root, manage_py, args)
     container = subprocess.check_output(
-        ['docker-compose', 'ps', '-q', 'postgres'], stderr=sys.stderr).strip()
+        ["docker-compose", "ps", "-q", "postgres"], stderr=sys.stderr
+    ).strip()
     log("pg container:", container)
 
     f = tempfile.NamedTemporaryFile(
-        delete=False,
-        prefix="pg-",
-        suffix=".sql",
-        dir=dst_dir)
+        delete=False, prefix="pg-", suffix=".sql", dir=dst_dir
+    )
     log("tempfile:", f.name)
     try:
-        command = ['docker', 'exec', container, 'sh',
-                   '-c', "echo pg_dump -U $POSTGRES_USER"]
+        command = [
+            "docker",
+            "exec",
+            container,
+            "sh",
+            "-c",
+            "echo pg_dump -U $POSTGRES_USER",
+        ]
         log("command: ", command)
         proc = subprocess.Popen(command, stdout=f, stderr=sys.stderr)
         proc.wait()
@@ -248,20 +296,20 @@ pg_dump.help = "create postgres sql dump file, expects a docker-compose setup wh
 
 CALLS = {
     "kill_runservers": kill_runservers,
-    'kill_manages': kill_manages,
-    'watchexec_run': watchexec_run,
-    'watchexec_test': watchexec_test,
-    'watchexec_lint': watchexec_lint,
-    'lint': lint,
-    'fmt': fmt,
-    'fml': fml,
+    "kill_manages": kill_manages,
+    "watchexec_run": watchexec_run,
+    "watchexec_test": watchexec_test,
+    "watchexec_lint": watchexec_lint,
+    "lint": lint,
+    "fmt": fmt,
+    "fml": fml,
     # 'pg_dump': pg_dump,
 }
 
 stderr = None
-if 'DJANGO_AUTO_COMPLETE' in os.environ:
+if "DJANGO_AUTO_COMPLETE" in os.environ:
     CALLS = {}
-    stderr = open(os.devnull, 'w')
+    stderr = open(os.devnull, "w")
 
 
 class Context(object):
@@ -294,22 +342,23 @@ def run(*args):
         log("found alias:", args)
 
     project_root = os.getcwd()
-    while not os.path.exists(joinpath(project_root, 'manage.py')):
+    while not os.path.exists(joinpath(project_root, "manage.py")):
         base_dir = os.path.dirname(project_root)
         if base_dir != project_root:
             project_root = base_dir
         else:
             sys.exit(
-                'django-shortcuts: No \'manage.py\' script'
-                ' found in this directory or its parents.')
+                "django-shortcuts: No 'manage.py' script"
+                " found in this directory or its parents."
+            )
     log("project root", project_root)
-    manage_py = (joinpath(project_root, 'manage.py'),)
+    manage_py = (joinpath(project_root, "manage.py"),)
 
     python_cmd = (sys.executable,)
     env_cmd = tuple()
-    if os.path.exists(joinpath(project_root, 'Pipfile')):
+    if os.path.exists(joinpath(project_root, "Pipfile")):
         env_cmd = ("pipenv", "run")
-        python_cmd = ('python',)
+        python_cmd = ("python",)
     log("env_cmd:", env_cmd)
     log("pyton:", python_cmd)
 
@@ -326,12 +375,12 @@ def run(*args):
     log("commands", commands)
 
     cmd_env = os.environ.copy()
-    if 'ENV_FILE' in cmd_env:
-        log("ENV_FILE is set, will not override:", cmd_env['ENV_FILE'])
+    if "ENV_FILE" in cmd_env:
+        log("ENV_FILE is set, will not override:", cmd_env["ENV_FILE"])
     else:
         dev_envfile = joinpath(project_root, "dev.env")
         if os.path.exists(dev_envfile):
-            cmd_env['ENV_FILE'] = dev_envfile
+            cmd_env["ENV_FILE"] = dev_envfile
             log("set ENV_FILE: ", dev_envfile)
 
     if len(commands) > 1:
@@ -370,6 +419,7 @@ def main():
 
         def killer(sig, frame):
             os.killpg(0, signal.SIGKILL)
+
         signal.signal(signal.SIGINT, killer)
 
     try:
@@ -379,5 +429,5 @@ def main():
             os.killpg(0, signal.SIGKILL)
 
 
-if __name__ == '__main__':
+if __name__ == "__main__":
     main()
