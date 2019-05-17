@@ -12,6 +12,10 @@ case ${bn} in
   autopep8|flake8|twine|mkdocs|wakatime|pyformat|docker-compose|pipenv|linode-cli|autoflake|poetry|black|pyupgrade|reorder-python-imports|wily)
     packages=${bn}
     ;;
+  pre-commit|pre-commit-validate-manifest|pre-commit-validate-config)
+    packages=pre-commit
+    env_name=pre-commit
+    ;;
   platformio|pio)
     py_v="2"
     packages=platformio
