@@ -1,7 +1,6 @@
 #!/usr/bin/env python
 
 
-import atexit
 import os
 import shutil
 import signal
@@ -15,7 +14,8 @@ from os.path import join as joinpath
 helptext = """Django manage wrapper.
 
 The additional utiltiy commands are modeled to work on very specific project
-structures so they probably won't just work OOTB for any general django project.
+structures so they probably won't just work OOTB for any general django
+project.
 
 Pipenv is supported, if a 'Pipfile' is located in the same directory as
 'manage.py', all commands will be exedcuted using 'pipenv run'.
@@ -162,22 +162,10 @@ watchexec_lint.help = (
 
 def fmt(ctx):
     commands = tuple()
-    if ctx.has_file(".isort.cfg"):
-        commands += (
-            (
-                ctx.env_cmd
-                + (
-                    "isort",
-                    "-q",
-                    "-sp",
-                    ctx.rootfile(".isort.cfg"),
-                    "-y",
-                    "-rc",
-                    ctx.project_root,
-                )
-            ),
-        )
-    if ctx.has_file(".flake8rc"):
+
+    if ctx.has_file("pyproject.toml", find_line="[tool.black]"):
+        commands += ((ctx.env_cmd + ("black", "-q", ctx.project_root)),)
+    elif ctx.has_file(".flake8rc"):
         commands += (
             (
                 ctx.env_cmd
@@ -191,6 +179,21 @@ def fmt(ctx):
                     "-a",
                     "-r",
                     "--in-place",
+                    ctx.project_root,
+                )
+            ),
+        )
+    if ctx.has_file(".isort.cfg"):
+        commands += (
+            (
+                ctx.env_cmd
+                + (
+                    "isort",
+                    "-q",
+                    "-sp",
+                    ctx.rootfile(".isort.cfg"),
+                    "-y",
+                    "-rc",
                     ctx.project_root,
                 )
             ),
@@ -323,8 +326,18 @@ class Context(object):
     def rootfile(self, filename):
         return joinpath(self.project_root, filename)
 
-    def has_file(self, filename):
-        return os.path.exists(self.rootfile(filename))
+    def has_file(self, filename, find_line=None):
+        full_name = self.rootfile(filename)
+        exists = os.path.exists(full_name)
+        if find_line is None:
+            log("exists:", exists, full_name)
+            return exists
+        with open(full_name, "r") as f:
+            if f.readline().strip() == find_line:
+                log("has_line:", full_name, find_line)
+                return True
+        log("does not have line:", full_name, find_line)
+        return False
 
 
 def run(*args):
@@ -360,7 +373,7 @@ def run(*args):
         env_cmd = ("pipenv", "run")
         python_cmd = ("python",)
     log("env_cmd:", env_cmd)
-    log("pyton:", python_cmd)
+    log("python:", python_cmd)
 
     if len(args) > 0 and args[0] in CALLS:
         ctx = Context(env_cmd, python_cmd, project_root, manage_py, args)
@@ -388,7 +401,7 @@ def run(*args):
         for cmd in commands:
             log("command", cmd)
             ex = subprocess.call(cmd, env=cmd_env, stderr=stderr)
-            if ex is not 0:
+            if ex != 0:
                 failed = ex
         return failed
     else:
