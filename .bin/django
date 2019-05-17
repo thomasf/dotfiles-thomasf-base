@@ -78,7 +78,10 @@ def kill_runservers(ctx):
     return (("pkill", "-f", "manage.py runserver"),)
 
 
-kill_runservers.help = "Kill all processes matching 'manage.py runserver' this command probably only works in linux os'es."
+kill_runservers.help = (
+    "Kill all processes matching 'manage.py runserver'. "
+    "This command probably only works in linux os'es."
+)
 
 
 def kill_manages(ctx):
@@ -86,7 +89,10 @@ def kill_manages(ctx):
     return (("pkill", "-f", "manage.py"),)
 
 
-kill_manages.help = "Kill all processes matching 'manage.py', this command probably only works in linux os'es."
+kill_manages.help = (
+    "Kill all processes matching 'manage.py'. "
+    "This command probably only works in linux os'es."
+)
 
 
 def watchexec_run(ctx):
@@ -204,7 +210,10 @@ def fmt(ctx):
     return commands
 
 
-fmt.help = "Runs isort/autopep8 to format python code, requires .flake8rc and .isort.cfg in project root to work."
+fmt.help = (
+    "Runs isort/autopep8 to format python code. "
+    "requires .flake8rc and .isort.cfg in project root to work."
+)
 
 
 def lint(ctx):
@@ -238,7 +247,10 @@ def lint(ctx):
     return commands
 
 
-lint.help = "Runs isort/flake8 to lint python code, requires .flake8rc and .isort.cfg in project root to work."
+lint.help = (
+    "Runs isort/flake8 to lint python code. "
+    "requires .flake8rc and .isort.cfg in project root to work."
+)
 
 
 def fml(ctx):
@@ -295,7 +307,10 @@ def pg_dump(env_cmd, python_cmd, project_root, manage_py, *args):
     sys.exit(0)
 
 
-pg_dump.help = "create postgres sql dump file, expects a docker-compose setup where the postgres container is named 'postgres'"
+pg_dump.help = (
+    "Create postgres sql dump file, expects a docker-compose setup "
+    "where the postgres container is named 'postgres'"
+)
 
 CALLS = {
     "kill_runservers": kill_runservers,
