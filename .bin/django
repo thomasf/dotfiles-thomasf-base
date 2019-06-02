@@ -414,13 +414,13 @@ def run(*args):
     if len(commands) > 1:
         failed = 0
         for cmd in commands:
-            log("command", cmd)
+            log("command", cmd, ":", " ".join(cmd))
             ex = subprocess.call(cmd, env=cmd_env, stderr=stderr)
             if ex != 0:
                 failed = ex
         return failed
     else:
-        log("command", commands[0])
+        log("command", commands[0], ":", " ".join(commands[0]))
         log("starting subprocess")
         ret = subprocess.call(commands[0], env=cmd_env, stderr=stderr)
         log("subprocess ended with exit code {}".format(ret))
