@@ -1,4 +1,4 @@
-#!/bin/sh
+#!/bin/bash
 
 set -e
 # set -x
@@ -8,9 +8,29 @@ cmd="NO_COMMAND"
 bn=$(basename ${0})
 env_name=${bn}
 
+upgradeall() {
+  deactivate || true
+  for d in ${HOME}/.virtualenvs-cmd/*; do
+    export d
+    (
+      set -e
+      cd ${d}
+      . bin/activate
+      pip install --upgrade $(cat requirements.txt)
+    )
+  done
+}
+
 case ${bn} in
-  autopep8|flake8|twine|mkdocs|wakatime|pyformat|docker-compose|pipenv|linode-cli|autoflake|poetry|black|pyupgrade|reorder-python-imports|wily)
-    packages=${bn}
+  py-cmd-env)
+    case ${1} in
+      u|upgrade)
+        upgradeall
+        exit 0
+        ;;
+    esac
+    echo "usage ${0} upgrade"
+    exit 1
     ;;
   pre-commit|pre-commit-validate-manifest|pre-commit-validate-config)
     packages=pre-commit
@@ -35,13 +55,8 @@ case ${bn} in
   devpi)
     packages=devpi-client
     ;;
-  pyls)
-    packages="python-language-server[all] pyls-isort pyls-mypy"
-    env_name="python-language-server"
-    ;;
   *)
-    echo "Nothing to do for ${0}"
-    exit 1
+    packages=${bn}
     ;;
 esac
 
@@ -65,6 +80,7 @@ if [ ! -e "${cmd_path}" ]; then
       exit 1
       ;;
   esac
+
   ${env_path}/bin/pip install wheel
   ${env_path}/bin/pip install ${packages}
   echo ${packages} > "${env_path}/requirements.txt"

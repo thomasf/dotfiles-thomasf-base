@@ -112,18 +112,7 @@ upgrader-mu(){
 }
 
 upgrader-pip() {
-  deactivate || true
-  for d in ${HOME}/.virtualenvs-cmd/*; do
-    export d
-    (
-      set -e
-      cd ${d}
-      . bin/activate
-      pip install --upgrade $(cat requirements.txt)
-    )
-  done
-
-
+  py-cmd-env upgrade
 }
 
 upgrader-npm() {
