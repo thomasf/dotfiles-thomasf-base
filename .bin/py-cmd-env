@@ -36,6 +36,10 @@ case ${bn} in
     packages=pre-commit
     env_name=pre-commit
     ;;
+  ansible|ansible-playbook|ansible-config|ansible-connection|ansible-console|ansible-doc|ansible-galaxy|ansible-inventory|ansible-pull|ansible-vault)
+    packages=ansible
+    env_name=ansible
+    ;;
   platformio|pio)
     py_v="2"
     packages=platformio
