@@ -19,7 +19,7 @@ dl_completion() {
 dl_completion "nvm" "https://raw.github.com/creationix/nvm/master/bash_completion" &
 dl_completion "lein" "https://raw.github.com/technomancy/leiningen/master/bash_completion.bash" &
 dl_completion "android" "https://raw.github.com/mbrubeck/android-completion/master/android" &
-dl_completion "git" "https://raw.github.com/git/git/master/contrib/completion/git-completion.bash" &
+# dl_completion "git" "https://raw.github.com/git/git/master/contrib/completion/git-completion.bash"
 dl_completion "ipython" "https://github.com/ipython/ipython/raw/master/examples/IPython%20Kernel/ipython-completion.bash" &
 dl_completion "maven" "https://raw.github.com/juven/maven-bash-completion/master/bash_completion.bash" &
 dl_completion "vagrant" "https://raw.github.com/kura/vagrant-bash-completion/master/etc/bash_completion.d/vagrant" &
