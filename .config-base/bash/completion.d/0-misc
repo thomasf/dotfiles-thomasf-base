@@ -5,8 +5,14 @@ complete -F _filedir_xspec e
 complete -F _filedir_xspec ee
 
 __g_complete() {
-  __load_completion git || true
-  __git_wrap__git_main "$@"
+  if  ! type -t __git_wrap__git_main > /dev/null 2>&1; then
+    if type -t __load_completion > /dev/null 2>&1;  then
+      __load_completion git || true
+    fi
+  fi
+  if type -t __git_wrap__git_main > /dev/null 2>&1; then
+    __git_wrap__git_main "$@"
+  fi
 }
 complete -o bashdefault -o default -o nospace -F __g_complete g
 complete -F _docker_compose doco
