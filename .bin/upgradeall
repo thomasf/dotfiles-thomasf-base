@@ -70,20 +70,16 @@ upgrader-goget() {
   export GOPATH;
   for l in  \
      github.com/github/hub \
-     github.com/golang/dep/cmd/dep \
      github.com/golang/lint/golint \
      github.com/jstemmer/gotags \
      github.com/junegunn/fzf/... \
-     github.com/kardianos/govendor/... \
      github.com/monochromegane/the_platinum_searcher/cmd/... \
      github.com/motemen/ghq/ \
      github.com/nsf/gocode \
      github.com/rogpeppe/godef \
-     github.com/shurcooL/Go-Package-Store/cmd/... \
      github.com/shurcooL/markdownfmt \
      github.com/smartystreets/goconvey \
      github.com/sosedoff/pgweb \
-     golang.org/x/tools/cmd/... \
      github.com/sourcegraph/go-langserver \
      ; do
     ts "${green}${l}${reset}"
