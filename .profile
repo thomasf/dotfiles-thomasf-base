@@ -31,6 +31,7 @@ apath() {
 }
 
 # general global path prepends
+ppath /snap/bin
 ppath /sbin
 ppath /bin
 ppath /usr/sbin
