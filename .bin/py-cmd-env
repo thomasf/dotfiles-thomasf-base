@@ -32,6 +32,10 @@ case ${bn} in
     echo "usage ${0} upgrade"
     exit 1
     ;;
+  glfs)
+    packages=gitlabfs
+    env_name=gitlabfs
+    ;;
   pre-commit|pre-commit-validate-manifest|pre-commit-validate-config)
     packages=pre-commit
     env_name=pre-commit
