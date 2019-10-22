@@ -49,10 +49,6 @@ case ${bn} in
     packages=platformio
     env_name=platformio
     ;;
-  tox|detox)
-    packages="tox detox"
-    env_name=tox
-    ;;
   git-goggles)
     py_v="2"
     packages="git-goggles termcolor"
