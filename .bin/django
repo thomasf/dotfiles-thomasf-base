@@ -105,7 +105,7 @@ def watchexec_run(ctx):
             "SIGKILL",
             "--restart",
             "--exts",
-            ".py,.html,.env",
+            ".py,.html,.env,.mo",
             "--",
         )
         + ctx.env_cmd
@@ -129,7 +129,7 @@ def watchexec_test(ctx):
             "--watch",
             ctx.project_root,
             "--exts",
-            ".py,.html,.env,.json",
+            ".py,.html,.env,.json,.mo,.po",
             "--",
         )
         + ctx.env_cmd
