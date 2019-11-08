@@ -11,6 +11,7 @@ magenta="$(tput setaf 5  2>/dev/null||echo -n)"
 
 set -e
 # set -x
+set -euxo pipefail
 
 ts() {
   echo "${reset}[$(date +%T)] ${@}"
@@ -73,17 +74,17 @@ upgrader-goget() {
      github.com/golang/lint/golint \
      github.com/jstemmer/gotags \
      github.com/junegunn/fzf/... \
-     github.com/monochromegane/the_platinum_searcher/cmd/... \
+     github.com/monochromegane/the_platinum_searcher/cmd/pt/ \
      github.com/motemen/ghq/ \
-     github.com/nsf/gocode \
-     github.com/rogpeppe/godef \
      github.com/shurcooL/markdownfmt \
      github.com/smartystreets/goconvey \
      github.com/sosedoff/pgweb \
-     github.com/sourcegraph/go-langserver \
      ; do
     ts "${green}${l}${reset}"
-    out=`go get -u -v ${l} 2>&1` || echo -e "\n${red}FAILED ${l}\n${yellow}${out}${reset}\n"
+    (
+      # set -e &&
+      cd "${HOME}/src/${l}" && git pull &&  go install -mod readonly .
+    ) || echo -e "\n${red}FAILED ${l}\n${yellow}${out}${reset}\n"
   done
 }
 
