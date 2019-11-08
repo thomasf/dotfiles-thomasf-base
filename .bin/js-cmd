@@ -1,0 +1,70 @@
+#!/usr/bin/env python
+
+
+import os
+import signal
+import subprocess
+import sys
+from inspect import getframeinfo, stack
+from os.path import join as joinpath
+
+verbose = False
+
+argv = sys.argv
+if len(argv) > 1 and argv[1] == "--debug-wrapper":
+    verbose = True
+    argv = (argv[0],) + tuple(argv[2:])
+else:
+    sys.tracebacklimit = 0
+
+has_setpgrp = sys.platform in ["linux", "linux2"]
+
+
+def log(*msg):
+    if verbose:
+        caller = getframeinfo(stack()[1][0])
+        strs = [str(i) for i in msg]
+        print("{:4}: {}".format(caller.lineno, " ".join(strs)))
+
+
+log("args after -v", argv)
+
+
+def run(*args):
+    project_root = os.getcwd()
+    while not os.path.exists(joinpath(project_root, "node_modules")):
+        base_dir = os.path.dirname(project_root)
+        if base_dir != project_root:
+            project_root = base_dir
+        else:
+            sys.exit("node_modules not found")
+    name = os.path.basename(sys.argv[0])
+    log("name", name)
+    command = joinpath(project_root, "node_modules/.bin/", name)
+    log("command", command)
+    call = (command,) + args
+    log("call", call)
+    if os.path.isfile(command):
+        ret = subprocess.call(call, stdout=sys.stdout, stderr=sys.stderr)
+        log("subprocess ended with exit code {}".format(ret))
+        return ret
+
+
+def main():
+    if has_setpgrp:
+        os.setpgrp()
+
+        def killer(sig, frame):
+            os.killpg(0, signal.SIGKILL)
+
+        signal.signal(signal.SIGINT, killer)
+
+    try:
+        sys.exit(run(*argv[1:]))
+    except Exception:
+        if has_setpgrp:
+            os.killpg(0, signal.SIGKILL)
+
+
+if __name__ == "__main__":
+    main()

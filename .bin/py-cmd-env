@@ -8,6 +8,39 @@ cmd="NO_COMMAND"
 bn=$(basename ${0})
 env_name=${bn}
 
+
+# colors
+reset="$(tput sgr0 2>/dev/null||echo -n)"
+red="$(tput setaf 1 2>/dev/null||echo -n)"
+green="$(tput setaf 2  2>/dev/null||echo -n)"
+yellow="$(tput setaf 3  2>/dev/null||echo -n)"
+magenta="$(tput setaf 5  2>/dev/null||echo -n)"
+
+
+ts() {
+  echo "${reset}[$(date +%T)] ${@}"
+}
+
+
+upgrade-env() {
+  local env_dir=${1}
+  ts "$yellow ->  $magenta $env_dir $reset"
+  deactivate 2> /dev/null|| true
+  echo -n ${env_name} | (
+    set -e &&
+    cd "${env_dir}" &&
+    . bin/activate &&
+    pip install --upgrade -r requirements.txt
+  )
+  ts "$yellow <- $magenta $env_dir $reset"
+}
+
+list-envs() {
+  find ${HOME}/.virtualenvs-cmd/  -maxdepth 1 -mindepth 1 -type d
+}
+
+
+
 upgradeall() {
   deactivate || true
   for d in ${HOME}/.virtualenvs-cmd/*; do
@@ -23,9 +56,19 @@ upgradeall() {
 
 case ${bn} in
   py-cmd-env)
-    case ${1} in
+    subcommand=${1}
+    shift
+    case ${subcommand} in
       u|upgrade)
         upgradeall
+        exit 0
+        ;;
+      ls|list-envs)
+        list-envs
+        exit 0
+        ;;
+      upgrade-env)
+        upgrade-env "$1"
         exit 0
         ;;
     esac
@@ -58,6 +101,9 @@ case ${bn} in
     ;;
   devpi)
     packages=devpi-client
+    ;;
+  gitlab)
+    packages=python-gitlab
     ;;
   *)
     packages=${bn}
