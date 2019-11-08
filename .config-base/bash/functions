@@ -232,7 +232,9 @@ else
 fi
 
 l() {
-  if hash pls 2>/dev/null && [ ! ${__OS} = darwin ]; then
+  if hash exa 2>/dev/null; then
+    exa -l --group-directories-first "$@"
+  elif hash pls 2>/dev/null && [ ! ${__OS} = darwin ]; then
     pls "$@"
   else
     ls -l "$@"
