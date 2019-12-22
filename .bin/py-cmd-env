@@ -105,6 +105,9 @@ case ${bn} in
   gitlab)
     packages=python-gitlab
     ;;
+  dephell)
+    packages="dephell[full]"
+    ;;
   *)
     packages=${bn}
     ;;
