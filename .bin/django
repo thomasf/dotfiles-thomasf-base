@@ -384,7 +384,10 @@ def run(*args):
 
     python_cmd = (sys.executable,)
     env_cmd = tuple()
-    if os.path.exists(joinpath(project_root, "Pipfile.lock")):
+    if os.path.exists(joinpath(project_root, "poetry.lock")):
+        env_cmd = ("poetry", "run")
+        python_cmd = ("python",)
+    elif os.path.exists(joinpath(project_root, "Pipfile.lock")):
         env_cmd = ("pipenv", "run")
         python_cmd = ("python",)
     log("env_cmd:", env_cmd)
