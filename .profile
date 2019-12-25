@@ -50,6 +50,7 @@ ppath /usr/local/opt/git/bin
 # User home path prepends
 ppath ~/.opt/depot_tools
 ppath ~/.cabal/bin
+ppath  ~/.ghcup/bin
 
 # Misc User home path prepends
 ppath ~/.rvm/bin
