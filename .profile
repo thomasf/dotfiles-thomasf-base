@@ -41,6 +41,7 @@ ppath /usr/local/bin
 # debian(?) global path prepends
 ppath /var/lib/gems/1.8/bin
 ppath /var/lib/gems/1.9/bin
+ppath /var/lib/gems/2.5/bin
 
 # osx (homebrew) global path prepends
 ppath /usr/local/opt/ruby/bin
