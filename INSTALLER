@@ -27,7 +27,7 @@ gu() {
 }
 
  case "${USER}" in
-   thomasf|a00001)
+   t|thomasf|a00001)
      gc user.name "Thomas Frössman"
      gc user.email "thomasf@jossystem.se"
      gc github.user thomasf
