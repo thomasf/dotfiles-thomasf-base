@@ -40,6 +40,7 @@ cabal-dev
 *_flymake*
 flycheck_*
 projectile-bookmarks.eld
+.projectile
 .cask/
 
 #### Idea - Intellij/Pycharm...
