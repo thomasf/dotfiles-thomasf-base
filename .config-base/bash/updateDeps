@@ -33,6 +33,8 @@ dl_completion "ansible-playbook" "https://raw.githubusercontent.com/dysosmus/ans
 dl_completion "ansible-pull" "https://raw.githubusercontent.com/dysosmus/ansible-completion/master/ansible-pull-completion.bash" &
 dl_completion "ansible-vault" "https://raw.githubusercontent.com/dysosmus/ansible-completion/master/ansible-vault-completion.bash" &
 
+dl_completion "yarn" "https://raw.githubusercontent.com/dsifford/yarn-completion/master/yarn-completion.bash"
+
 dl_bin "git-imerge" "https://raw.github.com/mhagger/git-imerge/master/git-imerge" &
 dl_bin "git-when-merged" "https://raw.githubusercontent.com/mhagger/git-when-merged/master/bin/git-when-merged" &
 dl_bin "ghi" "https://raw.github.com/stephencelis/ghi/master/ghi" &
