@@ -213,6 +213,16 @@ MPD_HOST=localhost && export MPD_HOST
     && DYNAMIC_COLORS_ROOT="${HOME}/.config-base/dynamic-colors" \
     && export DYNAMIC_COLORS_ROOT
 
+
+# Set android sdk home
+[ -d "${HOME}/.opt/android-sdks" ] \
+  && export ANDROID_SDK="${HOME}/.opt/android-sdks" \
+  && export ANDROID_HOME="${ANDROID_SDK}"
+
+# Set android ndk home
+[ -d "${HOME}/.opt/android-ndk" ] \
+  && export ANDROID_NDK="${HOME}/.opt/android-ndk"
+
 # ------------------------------------------------------------------------------
 # PRIVATE AND LOCAL
 #
