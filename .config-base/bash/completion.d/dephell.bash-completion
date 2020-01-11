@@ -1,0 +1,660 @@
+_dephell()
+{
+  local first second current double
+  COMPREPLY=()
+  first="${COMP_WORDS[1]}"
+  second="${COMP_WORDS[2]}"
+  double="${COMP_WORDS[1]} ${COMP_WORDS[2]}"
+  current="${COMP_WORDS[COMP_CWORD]}"
+
+  # autocomplete command first word
+  if [[ ${first} == ${current} ]] ; then
+    COMPREPLY=( $(compgen -W "jail inspect package venv deps vendor self project docker generate --help" -- ${current}) )
+    return 0
+  fi
+
+  # autocomplete command second word
+  if [[ ${second} == ${current} ]] ; then
+    case "${first}" in
+      
+        deps)
+          COMPREPLY=( $(compgen -W "tree install outdated convert add sync audit licenses check " -- ${current}) )
+          return 0
+          ;;
+      
+        docker)
+          COMPREPLY=( $(compgen -W "prepare stop tags run create destroy shell " -- ${current}) )
+          return 0
+          ;;
+      
+        generate)
+          COMPREPLY=( $(compgen -W "config license contributing authors travis editorconfig " -- ${current}) )
+          return 0
+          ;;
+      
+        inspect)
+          COMPREPLY=( $(compgen -W "venv config gadget versioning self project auth " -- ${current}) )
+          return 0
+          ;;
+      
+        jail)
+          COMPREPLY=( $(compgen -W "list try show remove install " -- ${current}) )
+          return 0
+          ;;
+      
+        package)
+          COMPREPLY=( $(compgen -W "list releases show remove install bug downloads purge search " -- ${current}) )
+          return 0
+          ;;
+      
+        project)
+          COMPREPLY=( $(compgen -W "test bump validate build " -- ${current}) )
+          return 0
+          ;;
+      
+        self)
+          COMPREPLY=( $(compgen -W "upgrade auth autocomplete uncache " -- ${current}) )
+          return 0
+          ;;
+      
+        vendor)
+          COMPREPLY=( $(compgen -W "import download " -- ${current}) )
+          return 0
+          ;;
+      
+        venv)
+          COMPREPLY=( $(compgen -W "run shell destroy create " -- ${current}) )
+          return 0
+          ;;
+      
+      *)
+      ;;
+    esac
+  fi
+
+  # autocomplete one-word command arguments
+  case "${first}" in
+    
+      "deps add")
+        COMPREPLY=( $(compgen -W "--table --silent --versioning --cache-path -c --env --cache-ttl --nocolors --tests --repo --strategy --help --traceback --pdb --project --from --format --warehouse --bin --filter --from-format --config --from-path --bitbucket --prereleases --level --envs -e -h --mutations " -- ${current}) )
+        return 0
+        ;;
+    
+      "deps audit")
+        COMPREPLY=( $(compgen -W "--table --silent --versioning --cache-path -c --env --cache-ttl --nocolors --tests --repo --help --traceback --pdb --project --from --format --warehouse --bin --filter --from-format --config --from-path --bitbucket --level --envs -e -h " -- ${current}) )
+        return 0
+        ;;
+    
+      "deps check")
+        COMPREPLY=( $(compgen -W "--table --silent --versioning --cache-path -c --env --cache-ttl --dotenv --nocolors --tests --repo --strategy --help --traceback --pdb --project --from --format --warehouse --bin --from-format --filter --venv --python --config --from-path --bitbucket --prereleases --level --envs -e -h --mutations " -- ${current}) )
+        return 0
+        ;;
+    
+      "deps convert")
+        COMPREPLY=( $(compgen -W "--sdist-ratio --table --silent --versioning --cache-path -c --env --cache-ttl --nocolors --tests --repo --to-path --strategy --help --traceback --pdb --project --from --format --to --to-format --warehouse --bin --from-format --filter --config --from-path --bitbucket --prereleases --level --envs -e -h --mutations " -- ${current}) )
+        return 0
+        ;;
+    
+      "deps install")
+        COMPREPLY=( $(compgen -W "--table --silent --versioning --cache-path -c --env --cache-ttl --dotenv --nocolors --tests --repo --strategy --help --traceback --pdb --project --from --format --warehouse --bin --from-format --filter --venv --python --config --from-path --bitbucket --prereleases --level --envs -e -h --mutations " -- ${current}) )
+        return 0
+        ;;
+    
+      "deps licenses")
+        COMPREPLY=( $(compgen -W "--table --silent --versioning --cache-path -c --env --cache-ttl --nocolors --tests --repo --strategy --help --traceback --pdb --project --from --format --warehouse --bin --from-format --filter --config --from-path --bitbucket --prereleases --level --envs -e -h --mutations " -- ${current}) )
+        return 0
+        ;;
+    
+      "deps outdated")
+        COMPREPLY=( $(compgen -W "--table --silent --versioning --cache-path -c --env --cache-ttl --nocolors --tests --repo --help --traceback --pdb --project --from --format --warehouse --bin --filter --from-format --config --from-path --bitbucket --level --envs -e -h " -- ${current}) )
+        return 0
+        ;;
+    
+      "deps sync")
+        COMPREPLY=( $(compgen -W "--sdist-ratio --table --silent --versioning --cache-path -c --env --cache-ttl --dotenv --nocolors --tests --repo --to-path --strategy --help --traceback --pdb --project --format --to --to-format --warehouse --bin --filter --venv --python --config --bitbucket --prereleases --level --envs -e -h --mutations " -- ${current}) )
+        return 0
+        ;;
+    
+      "deps tree")
+        COMPREPLY=( $(compgen -W "--table --silent --versioning --cache-path -c --env --cache-ttl --nocolors --tests --repo --strategy --help --traceback --type --pdb --project --from --format --warehouse --bin --from-format --filter --config --from-path --bitbucket --prereleases --level --envs -e -h --mutations " -- ${current}) )
+        return 0
+        ;;
+    
+      "docker create")
+        COMPREPLY=( $(compgen -W "--table --silent --versioning --cache-path -c --env --cache-ttl --nocolors --tests --help --traceback --pdb --project --format --bin --docker-container --filter --config --level --docker-repo --envs --docker-tag -e -h " -- ${current}) )
+        return 0
+        ;;
+    
+      "docker destroy")
+        COMPREPLY=( $(compgen -W "--table --silent --versioning --cache-path -c --env --cache-ttl --nocolors --tests --help --traceback --pdb --project --format --bin --docker-container --filter --config --level --docker-repo --envs --docker-tag -e -h " -- ${current}) )
+        return 0
+        ;;
+    
+      "docker prepare")
+        COMPREPLY=( $(compgen -W "--table --silent --versioning --cache-path -c --env --cache-ttl --nocolors --tests --help --traceback --pdb --project --format --bin --docker-container --filter --config --level --docker-repo --envs --docker-tag -e -h " -- ${current}) )
+        return 0
+        ;;
+    
+      "docker run")
+        COMPREPLY=( $(compgen -W "--table --silent --versioning --cache-path -c --env --cache-ttl --nocolors --tests --help --traceback --pdb --project --format --bin --docker-container --filter --config --level --docker-repo --envs --docker-tag -e -h " -- ${current}) )
+        return 0
+        ;;
+    
+      "docker shell")
+        COMPREPLY=( $(compgen -W "--table --silent --versioning --cache-path -c --env --cache-ttl --nocolors --tests --help --traceback --pdb --project --format --bin --docker-container --filter --config --level --docker-repo --envs --docker-tag -e -h " -- ${current}) )
+        return 0
+        ;;
+    
+      "docker stop")
+        COMPREPLY=( $(compgen -W "--table --silent --versioning --cache-path -c --env --cache-ttl --nocolors --tests --help --traceback --pdb --project --format --bin --docker-container --filter --config --level --docker-repo --envs --docker-tag -e -h " -- ${current}) )
+        return 0
+        ;;
+    
+      "docker tags")
+        COMPREPLY=( $(compgen -W "--table --silent --versioning --cache-path -c --env --cache-ttl --nocolors --tests --help --traceback --pdb --project --format --bin --docker-container --filter --config --level --docker-repo --envs --docker-tag -e -h " -- ${current}) )
+        return 0
+        ;;
+    
+      "generate authors")
+        COMPREPLY=( $(compgen -W "--table --silent --versioning --cache-path -c --env --cache-ttl --nocolors --tests --help --traceback --pdb --project --format --bin --filter --config --level --envs -e -h " -- ${current}) )
+        return 0
+        ;;
+    
+      "generate config")
+        COMPREPLY=( $(compgen -W "--table --silent --versioning --cache-path -c --env --cache-ttl --nocolors --tests --help --traceback --pdb --project --format --bin --filter --config --level --envs -e -h " -- ${current}) )
+        return 0
+        ;;
+    
+      "generate contributing")
+        COMPREPLY=( $(compgen -W "--table --silent --versioning --cache-path -c --env --cache-ttl --nocolors --tests --help --traceback --pdb --project --format --bin --filter --config --level --envs -e -h " -- ${current}) )
+        return 0
+        ;;
+    
+      "generate editorconfig")
+        COMPREPLY=( $(compgen -W "--table --silent --versioning --cache-path -c --env --cache-ttl --nocolors --tests --help --traceback --pdb --project --format --bin --filter --config --level --envs -e -h " -- ${current}) )
+        return 0
+        ;;
+    
+      "generate license")
+        COMPREPLY=( $(compgen -W "--table --silent --versioning --cache-path -c --env --cache-ttl --nocolors --owner --tests --help --traceback --pdb --project --format --bin --filter --config --level --envs -e -h " -- ${current}) )
+        return 0
+        ;;
+    
+      "generate travis")
+        COMPREPLY=( $(compgen -W "--table --silent --versioning --cache-path -c --env --cache-ttl --nocolors --tests --help --traceback --pdb --project --format --bin --filter --config --level --envs -e -h " -- ${current}) )
+        return 0
+        ;;
+    
+      "inspect auth")
+        COMPREPLY=( $(compgen -W "--pdb --config --nocolors --table --level --format --silent -e -h --filter -c --help --traceback --env " -- ${current}) )
+        return 0
+        ;;
+    
+      "inspect config")
+        COMPREPLY=( $(compgen -W "--sdist-ratio --table --silent --versioning --cache-path -c --env --cache-ttl --dotenv --nocolors --tests --repo --to-path --strategy --help --traceback --pdb --project --from --format --to --to-format --warehouse --bin --from-format --filter --venv --python --config --from-path --bitbucket --prereleases --level --envs -e -h --mutations " -- ${current}) )
+        return 0
+        ;;
+    
+      "inspect gadget")
+        COMPREPLY=( $(compgen -W "--config -e -h -c --help --env " -- ${current}) )
+        return 0
+        ;;
+    
+      "inspect project")
+        COMPREPLY=( $(compgen -W "--table --silent --versioning --cache-path -c --env --cache-ttl --nocolors --tests --repo --help --traceback --pdb --project --from --format --warehouse --bin --filter --from-format --config --from-path --bitbucket --level --envs -e -h " -- ${current}) )
+        return 0
+        ;;
+    
+      "inspect self")
+        COMPREPLY=( $(compgen -W "--table --silent --versioning --cache-path -c --env --cache-ttl --nocolors --tests --help --traceback --pdb --project --format --bin --filter --config --level --envs -e -h " -- ${current}) )
+        return 0
+        ;;
+    
+      "inspect venv")
+        COMPREPLY=( $(compgen -W "--table --silent --versioning --cache-path -c --env --cache-ttl --dotenv --nocolors --tests --help --traceback --pdb --project --format --bin --filter --venv --python --config --level --envs -e -h " -- ${current}) )
+        return 0
+        ;;
+    
+      "inspect versioning")
+        COMPREPLY=( $(compgen -W "--help -h " -- ${current}) )
+        return 0
+        ;;
+    
+      "jail install")
+        COMPREPLY=( $(compgen -W "--table --silent --versioning --cache-path -c --env --cache-ttl --dotenv --nocolors --tests --strategy --help --traceback --pdb --project --format --bin --filter --venv --python --config --prereleases --level --envs -e -h --mutations " -- ${current}) )
+        return 0
+        ;;
+    
+      "jail list")
+        COMPREPLY=( $(compgen -W "--table --silent --versioning --cache-path -c --env --cache-ttl --dotenv --nocolors --tests --help --traceback --pdb --project --format --bin --filter --venv --python --config --level --envs -e -h " -- ${current}) )
+        return 0
+        ;;
+    
+      "jail remove")
+        COMPREPLY=( $(compgen -W "--table --silent --versioning --cache-path -c --env --cache-ttl --dotenv --nocolors --tests --help --traceback --pdb --project --format --bin --filter --venv --python --config --level --envs -e -h " -- ${current}) )
+        return 0
+        ;;
+    
+      "jail show")
+        COMPREPLY=( $(compgen -W "--help -h " -- ${current}) )
+        return 0
+        ;;
+    
+      "jail try")
+        COMPREPLY=( $(compgen -W "--table --silent --versioning --cache-path -c --env --cache-ttl --dotenv --nocolors --tests --help --traceback --pdb --project --command --format --bin --filter --venv --python --config --level --envs -e -h " -- ${current}) )
+        return 0
+        ;;
+    
+      "package bug")
+        COMPREPLY=( $(compgen -W "--help -h " -- ${current}) )
+        return 0
+        ;;
+    
+      "package downloads")
+        COMPREPLY=( $(compgen -W "--table --silent --versioning --cache-path -c --env --cache-ttl --nocolors --tests --repo --help --traceback --pdb --project --format --warehouse --bin --filter --config --bitbucket --level --envs -e -h " -- ${current}) )
+        return 0
+        ;;
+    
+      "package install")
+        COMPREPLY=( $(compgen -W "--table --silent --versioning --cache-path -c --env --cache-ttl --dotenv --nocolors --tests --strategy --help --traceback --pdb --project --format --bin --filter --venv --python --config --prereleases --level --envs -e -h --mutations " -- ${current}) )
+        return 0
+        ;;
+    
+      "package list")
+        COMPREPLY=( $(compgen -W "--table --silent --versioning --cache-path -c --env --cache-ttl --dotenv --nocolors --tests --repo --help --traceback --pdb --project --format --warehouse --bin --filter --venv --python --config --bitbucket --level --envs -e -h " -- ${current}) )
+        return 0
+        ;;
+    
+      "package purge")
+        COMPREPLY=( $(compgen -W "--table --silent --versioning --cache-path -c --env --cache-ttl --dotenv --nocolors --tests --help --traceback --pdb --project --format --bin --filter --venv --python --config --level --envs -e -h " -- ${current}) )
+        return 0
+        ;;
+    
+      "package releases")
+        COMPREPLY=( $(compgen -W "--table --silent --versioning --cache-path -c --env --cache-ttl --nocolors --tests --repo --help --traceback --pdb --project --format --warehouse --bin --filter --config --bitbucket --level --envs -e -h " -- ${current}) )
+        return 0
+        ;;
+    
+      "package remove")
+        COMPREPLY=( $(compgen -W "--table --silent --versioning --cache-path -c --env --cache-ttl --dotenv --nocolors --tests --help --traceback --pdb --project --format --bin --filter --venv --python --config --level --envs -e -h " -- ${current}) )
+        return 0
+        ;;
+    
+      "package search")
+        COMPREPLY=( $(compgen -W "--table --silent --versioning --cache-path -c --env --cache-ttl --nocolors --tests --repo --help --traceback --pdb --project --format --warehouse --bin --filter --config --bitbucket --level --envs -e -h " -- ${current}) )
+        return 0
+        ;;
+    
+      "package show")
+        COMPREPLY=( $(compgen -W "--table --silent --versioning --cache-path -c --env --cache-ttl --dotenv --nocolors --tests --repo --help --traceback --pdb --project --format --warehouse --bin --filter --venv --python --config --bitbucket --level --envs -e -h " -- ${current}) )
+        return 0
+        ;;
+    
+      "project build")
+        COMPREPLY=( $(compgen -W "--table --silent --versioning --cache-path -c --env --cache-ttl --nocolors --tests --repo --strategy --help --traceback --pdb --project --from --format --warehouse --bin --from-format --filter --config --from-path --bitbucket --prereleases --level --envs -e -h --mutations " -- ${current}) )
+        return 0
+        ;;
+    
+      "project bump")
+        COMPREPLY=( $(compgen -W "--table --silent --versioning --cache-path -c --env --cache-ttl --nocolors --tests --repo --help --traceback --pdb --project --from --format --warehouse --bin --filter --from-format --tag --config --from-path --bitbucket --level --envs -e -h " -- ${current}) )
+        return 0
+        ;;
+    
+      "project test")
+        COMPREPLY=( $(compgen -W "--table --silent --versioning --cache-path -c --env --cache-ttl --dotenv --nocolors --tests --help --traceback --pdb --project --from --format --bin --filter --from-format --venv --python --config --from-path --level --envs -e -h " -- ${current}) )
+        return 0
+        ;;
+    
+      "project validate")
+        COMPREPLY=( $(compgen -W "--table --silent --versioning --cache-path -c --env --cache-ttl --nocolors --tests --help --traceback --pdb --project --from --format --bin --filter --from-format --config --from-path --level --envs -e -h " -- ${current}) )
+        return 0
+        ;;
+    
+      "self auth")
+        COMPREPLY=( $(compgen -W "--pdb --config --nocolors --table --level --format --silent -e -h --filter -c --help --traceback --env " -- ${current}) )
+        return 0
+        ;;
+    
+      "self autocomplete")
+        COMPREPLY=( $(compgen -W "--pdb --config --nocolors --table --level --format --silent -e -h --filter -c --help --traceback --env " -- ${current}) )
+        return 0
+        ;;
+    
+      "self uncache")
+        COMPREPLY=( $(compgen -W "--table --silent --versioning --cache-path -c --env --cache-ttl --nocolors --tests --help --traceback --pdb --project --format --bin --filter --config --level --envs -e -h " -- ${current}) )
+        return 0
+        ;;
+    
+      "self upgrade")
+        COMPREPLY=( $(compgen -W "--table --silent --versioning --cache-path -c --env --cache-ttl --nocolors --tests --help --traceback --pdb --project --format --bin --filter --config --level --envs -e -h " -- ${current}) )
+        return 0
+        ;;
+    
+      "vendor download")
+        COMPREPLY=( $(compgen -W "--table --silent --versioning --cache-path -c --env --cache-ttl --nocolors --tests --repo --strategy --help --traceback --pdb --project --from --format --warehouse --bin --from-format --filter --config --from-path --bitbucket --prereleases --level --envs -e -h --mutations " -- ${current}) )
+        return 0
+        ;;
+    
+      "vendor import")
+        COMPREPLY=( $(compgen -W "--table --silent --versioning --cache-path -c --env --cache-ttl --nocolors --tests --repo --strategy --help --traceback --pdb --project --from --format --warehouse --bin --from-format --filter --config --from-path --bitbucket --prereleases --level --envs -e -h --mutations " -- ${current}) )
+        return 0
+        ;;
+    
+      "venv create")
+        COMPREPLY=( $(compgen -W "--table --silent --versioning --cache-path -c --env --cache-ttl --dotenv --nocolors --tests --help --traceback --pdb --project --from --format --bin --filter --from-format --venv --python --config --from-path --level --envs -e -h " -- ${current}) )
+        return 0
+        ;;
+    
+      "venv destroy")
+        COMPREPLY=( $(compgen -W "--table --silent --versioning --cache-path -c --env --cache-ttl --nocolors --tests --help --traceback --pdb --project --format --bin --filter --config --level --envs -e -h " -- ${current}) )
+        return 0
+        ;;
+    
+      "venv run")
+        COMPREPLY=( $(compgen -W "--table --silent --versioning --cache-path -c --env --cache-ttl --dotenv --nocolors --tests --repo --help --traceback --pdb --project --format --warehouse --bin --filter --venv --python --config --bitbucket --level --envs -e -h " -- ${current}) )
+        return 0
+        ;;
+    
+      "venv shell")
+        COMPREPLY=( $(compgen -W "--table --silent --versioning --cache-path -c --env --cache-ttl --dotenv --nocolors --tests --help --traceback --pdb --project --from --format --bin --filter --from-format --venv --python --config --from-path --level --envs -e -h " -- ${current}) )
+        return 0
+        ;;
+    
+    *)
+    ;;
+  esac
+
+  # autocomplete two-words command arguments
+  case "${double}" in
+    
+      "deps add")
+        COMPREPLY=( $(compgen -W "--table --silent --versioning --cache-path -c --env --cache-ttl --nocolors --tests --repo --strategy --help --traceback --pdb --project --from --format --warehouse --bin --filter --from-format --config --from-path --bitbucket --prereleases --level --envs -e -h --mutations " -- ${current}) )
+        return 0
+        ;;
+    
+      "deps audit")
+        COMPREPLY=( $(compgen -W "--table --silent --versioning --cache-path -c --env --cache-ttl --nocolors --tests --repo --help --traceback --pdb --project --from --format --warehouse --bin --filter --from-format --config --from-path --bitbucket --level --envs -e -h " -- ${current}) )
+        return 0
+        ;;
+    
+      "deps check")
+        COMPREPLY=( $(compgen -W "--table --silent --versioning --cache-path -c --env --cache-ttl --dotenv --nocolors --tests --repo --strategy --help --traceback --pdb --project --from --format --warehouse --bin --from-format --filter --venv --python --config --from-path --bitbucket --prereleases --level --envs -e -h --mutations " -- ${current}) )
+        return 0
+        ;;
+    
+      "deps convert")
+        COMPREPLY=( $(compgen -W "--sdist-ratio --table --silent --versioning --cache-path -c --env --cache-ttl --nocolors --tests --repo --to-path --strategy --help --traceback --pdb --project --from --format --to --to-format --warehouse --bin --from-format --filter --config --from-path --bitbucket --prereleases --level --envs -e -h --mutations " -- ${current}) )
+        return 0
+        ;;
+    
+      "deps install")
+        COMPREPLY=( $(compgen -W "--table --silent --versioning --cache-path -c --env --cache-ttl --dotenv --nocolors --tests --repo --strategy --help --traceback --pdb --project --from --format --warehouse --bin --from-format --filter --venv --python --config --from-path --bitbucket --prereleases --level --envs -e -h --mutations " -- ${current}) )
+        return 0
+        ;;
+    
+      "deps licenses")
+        COMPREPLY=( $(compgen -W "--table --silent --versioning --cache-path -c --env --cache-ttl --nocolors --tests --repo --strategy --help --traceback --pdb --project --from --format --warehouse --bin --from-format --filter --config --from-path --bitbucket --prereleases --level --envs -e -h --mutations " -- ${current}) )
+        return 0
+        ;;
+    
+      "deps outdated")
+        COMPREPLY=( $(compgen -W "--table --silent --versioning --cache-path -c --env --cache-ttl --nocolors --tests --repo --help --traceback --pdb --project --from --format --warehouse --bin --filter --from-format --config --from-path --bitbucket --level --envs -e -h " -- ${current}) )
+        return 0
+        ;;
+    
+      "deps sync")
+        COMPREPLY=( $(compgen -W "--sdist-ratio --table --silent --versioning --cache-path -c --env --cache-ttl --dotenv --nocolors --tests --repo --to-path --strategy --help --traceback --pdb --project --format --to --to-format --warehouse --bin --filter --venv --python --config --bitbucket --prereleases --level --envs -e -h --mutations " -- ${current}) )
+        return 0
+        ;;
+    
+      "deps tree")
+        COMPREPLY=( $(compgen -W "--table --silent --versioning --cache-path -c --env --cache-ttl --nocolors --tests --repo --strategy --help --traceback --type --pdb --project --from --format --warehouse --bin --from-format --filter --config --from-path --bitbucket --prereleases --level --envs -e -h --mutations " -- ${current}) )
+        return 0
+        ;;
+    
+      "docker create")
+        COMPREPLY=( $(compgen -W "--table --silent --versioning --cache-path -c --env --cache-ttl --nocolors --tests --help --traceback --pdb --project --format --bin --docker-container --filter --config --level --docker-repo --envs --docker-tag -e -h " -- ${current}) )
+        return 0
+        ;;
+    
+      "docker destroy")
+        COMPREPLY=( $(compgen -W "--table --silent --versioning --cache-path -c --env --cache-ttl --nocolors --tests --help --traceback --pdb --project --format --bin --docker-container --filter --config --level --docker-repo --envs --docker-tag -e -h " -- ${current}) )
+        return 0
+        ;;
+    
+      "docker prepare")
+        COMPREPLY=( $(compgen -W "--table --silent --versioning --cache-path -c --env --cache-ttl --nocolors --tests --help --traceback --pdb --project --format --bin --docker-container --filter --config --level --docker-repo --envs --docker-tag -e -h " -- ${current}) )
+        return 0
+        ;;
+    
+      "docker run")
+        COMPREPLY=( $(compgen -W "--table --silent --versioning --cache-path -c --env --cache-ttl --nocolors --tests --help --traceback --pdb --project --format --bin --docker-container --filter --config --level --docker-repo --envs --docker-tag -e -h " -- ${current}) )
+        return 0
+        ;;
+    
+      "docker shell")
+        COMPREPLY=( $(compgen -W "--table --silent --versioning --cache-path -c --env --cache-ttl --nocolors --tests --help --traceback --pdb --project --format --bin --docker-container --filter --config --level --docker-repo --envs --docker-tag -e -h " -- ${current}) )
+        return 0
+        ;;
+    
+      "docker stop")
+        COMPREPLY=( $(compgen -W "--table --silent --versioning --cache-path -c --env --cache-ttl --nocolors --tests --help --traceback --pdb --project --format --bin --docker-container --filter --config --level --docker-repo --envs --docker-tag -e -h " -- ${current}) )
+        return 0
+        ;;
+    
+      "docker tags")
+        COMPREPLY=( $(compgen -W "--table --silent --versioning --cache-path -c --env --cache-ttl --nocolors --tests --help --traceback --pdb --project --format --bin --docker-container --filter --config --level --docker-repo --envs --docker-tag -e -h " -- ${current}) )
+        return 0
+        ;;
+    
+      "generate authors")
+        COMPREPLY=( $(compgen -W "--table --silent --versioning --cache-path -c --env --cache-ttl --nocolors --tests --help --traceback --pdb --project --format --bin --filter --config --level --envs -e -h " -- ${current}) )
+        return 0
+        ;;
+    
+      "generate config")
+        COMPREPLY=( $(compgen -W "--table --silent --versioning --cache-path -c --env --cache-ttl --nocolors --tests --help --traceback --pdb --project --format --bin --filter --config --level --envs -e -h " -- ${current}) )
+        return 0
+        ;;
+    
+      "generate contributing")
+        COMPREPLY=( $(compgen -W "--table --silent --versioning --cache-path -c --env --cache-ttl --nocolors --tests --help --traceback --pdb --project --format --bin --filter --config --level --envs -e -h " -- ${current}) )
+        return 0
+        ;;
+    
+      "generate editorconfig")
+        COMPREPLY=( $(compgen -W "--table --silent --versioning --cache-path -c --env --cache-ttl --nocolors --tests --help --traceback --pdb --project --format --bin --filter --config --level --envs -e -h " -- ${current}) )
+        return 0
+        ;;
+    
+      "generate license")
+        COMPREPLY=( $(compgen -W "--table --silent --versioning --cache-path -c --env --cache-ttl --nocolors --owner --tests --help --traceback --pdb --project --format --bin --filter --config --level --envs -e -h " -- ${current}) )
+        return 0
+        ;;
+    
+      "generate travis")
+        COMPREPLY=( $(compgen -W "--table --silent --versioning --cache-path -c --env --cache-ttl --nocolors --tests --help --traceback --pdb --project --format --bin --filter --config --level --envs -e -h " -- ${current}) )
+        return 0
+        ;;
+    
+      "inspect auth")
+        COMPREPLY=( $(compgen -W "--pdb --config --nocolors --table --level --format --silent -e -h --filter -c --help --traceback --env " -- ${current}) )
+        return 0
+        ;;
+    
+      "inspect config")
+        COMPREPLY=( $(compgen -W "--sdist-ratio --table --silent --versioning --cache-path -c --env --cache-ttl --dotenv --nocolors --tests --repo --to-path --strategy --help --traceback --pdb --project --from --format --to --to-format --warehouse --bin --from-format --filter --venv --python --config --from-path --bitbucket --prereleases --level --envs -e -h --mutations " -- ${current}) )
+        return 0
+        ;;
+    
+      "inspect gadget")
+        COMPREPLY=( $(compgen -W "--config -e -h -c --help --env " -- ${current}) )
+        return 0
+        ;;
+    
+      "inspect project")
+        COMPREPLY=( $(compgen -W "--table --silent --versioning --cache-path -c --env --cache-ttl --nocolors --tests --repo --help --traceback --pdb --project --from --format --warehouse --bin --filter --from-format --config --from-path --bitbucket --level --envs -e -h " -- ${current}) )
+        return 0
+        ;;
+    
+      "inspect self")
+        COMPREPLY=( $(compgen -W "--table --silent --versioning --cache-path -c --env --cache-ttl --nocolors --tests --help --traceback --pdb --project --format --bin --filter --config --level --envs -e -h " -- ${current}) )
+        return 0
+        ;;
+    
+      "inspect venv")
+        COMPREPLY=( $(compgen -W "--table --silent --versioning --cache-path -c --env --cache-ttl --dotenv --nocolors --tests --help --traceback --pdb --project --format --bin --filter --venv --python --config --level --envs -e -h " -- ${current}) )
+        return 0
+        ;;
+    
+      "inspect versioning")
+        COMPREPLY=( $(compgen -W "--help -h " -- ${current}) )
+        return 0
+        ;;
+    
+      "jail install")
+        COMPREPLY=( $(compgen -W "--table --silent --versioning --cache-path -c --env --cache-ttl --dotenv --nocolors --tests --strategy --help --traceback --pdb --project --format --bin --filter --venv --python --config --prereleases --level --envs -e -h --mutations " -- ${current}) )
+        return 0
+        ;;
+    
+      "jail list")
+        COMPREPLY=( $(compgen -W "--table --silent --versioning --cache-path -c --env --cache-ttl --dotenv --nocolors --tests --help --traceback --pdb --project --format --bin --filter --venv --python --config --level --envs -e -h " -- ${current}) )
+        return 0
+        ;;
+    
+      "jail remove")
+        COMPREPLY=( $(compgen -W "--table --silent --versioning --cache-path -c --env --cache-ttl --dotenv --nocolors --tests --help --traceback --pdb --project --format --bin --filter --venv --python --config --level --envs -e -h " -- ${current}) )
+        return 0
+        ;;
+    
+      "jail show")
+        COMPREPLY=( $(compgen -W "--help -h " -- ${current}) )
+        return 0
+        ;;
+    
+      "jail try")
+        COMPREPLY=( $(compgen -W "--table --silent --versioning --cache-path -c --env --cache-ttl --dotenv --nocolors --tests --help --traceback --pdb --project --command --format --bin --filter --venv --python --config --level --envs -e -h " -- ${current}) )
+        return 0
+        ;;
+    
+      "package bug")
+        COMPREPLY=( $(compgen -W "--help -h " -- ${current}) )
+        return 0
+        ;;
+    
+      "package downloads")
+        COMPREPLY=( $(compgen -W "--table --silent --versioning --cache-path -c --env --cache-ttl --nocolors --tests --repo --help --traceback --pdb --project --format --warehouse --bin --filter --config --bitbucket --level --envs -e -h " -- ${current}) )
+        return 0
+        ;;
+    
+      "package install")
+        COMPREPLY=( $(compgen -W "--table --silent --versioning --cache-path -c --env --cache-ttl --dotenv --nocolors --tests --strategy --help --traceback --pdb --project --format --bin --filter --venv --python --config --prereleases --level --envs -e -h --mutations " -- ${current}) )
+        return 0
+        ;;
+    
+      "package list")
+        COMPREPLY=( $(compgen -W "--table --silent --versioning --cache-path -c --env --cache-ttl --dotenv --nocolors --tests --repo --help --traceback --pdb --project --format --warehouse --bin --filter --venv --python --config --bitbucket --level --envs -e -h " -- ${current}) )
+        return 0
+        ;;
+    
+      "package purge")
+        COMPREPLY=( $(compgen -W "--table --silent --versioning --cache-path -c --env --cache-ttl --dotenv --nocolors --tests --help --traceback --pdb --project --format --bin --filter --venv --python --config --level --envs -e -h " -- ${current}) )
+        return 0
+        ;;
+    
+      "package releases")
+        COMPREPLY=( $(compgen -W "--table --silent --versioning --cache-path -c --env --cache-ttl --nocolors --tests --repo --help --traceback --pdb --project --format --warehouse --bin --filter --config --bitbucket --level --envs -e -h " -- ${current}) )
+        return 0
+        ;;
+    
+      "package remove")
+        COMPREPLY=( $(compgen -W "--table --silent --versioning --cache-path -c --env --cache-ttl --dotenv --nocolors --tests --help --traceback --pdb --project --format --bin --filter --venv --python --config --level --envs -e -h " -- ${current}) )
+        return 0
+        ;;
+    
+      "package search")
+        COMPREPLY=( $(compgen -W "--table --silent --versioning --cache-path -c --env --cache-ttl --nocolors --tests --repo --help --traceback --pdb --project --format --warehouse --bin --filter --config --bitbucket --level --envs -e -h " -- ${current}) )
+        return 0
+        ;;
+    
+      "package show")
+        COMPREPLY=( $(compgen -W "--table --silent --versioning --cache-path -c --env --cache-ttl --dotenv --nocolors --tests --repo --help --traceback --pdb --project --format --warehouse --bin --filter --venv --python --config --bitbucket --level --envs -e -h " -- ${current}) )
+        return 0
+        ;;
+    
+      "project build")
+        COMPREPLY=( $(compgen -W "--table --silent --versioning --cache-path -c --env --cache-ttl --nocolors --tests --repo --strategy --help --traceback --pdb --project --from --format --warehouse --bin --from-format --filter --config --from-path --bitbucket --prereleases --level --envs -e -h --mutations " -- ${current}) )
+        return 0
+        ;;
+    
+      "project bump")
+        COMPREPLY=( $(compgen -W "--table --silent --versioning --cache-path -c --env --cache-ttl --nocolors --tests --repo --help --traceback --pdb --project --from --format --warehouse --bin --filter --from-format --tag --config --from-path --bitbucket --level --envs -e -h " -- ${current}) )
+        return 0
+        ;;
+    
+      "project test")
+        COMPREPLY=( $(compgen -W "--table --silent --versioning --cache-path -c --env --cache-ttl --dotenv --nocolors --tests --help --traceback --pdb --project --from --format --bin --filter --from-format --venv --python --config --from-path --level --envs -e -h " -- ${current}) )
+        return 0
+        ;;
+    
+      "project validate")
+        COMPREPLY=( $(compgen -W "--table --silent --versioning --cache-path -c --env --cache-ttl --nocolors --tests --help --traceback --pdb --project --from --format --bin --filter --from-format --config --from-path --level --envs -e -h " -- ${current}) )
+        return 0
+        ;;
+    
+      "self auth")
+        COMPREPLY=( $(compgen -W "--pdb --config --nocolors --table --level --format --silent -e -h --filter -c --help --traceback --env " -- ${current}) )
+        return 0
+        ;;
+    
+      "self autocomplete")
+        COMPREPLY=( $(compgen -W "--pdb --config --nocolors --table --level --format --silent -e -h --filter -c --help --traceback --env " -- ${current}) )
+        return 0
+        ;;
+    
+      "self uncache")
+        COMPREPLY=( $(compgen -W "--table --silent --versioning --cache-path -c --env --cache-ttl --nocolors --tests --help --traceback --pdb --project --format --bin --filter --config --level --envs -e -h " -- ${current}) )
+        return 0
+        ;;
+    
+      "self upgrade")
+        COMPREPLY=( $(compgen -W "--table --silent --versioning --cache-path -c --env --cache-ttl --nocolors --tests --help --traceback --pdb --project --format --bin --filter --config --level --envs -e -h " -- ${current}) )
+        return 0
+        ;;
+    
+      "vendor download")
+        COMPREPLY=( $(compgen -W "--table --silent --versioning --cache-path -c --env --cache-ttl --nocolors --tests --repo --strategy --help --traceback --pdb --project --from --format --warehouse --bin --from-format --filter --config --from-path --bitbucket --prereleases --level --envs -e -h --mutations " -- ${current}) )
+        return 0
+        ;;
+    
+      "vendor import")
+        COMPREPLY=( $(compgen -W "--table --silent --versioning --cache-path -c --env --cache-ttl --nocolors --tests --repo --strategy --help --traceback --pdb --project --from --format --warehouse --bin --from-format --filter --config --from-path --bitbucket --prereleases --level --envs -e -h --mutations " -- ${current}) )
+        return 0
+        ;;
+    
+      "venv create")
+        COMPREPLY=( $(compgen -W "--table --silent --versioning --cache-path -c --env --cache-ttl --dotenv --nocolors --tests --help --traceback --pdb --project --from --format --bin --filter --from-format --venv --python --config --from-path --level --envs -e -h " -- ${current}) )
+        return 0
+        ;;
+    
+      "venv destroy")
+        COMPREPLY=( $(compgen -W "--table --silent --versioning --cache-path -c --env --cache-ttl --nocolors --tests --help --traceback --pdb --project --format --bin --filter --config --level --envs -e -h " -- ${current}) )
+        return 0
+        ;;
+    
+      "venv run")
+        COMPREPLY=( $(compgen -W "--table --silent --versioning --cache-path -c --env --cache-ttl --dotenv --nocolors --tests --repo --help --traceback --pdb --project --format --warehouse --bin --filter --venv --python --config --bitbucket --level --envs -e -h " -- ${current}) )
+        return 0
+        ;;
+    
+      "venv shell")
+        COMPREPLY=( $(compgen -W "--table --silent --versioning --cache-path -c --env --cache-ttl --dotenv --nocolors --tests --help --traceback --pdb --project --from --format --bin --filter --from-format --venv --python --config --from-path --level --envs -e -h " -- ${current}) )
+        return 0
+        ;;
+    
+    *)
+    ;;
+  esac
+}
+
+complete -F _dephell dephell
