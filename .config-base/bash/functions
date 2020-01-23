@@ -233,6 +233,20 @@ fi
 
 l() {
   if hash exa 2>/dev/null; then
+    if [[ $(tput lines) -lt 13 ]]; then
+      exa -G --group-directories-first "$@"
+    else
+      exa -l --group-directories-first "$@"
+    fi
+  elif hash pls 2>/dev/null && [ ! ${__OS} = darwin ]; then
+    pls "$@"
+  else
+    ls -l "$@"
+  fi
+}
+
+ll() {
+  if hash exa 2>/dev/null; then
     exa -l --group-directories-first "$@"
   elif hash pls 2>/dev/null && [ ! ${__OS} = darwin ]; then
     pls "$@"
@@ -241,9 +255,6 @@ l() {
   fi
 }
 
-alias la='ls -A'
-alias ll="ls -l"
-alias lsg="git ls-dir"
 alias lslistenports="sudo netstat -plunt"
 alias adblogcat="adb logcat | adb-logcat-pp"
 
