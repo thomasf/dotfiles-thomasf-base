@@ -108,6 +108,9 @@ case ${bn} in
   dephell)
     packages="dephell[full]"
     ;;
+  sam)
+    packages="aws-sam-cli"
+    ;;
   *)
     packages=${bn}
     ;;
