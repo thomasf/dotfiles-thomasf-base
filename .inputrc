@@ -42,10 +42,6 @@ $if Python
 $endif
 
 $if Bash
-  # F10 toggles mc on and off
-  # Note Ctrl-o toggles panes on and off in mc
-  "\e[21~": "mc\C-M"
-
   # do history expansion when space entered
   Space: magic-space
 $endif
