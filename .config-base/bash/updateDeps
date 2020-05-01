@@ -40,7 +40,6 @@ dl_bin "git-when-merged" "https://raw.githubusercontent.com/mhagger/git-when-mer
 dl_bin "ghi" "https://raw.github.com/stephencelis/ghi/master/ghi" &
 dl_bin "vcprompt" "https://raw.github.com/djl/vcprompt/master/bin/vcprompt" &
 # dl_bin "svtget" "https://raw.github.com/mmn/svtget/master/bash/svtget"
-dl_bin "fzf" "https://raw.gitub.com/junegunn/fzf/master/fzf" &
 dl_bin "spark" "https://raw.github.com/holman/spark/master/spark" &
 # dl_bin "pamixer" "https://raw.github.com/mk-fg/pulseaudio-mixer-cli/master/pulseaudio-mixer-cli.py"
 dl_bin "pamixer" "https://raw.github.com/mk-fg/pulseaudio-mixer-cli/master/pa-mixer-mk2.py" &
