@@ -146,11 +146,11 @@ dp() {
 }
 
 upgrader-docker() {
-  dp golang:{1.11,1.11.5}{,-alpine}
-  dp python:{2.7,3.5,3.6,3.7}{,-alpine}
-  dp ubuntu:{16.04,18.04,18.10}
+  dp golang:{1.11,1.12,1.13}{,-alpine}
+  dp python:{2.7,3.7,3.8}{,-alpine}
+  dp ubuntu:{16.04,18.04}
   dp redis:{3,3.2,4,5}
-  dp postgres:{9.5,9.6,10.7,11.2}
+  dp postgres:{9.5,9.6,10.7,11.2,11}
   dp plugins/{docker,slack,git,s3,drone-git}
   dp thomasf/{twine,drone-devpi}
   dp minio/minio
