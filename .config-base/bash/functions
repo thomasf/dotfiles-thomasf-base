@@ -19,7 +19,7 @@ dl() {
   curl -O -L "$@"
 }
 
-alias df='df -h -T'
+alias df='df -h'
 
 __exec_in_dir() {
   local ncolors=$(tput colors)
