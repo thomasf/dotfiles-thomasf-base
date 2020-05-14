@@ -1,6 +1,6 @@
 #!/bin/bash
 
-[ $(which wmctrl) ] || exit 1
+hash wmctrl > /dev/null || exit 1
 name=$(wmctrl -d 2> /dev/null | grep  "[0-9]* \*" | tr -s ' '  | cut -d ' ' -f 10-)
 
 [[ -z $name ]] \
