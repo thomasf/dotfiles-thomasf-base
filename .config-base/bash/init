@@ -15,6 +15,7 @@ log() {
   #   && [ ! "${TERM}" == "dumb" ] \
   #   && [ ! "${TERM}" == "eterm" ] \
   #   && [ ! "${TERM}" == "eterm-color" ] \
+  #   && echo "$(date +%s.%N) ■ ${1}"
   #   && echo -n "■"
   return 0
 }
@@ -346,12 +347,8 @@ if [ ! -z "${BASH}" ]; then
   esac
 fi
 
-# replace log function with empty stub
-log() {
-  return 0
-}
 
-
+log "set manpath"
 hash manpath 2>/dev/null &&
   unset MANPATH &&
   export MANPATH=$(manpath -q)
@@ -380,6 +377,7 @@ if [ ! "${TERM}" == "dumb" ] &&
   __pwd_logger
 fi
 
+log "maybe list tmux sessions"
 [ ! -z $SSH_TTY ] &&
   [ -z $TMUX ] &&
   hash tmux 2>/dev/null &&
@@ -390,5 +388,11 @@ fi
   export TMOUT=3600 ||
     true
 
+log "init done"
+
+# replace log function with empty stub
+log() {
+  return 0
+}
 
 # end of init
