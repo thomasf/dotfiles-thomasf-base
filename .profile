@@ -113,21 +113,21 @@ case ${OSTYPE} in
         # do nothing
         ;;
     *)
-        # set JAVA_HOME
-        if [ $(which javac) ]; then
-            JAVA_HOME=$(resolvelink $(which javac) | sed "s:/bin/javac::")
-            export JAVA_HOME
-        elif [ $(which java) ]; then
-            JAVA_HOME=$(resolvelink $(which java) | sed "s:/bin/java::")
-            export JAVA_HOME
-        fi
+      # set JAVA_HOME
+      if hash javac 2>/dev/null ; then
+        JAVA_HOME=$(resolvelink $(which javac) | sed "s:/bin/javac::")
+        export JAVA_HOME
+      elif hash java 2>/dev/null; then
+        JAVA_HOME=$(resolvelink $(which java) | sed "s:/bin/java::")
+        export JAVA_HOME
+      fi
         ;;
 esac
 
 # Prohibit perl from complaining about missing locales
 PERL_BADLANG=0 && export PERL_BADLANG
 # Locale settings (man page: locale)
-if [ $(which locale) ]; then
+if hash locale 2>/dev/null ; then
     if $(locale -a 2>/dev/null | grep -q -x en_US.utf8); then
       unset LC_ALL
       LANGUAGE="en_US:en" && export LANGUAGE
@@ -233,4 +233,4 @@ MPD_HOST=localhost && export MPD_HOST
 EDITOR="editor" && export EDITOR
 VISUAL="${EDITOR}" && export VISUAL
 ALTERNATE_EDITOR="" && export ALTERNATE_EDITOR
-[ $(which less) ] && PAGER="less -R" && export PAGER
+hash les 2>/dev/null && PAGER="less -R" && export PAGER
