@@ -84,6 +84,11 @@ ppath ~/.opt/AdobeAIRSDK/bin
 ppath ~/.opt/arm-cs-tools/bin
 ppath ~/src/github.com/pfalcon/esp-open-sdk/xtensa-lx106-elf/bin/
 
+[ -d ~/.deno/ ] &&
+  export DENO_INSTALL="${HOME}/.deno" &&
+  ppath ~/.deno/bin
+
+
 [ -d ~/src/github.com/pfalcon/esp-open-sdk/ ] &&
   export ESP_ROOT=${HOME}/src/github.com/pfalcon/esp-open-sdk
 
