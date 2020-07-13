@@ -9,6 +9,16 @@ emacs_bin=''
 emacsclient_bin=''
 cmd="$(basename "${0}")"
 
+ppath() {
+ [ -d "${1}" ] && PATH="${1}:${PATH}"
+}
+
+[ -d node_modules/.bin ] &&
+  ppath "${PWD}/node_modules/.bin"
+
+export PATH
+
+
 if [ "${OSTYPE:0:6}" = "darwin" ] \
      && [ -x "${HOME}/Applications/Emacs.app/Contents/MacOS/bin/emacsclient" ]; then
   emacsclient_bin="${HOME}/Applications/Emacs.app/Contents/MacOS/bin/emacsclient"
