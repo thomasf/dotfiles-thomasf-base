@@ -47,6 +47,7 @@ ppath /var/lib/gems/2.5/bin
 ppath /usr/local/opt/ruby/bin
 ppath /usr/local/opt/python/bin
 ppath /usr/local/opt/git/bin
+ppath ~/.pyenv/bin
 
 # User home path prepends
 ppath ~/.opt/depot_tools
