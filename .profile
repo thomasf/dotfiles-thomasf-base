@@ -106,7 +106,7 @@ export PERL_MB_OPT="--install_base ${PERL_LOCAL_LIB_ROOT}";
 export PERL_MM_OPT="INSTALL_BASE=${PERL_LOCAL_LIB_ROOT}";
 export PERL5LIB="${PERL_LOCAL_LIB_ROOT}/lib/perl5/x86_64-linux-gnu-thread-multi:${PERL_LOCAL_LIB_ROOT}/lib/perl5";
 ppath "${PERL_LOCAL_LIB_ROOT}/bin"
-
+ppath ~/.config/perl5/bin
 # Add all ~/.bin and all ~/.bin-* directories to path
 for D in $(find $HOME -maxdepth 1 -name ".bin-*" -o -name ".bin" | sort); do
     ppath ${D}
