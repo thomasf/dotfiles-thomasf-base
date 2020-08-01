@@ -233,7 +233,7 @@ fi
 
 l() {
   if hash exa 2>/dev/null; then
-    if [[ $(tput lines) -lt 13 ]]; then
+    if [[ $(tput lines) -lt 13 ]] || [[ $(tput cols) -lt 70 ]]; then
       exa -G --group-directories-first "$@"
     else
       exa -l --group-directories-first "$@"
