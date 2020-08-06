@@ -82,7 +82,7 @@ case $cmd in
           ;;
         e)
           run_background='yes'
-          if [ -n "$DISPLAY" ]; then
+          if [ -n "$DISPLAY" ] || [ "${OSTYPE:0:6}" = "darwin" ]; then
             window_argument='-c -n'
           else
             window_argument='-nw'
@@ -132,8 +132,12 @@ fi
 #     ;;
 # esac
 
-if [ -n "$run_background" ]; then
-  exec ${run} ${server_argument} ${window_argument} ${editor_argument} "$@" 2>/dev/null &
+if [ "${OSTYPE:0:6}" = "darwin" ]; then
+  exec nohup ${run} ${server_argument} ${window_argument} ${editor_argument} "$@" >/dev/null 2>&1 &
 else
-  exec ${run} ${server_argument} ${window_argument} ${editor_argument} "$@"
+  if [ -n "$run_background" ]; then
+    exec ${run} ${server_argument} ${window_argument} ${editor_argument} "$@" 2>/dev/null &
+  else
+    exec ${run} ${server_argument} ${window_argument} ${editor_argument} "$@"
+  fi
 fi
