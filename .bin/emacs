@@ -133,7 +133,14 @@ fi
 # esac
 
 if [ "${OSTYPE:0:6}" = "darwin" ]; then
-  exec nohup ${run} ${server_argument} ${window_argument} ${editor_argument} "$@" >/dev/null 2>&1 &
+  case $cmd in
+    emacs)
+      exec ${run} ${server_argument} ${window_argument} ${editor_argument} "$@"
+      ;;
+    *)
+      exec nohup ${run} ${server_argument} ${window_argument} ${editor_argument} "$@" >/dev/null 2>&1 &
+      ;;
+  esac
 else
   if [ -n "$run_background" ]; then
     exec ${run} ${server_argument} ${window_argument} ${editor_argument} "$@" 2>/dev/null &
