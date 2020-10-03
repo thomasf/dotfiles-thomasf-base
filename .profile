@@ -4,22 +4,7 @@
 #   Man page: profile
 #   Useful reference: https://help.ubuntu.com/community/EnvironmentVariables
 
-#set -x
-
-# try to find a suitable python interpreter for virtualenv
-if command -v python3.6 >/dev/null 2>&1; then
-  VIRTUALENV_PYTHON=$(command -v python3.6)
-  export VIRTUALENV_PYTHON
-elif command -v python3.5 >/dev/null 2>&1; then
-  VIRTUALENV_PYTHON=$(command -v python3.5)
-  export VIRTUALENV_PYTHON
-elif command -v python3 >/dev/null 2>&1; then
-  VIRTUALENV_PYTHON=$(command -v python3)
-  export VIRTUALENV_PYTHON
-elif command -v python >/dev/null 2>&1; then
-  VIRTUALENV_PYTHON=$(command -v python)
-  export VIRTUALENV_PYTHON
-fi
+# set -x
 
 # Prepend paths
 ppath() {
@@ -61,8 +46,6 @@ ppath ~/.rbenv/bin
 ppath ~/.npm-global/bin
 ppath ~/.local/bin
 ppath ~/.cargo/bin
-# apath ~/.virtualenvs/default2/bin
-# ppath ~/.virtualenvs/default/bin
 
 # osx User home path prepends
 ppath ~/Library/Haskell/bin

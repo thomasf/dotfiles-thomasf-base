@@ -198,7 +198,7 @@ def fmt(ctx):
                     "-q",
                     "-sp",
                     ctx.rootfile(".isort.cfg"),
-                    "-y",
+                    # "-y",
                     "-rc",
                     ctx.project_root,
                 )

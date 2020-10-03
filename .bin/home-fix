@@ -29,7 +29,6 @@ done
 # If option o is given, take ownership of some directories
 # that might have files accidently owned by root while sudoing.
 if  [ "${1}" = "o" ]; then
-  # Python virtualenv burrito and virtualenvwrapper
   [ -d "${HOME}/.venvburrito" ] && sudo chown -R ${USER} "${HOME}/.venvburrito"
   [ -d "${HOME}/.virtualenvs" ] && sudo chown -R ${USER} "${HOME}/.virtualenvs"
   # Node version manager

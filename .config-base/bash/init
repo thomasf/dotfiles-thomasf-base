@@ -111,42 +111,27 @@ if [ $UID != 0 ]; then
     && log "nvm" \
     && source "${HOME}/.opt/nvm/nvm.sh"
 
-  # Set virtualenvwrapper hooks dir
-  [ -e "${HOME}/.virtualenvwrapper-hooks" ] \
-    && VIRTUALENVWRAPPER_HOOK_DIR="${HOME}/.virtualenvwrapper-hooks" \
-    && export VIRTUALENVWRAPPER_HOOK_DIR
+  workon() {
+    local activate="${HOME}/.virtualenvs/${1}/bin/activate"
+    if [ "$#" -eq 1 ] && [ -f "${activate}" ]; then
+      source "${activate}"
+    else
+      echo "script not found: ${activate}"
+      return 1
+    fi
+  }
 
-  # Maybe load virtualenvwrapper
-  if [ -f "/usr/local/bin/virtualenvwrapper_lazy.sh" ]; then
-    # TODO: Probably do conditional check for this, it's only needed and only
-    # works with python from homebrew.
-    #
-    # if [ ${__OS} = darwin ]; then
-    #   export VIRTUALENVWRAPPER_PYTHON=/usr/local/bin/python
-    # fi
-    log "virtualenvwrapper" \
-      && source "/usr/local/bin/virtualenvwrapper_lazy.sh"
-
-    workon() {
-      local activate="${HOME}/.virtualenvs/${1}/bin/activate"
-      if [ "$#" -eq 1 ] && [ -f "${activate}" ]; then
-        source "${activate}"
-      else
-        virtualenvwrapper_load;
-        workon "$@"
-      fi
-    }
-  else
-    workon() {
-      local activate="${HOME}/.virtualenvs/${1}/bin/activate"
-      if [ "$#" -eq 1 ] && [ -f "${activate}" ]; then
-        source "${activate}"
-      else
-        echo "script not found: ${activate}"
-        return 1
-      fi
-    }
-  fi
+  mkvirtualenv() {
+    deactivate || true
+    mkdir -p "${HOME}/.virtualenvs"
+    local dir
+    dir="${HOME}/.virtualenvs/${1}"
+    shift || return 1
+    python3 -mvenv "${dir}" "${@}" || return 1
+    . "${dir}/bin/activate" || return 1
+    pip install --upgrade wheel setuptools pip
+    pip install python-language-server pdbpp funcsigs
+  }
 fi
 
 # ------------------------------------------------------------------------------
