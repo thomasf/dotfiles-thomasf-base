@@ -111,27 +111,7 @@ if [ $UID != 0 ]; then
     && log "nvm" \
     && source "${HOME}/.opt/nvm/nvm.sh"
 
-  workon() {
-    local activate="${HOME}/.virtualenvs/${1}/bin/activate"
-    if [ "$#" -eq 1 ] && [ -f "${activate}" ]; then
-      source "${activate}"
-    else
-      echo "script not found: ${activate}"
-      return 1
-    fi
-  }
 
-  mkvirtualenv() {
-    deactivate || true
-    mkdir -p "${HOME}/.virtualenvs"
-    local dir
-    dir="${HOME}/.virtualenvs/${1}"
-    shift || return 1
-    python3 -mvenv "${dir}" "${@}" || return 1
-    . "${dir}/bin/activate" || return 1
-    pip install --upgrade wheel setuptools pip
-    pip install python-language-server pdbpp funcsigs
-  }
 fi
 
 # ------------------------------------------------------------------------------
@@ -265,6 +245,35 @@ if [ -x /usr/bin/dircolors ]; then
 fi
 
 export LSCOLORS=gxfxbEaEBxxEhEhBaDaCaD
+
+# ------------------------------------------------------------------------------
+# super minimal virtualenvwrapper replacement
+
+workon() {
+  local activate="${HOME}/.virtualenvs/${1}/bin/activate"
+  if [ "$#" -eq 1 ] && [ -f "${activate}" ]; then
+    source "${activate}"
+  else
+    echo "script not found: ${activate}"
+    return 1
+  fi
+}
+
+mkvirtualenv() {
+  deactivate || true
+  mkdir -p "${HOME}/.virtualenvs"
+  local dir
+  dir="${HOME}/.virtualenvs/${1}"
+  shift || return 1
+  python3 -mvenv "${dir}" "${@}" || return 1
+  . "${dir}/bin/activate" || return 1
+  pip install --upgrade wheel setuptools pip
+  pip install python-language-server pdbpp funcsigs
+}
+
+lsvirtualenvs() {
+  find ~/.virtualenvs -maxdepth 1 -mindepth 1 -type d -printf '%P\n'
+}
 
 # ------------------------------------------------------------------------------
 # Misc
