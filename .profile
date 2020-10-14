@@ -189,6 +189,7 @@ fi
 PYTHONZ_ROOT="${HOME}/opt/pythonz" && export PYTHONZ_ROOT
 
 PIPENV_IGNORE_VIRTUALENVS=1 && export PIPENV_IGNORE_VIRTUALENVS
+PIP_DEFAULT_TIMEOUT=120 && export PIP_DEFAULT_TIMEOUT
 
 # coffeelint configuration file
 COFFEELINT_CONFIG="${HOME}/.config-base/coffeelint.json"
