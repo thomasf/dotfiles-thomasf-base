@@ -37,6 +37,8 @@ set bell-style none
 "\e[B": history-search-forward
 "\e[A": history-search-backward
 
+set enable-bracketed-paste on
+
 $if Python
     Tab: complete
 $endif
