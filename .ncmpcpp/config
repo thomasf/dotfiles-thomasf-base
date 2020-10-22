@@ -226,7 +226,7 @@ now_playing_suffix = "$/u"
 ##   not available.
 ##
 #
-#song_columns_list_format = "(7f)[green]{l} (25)[cyan]{a} (40)[]{t|f} (30)[red]{b}"
+song_columns_list_format = (20)[]{a} (6f)[green]{NE} (50)[white]{t|f:Title} (20)[cyan]{b} (7f)[magenta]{l} (4f)[green]{y}
 #
 ##### various settings #####
 #
@@ -248,7 +248,7 @@ now_playing_suffix = "$/u"
 #playlist_display_mode = "classic" (classic/columns)
 playlist_display_mode = "columns"
 #
-browser_display_mode = "classic"
+browser_display_mode = "columns"
 #
 search_engine_display_mode = "columns"
 #
