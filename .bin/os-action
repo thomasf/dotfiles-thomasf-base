@@ -49,10 +49,10 @@ for arg in $*; do
       $sudocmd /usr/sbin/pm-suspend
       ;;
     reboot)
-      $sudocmd "reboot -f"
+      reboot
       ;;
     shutdown)
-      $sudocmd "shutdown now -P"
+      shutdown now -P
       ;;
   esac
 done
