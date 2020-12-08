@@ -111,6 +111,9 @@ case ${bn} in
   sam)
     packages="aws-sam-cli"
     ;;
+  pyup_dirs)
+    packages="pyupgrade-directories"
+    ;;
   *)
     packages=${bn}
     ;;
