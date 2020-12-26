@@ -16,9 +16,6 @@
 [ -e "${HOME}/.config/pudb" ] \
     || ln -fs "$(pwd)/.config-base/pudb" "${HOME}/.config/pudb"
 
-[[ $(which gocode) ]] &&
-  gocode set autobuild true
-
 gc() {
   git config --global "$@" || true
 }
