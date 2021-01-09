@@ -23,10 +23,11 @@ ppath /usr/sbin
 ppath /usr/bin
 ppath /usr/local/bin
 
-# debian(?) global path prepends
-ppath /var/lib/gems/1.8/bin
-ppath /var/lib/gems/1.9/bin
-ppath /var/lib/gems/2.5/bin
+if [ -d /var/lib/gems ]; then
+  for d in $(find /var/lib/gems/ -mindepth 1 -maxdepth 1 -type d | sort ); do
+    ppath ${d}/bin
+  done
+fi
 
 # osx (homebrew) global path prepends
 ppath /usr/local/opt/ruby/bin
@@ -38,6 +39,12 @@ ppath ~/.pyenv/bin
 ppath ~/.opt/depot_tools
 ppath ~/.cabal/bin
 ppath  ~/.ghcup/bin
+
+if [ -d ~/.gem/ruby ]; then
+  for d in $(find ~/.gem/ruby -mindepth 1 -maxdepth 1 -type d | sort ); do
+    ppath ${d}/bin
+  done
+fi
 
 # Misc User home path prepends
 ppath ~/.rvm/bin
