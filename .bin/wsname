@@ -1,10 +1,10 @@
 #!/bin/bash
 
 hash wmctrl 2> /dev/null || exit 1
-name=$(wmctrl -d 2> /dev/null | grep  "[0-9]* \*" | tr -s ' '  | cut -d ' ' -f 10-)
+name=$(wmctrl -d 2> /dev/null | grep  "[0-9]* \*" | tr -s ' '  | cut -d ' ' -f 10- | tr / _)
 
 [[ -z $name ]] \
-  && name=$(wmctrl -d 2> /dev/null | grep  "[0-9]* \*" | tr -s ' '  | cut -d ' ' -f 9-)
+  && name=$(wmctrl -d 2> /dev/null | grep  "[0-9]* \*" | tr -s ' '  | cut -d ' ' -f 9- | tr / _)
 
 [[ -z $name ]] && exit 1
 
