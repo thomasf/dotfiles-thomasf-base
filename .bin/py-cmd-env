@@ -3,7 +3,6 @@
 set -e
 # set -x
 
-py_v="3"
 cmd="NO_COMMAND"
 bn=$(basename ${0})
 env_name=${bn}
@@ -88,12 +87,10 @@ case ${bn} in
     env_name=ansible
     ;;
   platformio|pio)
-    py_v="2"
     packages=platformio
     env_name=platformio
     ;;
   git-goggles)
-    py_v="2"
     packages="git-goggles termcolor"
     ;;
   youtube-dl)
@@ -127,19 +124,7 @@ cmd_path="${env_path}/bin/${bn}"
 if [ ! -e "${cmd_path}" ]; then
   deactivate 2>/dev/null || true
   mkdir -p ${envs_root}
-  case ${py_v} in
-    3*)
-      python3 -mvenv --clear "${env_path}"
-      ;;
-    2*)
-      virtualenv -p python2 "${env_path}"
-      ;;
-    *)
-      echo "Nothing to do for ${py_v}"
-      exit 1
-      ;;
-  esac
-
+  python3 -mvenv --clear "${env_path}"
   ${env_path}/bin/pip install wheel
   ${env_path}/bin/pip install ${packages}
   echo ${packages} > "${env_path}/requirements.txt"
