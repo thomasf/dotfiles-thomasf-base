@@ -96,8 +96,9 @@ case ${bn} in
   youtube-dl)
     packages=youtube_dl
     ;;
-  devpi)
-    packages=devpi-client
+  devpi*)
+    packages="devpi-client devpi-server"
+    env_name="devpi"
     ;;
   gitlab)
     packages=python-gitlab
