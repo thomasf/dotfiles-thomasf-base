@@ -155,14 +155,14 @@ __prompt_command() {
     # do nothing
     ;;
     *)
-      __pwd_logger;
-      history -a;
+      [ "$CONFIDENTAL" == "confidental" ] || __pwd_logger;
+      [ "$CONFIDENTAL" == "confidental" ] || history -a;
       [ -n "${DARKMODE}" ] && __darkmode_switcher
       echo -ne '\a'
       ;;
   esac
   __prompt_fn
-  _z --add "$(command pwd '$_Z_RESOLVE_SYMLINKS' 2>/dev/null)" 2>/dev/null;
+  [ "$CONFIDENTAL" == "confidental" ] || _z --add "$(command pwd '$_Z_RESOLVE_SYMLINKS' 2>/dev/null)" 2>/dev/null;
   unset __RUNNING_PROMPT_COMMAND
 }
 export -f __prompt_command

@@ -33,6 +33,22 @@ ssh() {
 }
 
 # ----------------------------------------------------------------------------
+# confidental mode
+confidental-mode() {
+  if [ "$CONFIDENTAL" == "confidental" ]; then
+    set -o history
+    export CONFIDENTAL=""
+    echo "confidental mode disabled"
+
+  else
+    set +o history
+    export CONFIDENTAL=confidental
+    echo "confidental mode enabled"
+  fi
+}
+
+
+# ----------------------------------------------------------------------------
 # FZF
 
 
