@@ -85,7 +85,7 @@ ppath ~/src/github.com/pfalcon/esp-open-sdk/xtensa-lx106-elf/bin/
 
 # Default go env
 [ -d ~/.opt/go/bin ] &&
-  export GOROOT=~/.opt/go/
+  export GOROOT=~/.opt/go
 export GOPATH="${HOME}"
 ppath "${GOPATH}/bin"
 export GO15VENDOREXPERIMENT=1
