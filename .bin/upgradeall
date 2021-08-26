@@ -63,27 +63,30 @@ read any;" &
 }
 
 
-# upgrader-goget installs variout things using go get.
-upgrader-goget() {
+# upgrader-go installs variout things using go get.
+upgrader-go() {
   local out
   echo UPDATING go-tools
   GOPATH=${HOME}
   export GOPATH;
   for l in  \
      github.com/github/hub \
-     github.com/golang/lint/golint \
-     github.com/jstemmer/gotags \
-     github.com/junegunn/fzf/... \
-     github.com/monochromegane/the_platinum_searcher/cmd/pt/ \
-     github.com/motemen/ghq/ \
+     github.com/junegunn/fzf \
+     github.com/monochromegane/the_platinum_searcher/cmd/pt \
+     github.com/x-motemen/ghq \
      github.com/shurcooL/markdownfmt \
      github.com/smartystreets/goconvey \
-     github.com/sosedoff/pgweb \
+     golang.org/x/tools/gopls \
+     github.com/google/gops \
+     golang.org/x/tools/cmd/goimports \
+     golang.org/x/tools/cmd/stringer \
+     golang.org/x/tools/cmd/benchcmp \
+     github.com/go-delve/delve/cmd/dlv \
+     golang.org/x/perf/cmd/benchstat \
      ; do
     ts "${green}${l}${reset}"
     (
-      # set -e &&
-      cd "${HOME}/src/${l}" && git pull &&  go install -mod readonly .
+      go install "${l}@latest"
     ) || echo -e "\n${red}FAILED ${l}\n${yellow}${out}${reset}\n"
   done
 }
@@ -159,7 +162,7 @@ upgrader-docker() {
 
 cmd=${1}
 case $cmd in
-  goget|dust|compton|mu|npm|pip|docker)
+  go|dust|compton|mu|npm|pip|docker)
     upgrader-${cmd}
     ;;
   all)
@@ -167,11 +170,11 @@ case $cmd in
     # runCmd "xmonadUpdate"
     # runCmd "${HOME}/.emacs.d/installDeps emacs"
     runCmd "hsadmin pull"
-    runCmd "$0 goget" &
+    runCmd "$0 go" &
     runCmd "$0 pip" &
     ;;
   *)
-    echo "$0 all goget dust compton mu npm pip"
+    echo "$0 all go dust compton mu npm pip"
     ;;
 esac
 
