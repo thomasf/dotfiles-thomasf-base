@@ -70,23 +70,32 @@ upgrader-go() {
   GOPATH=${HOME}
   export GOPATH;
   for l in  \
-     github.com/github/hub \
-     github.com/junegunn/fzf \
-     github.com/monochromegane/the_platinum_searcher/cmd/pt \
-     github.com/x-motemen/ghq \
-     github.com/shurcooL/markdownfmt \
-     github.com/smartystreets/goconvey \
-     golang.org/x/tools/gopls \
-     github.com/google/gops \
-     golang.org/x/tools/cmd/goimports \
-     golang.org/x/tools/cmd/stringer \
-     golang.org/x/tools/cmd/benchcmp \
-     github.com/go-delve/delve/cmd/dlv \
-     golang.org/x/perf/cmd/benchstat \
-     ; do
+    github.com/github/hub \
+      github.com/go-delve/delve/cmd/dlv \
+      github.com/google/gops \
+      github.com/junegunn/fzf \
+      github.com/monochromegane/the_platinum_searcher/cmd/pt \
+      github.com/profclems/glab/cmd/glab \
+      github.com/shurcooL/markdownfmt \
+      github.com/smartystreets/goconvey \
+      github.com/x-motemen/ghq \
+      golang.org/x/perf/cmd/benchstat \
+      golang.org/x/tools/cmd/benchcmp \
+      golang.org/x/tools/cmd/goimports \
+      golang.org/x/tools/cmd/stringer \
+      golang.org/x/tools/gopls \
+    ; do
     ts "${green}${l}${reset}"
     (
       go install "${l}@latest"
+    ) || echo -e "\n${red}FAILED ${l}\n${yellow}${out}${reset}\n"
+  done
+  for l in  \
+      github.com/boyter/scc@master \
+    ; do
+    ts "${green}${l}${reset}"
+    (
+      go install "${l}"
     ) || echo -e "\n${red}FAILED ${l}\n${yellow}${out}${reset}\n"
   done
 }
