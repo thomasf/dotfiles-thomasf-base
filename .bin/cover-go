@@ -1,0 +1,15 @@
+#!/bin/bash
+
+set -e
+
+all=""
+
+if [ $# -eq 0 ]; then
+  all="./..."
+fi
+
+tmpfile="$(mktemp)"
+
+go test -coverprofile="${tmpfile}" "${all}" "${@}"
+go tool cover -html="${tmpfile}" -o cover.html
+rm -f "${tmpfile}"
