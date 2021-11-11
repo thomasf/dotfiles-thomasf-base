@@ -46,5 +46,6 @@ dl_bin "pamixer" "https://raw.github.com/mk-fg/pulseaudio-mixer-cli/master/pa-mi
 dl_bin "git-ls-dir" "https://raw.github.com/aspiers/git-config/master/bin/git-ls-dir" &
 dl_bin "recollfs" "https://raw.githubusercontent.com/pidlug/recollfs/master/recollfs" &
 dl_bin "neofetch" "https://raw.githubusercontent.com/dylanaraps/neofetch/master/neofetch" &
+dl_bin "sysz" "https://raw.githubusercontent.com/joehillen/sysz/master/sysz" &
 
 dl "z" "https://raw.github.com/rupa/z/master/z.sh" &
