@@ -11,7 +11,7 @@ magenta="$(tput setaf 5  2>/dev/null||echo -n)"
 
 set -e
 # set -x
-set -euxo pipefail
+set -exo pipefail
 
 ts() {
   echo "${reset}[$(date +%T)] ${@}"
@@ -87,6 +87,7 @@ upgrader-go() {
       github.com/go-critic/go-critic/cmd/gocritic \
       honnef.co/go/tools/cmd/... \
       github.com/tsenart/vegeta \
+      github.com/cuonglm/gocmt \
     ; do
     ts "${green}${l}${reset}"
     (
