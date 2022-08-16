@@ -6,6 +6,8 @@
 
 # set -x
 
+export PNPM_HOME="${HOME}/.local/share/pnpm"
+
 # Prepend paths
 ppath() {
  [ -d "${1}" ] && PATH="${1}:${PATH}"
@@ -53,6 +55,7 @@ ppath ~/.rbenv/bin
 ppath ~/.npm-global/bin
 ppath ~/.local/bin
 ppath ~/.cargo/bin
+ppath "${PNPM_HOME}"
 
 # osx User home path prepends
 ppath ~/Library/Haskell/bin
