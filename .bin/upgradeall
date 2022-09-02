@@ -88,6 +88,8 @@ upgrader-go() {
       honnef.co/go/tools/cmd/... \
       github.com/tsenart/vegeta \
       github.com/cuonglm/gocmt \
+      mvdan.cc/gofumpt \
+      honnef.co/go/tools/cmd/staticcheck \
     ; do
     ts "${green}${l}${reset}"
     (
