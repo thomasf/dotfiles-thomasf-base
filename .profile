@@ -69,14 +69,11 @@ ppath ~/.opt/ec2-api-tools/bin \
 ppath ~/.opt/groovy/bin
 ppath ~/.opt/gradle/bin
 ppath ~/.opt/apache-maven/bin
-ppath ~/.opt/android-sdks/build-tools/29.0.3
-ppath ~/.opt/android-sdks/tools
-ppath ~/.opt/android-sdks/emulator
-ppath ~/.opt/android-sdks/tools/bin
-ppath ~/.opt/android-sdks/platform-tools
-ppath ~/.opt/AdobeAIRSDK/bin
 ppath ~/.opt/arm-cs-tools/bin
 ppath ~/src/github.com/pfalcon/esp-open-sdk/xtensa-lx106-elf/bin/
+
+# ppath ~/Android/Sdk/platform-tools
+# ppath ~/Android/Sdk/cmdline-tools/latest/bin
 
 [ -d ~/.deno/ ] &&
   export DENO_INSTALL="${HOME}/.deno" &&
@@ -214,14 +211,14 @@ MPD_HOST=localhost && export MPD_HOST
     && export DYNAMIC_COLORS_ROOT
 
 
-# Set android sdk home
-[ -d "${HOME}/.opt/android-sdks" ] \
-  && export ANDROID_SDK="${HOME}/.opt/android-sdks" \
-  && export ANDROID_HOME="${ANDROID_SDK}"
+# # Set android sdk home
+# [ -d "${HOME}/.opt/android-sdks" ] \
+#   && export ANDROID_SDK="${HOME}/.opt/android-sdks" \
+#   && export ANDROID_HOME="${ANDROID_SDK}"
 
-# Set android ndk home
-[ -d "${HOME}/.opt/android-ndk" ] \
-  && export ANDROID_NDK="${HOME}/.opt/android-ndk"
+# # Set android ndk home
+# [ -d "${HOME}/.opt/android-ndk" ] \
+#   && export ANDROID_NDK="${HOME}/.opt/android-ndk"
 
 # ------------------------------------------------------------------------------
 # PRIVATE AND LOCAL
