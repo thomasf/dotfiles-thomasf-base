@@ -624,31 +624,6 @@ __docker_server_os_is() {
 	[ "$server_os" = "$expected_os" ]
 }
 
-# __docker_stack_orchestrator_is tests whether the client is configured to use
-# the orchestrator that is passed in as the first argument.
-__docker_stack_orchestrator_is() {
-	case "$1" in
-		kubernetes)
-			if [ -z "$stack_orchestrator_is_kubernetes" ] ; then
-				__docker_q stack ls --help | grep -qe --namespace
-				stack_orchestrator_is_kubernetes=$?
-			fi
-			return $stack_orchestrator_is_kubernetes
-			;;
-		swarm)
-			if [ -z "$stack_orchestrator_is_swarm" ] ; then
-				__docker_q stack deploy --help | grep -qe "with-registry-auth"
-				stack_orchestrator_is_swarm=$?
-			fi
-			return $stack_orchestrator_is_swarm
-			;;
-		*)
-			return 1
-			;;
-
-	esac
-}
-
 # __docker_pos_first_nonflag finds the position of the first word that is neither
 # option nor an option's argument. If there are options that require arguments,
 # you should pass a glob describing those options, e.g. "--option1|-o|--option2"
@@ -1126,23 +1101,6 @@ __docker_complete_signals() {
 		SIGUSR2
 	)
 	COMPREPLY=( $( compgen -W "${signals[*]} ${signals[*]#SIG}" -- "$( echo "$cur" | tr '[:lower:]' '[:upper:]')" ) )
-}
-
-__docker_complete_stack_orchestrator_options() {
-	case "$prev" in
-		--kubeconfig)
-			_filedir
-			return 0
-			;;
-		--namespace)
-			return 0
-			;;
-		--orchestrator)
-			COMPREPLY=( $( compgen -W "all kubernetes swarm" -- "$cur") )
-			return 0
-			;;
-	esac
-	return 1
 }
 
 __docker_complete_ulimits() {
@@ -1954,6 +1912,7 @@ _docker_container_run_and_create() {
 		--oom-score-adj
 		--pid
 		--pids-limit
+		--platform
 		--publish -p
 		--pull
 		--restart
@@ -1981,9 +1940,6 @@ _docker_container_run_and_create() {
 		--io-maxiops
 		--isolation
 	"
-	__docker_server_is_experimental && options_with_args+="
-		--platform
-	"
 
 	local boolean_options="
 		--disable-content-trust=false
@@ -1994,6 +1950,7 @@ _docker_container_run_and_create() {
 		--oom-kill-disable
 		--privileged
 		--publish-all -P
+		--quiet -q
 		--read-only
 		--tty -t
 	"
@@ -2390,11 +2347,7 @@ _docker_context() {
 
 _docker_context_create() {
 	case "$prev" in
-		--default-stack-orchestrator)
-			COMPREPLY=( $( compgen -W "all kubernetes swarm" -- "$cur" ) )
-			return
-			;;
-		--description|--docker|--kubernetes)
+		--description|--docker)
 			return
 			;;
 		--from)
@@ -2405,7 +2358,7 @@ _docker_context_create() {
 
 	case "$cur" in
 		-*)
-			COMPREPLY=( $( compgen -W "--default-stack-orchestrator --description --docker --from --help --kubernetes" -- "$cur" ) )
+			COMPREPLY=( $( compgen -W "--description --docker --from --help" -- "$cur" ) )
 			;;
 	esac
 }
@@ -2413,7 +2366,7 @@ _docker_context_create() {
 _docker_context_export() {
 	case "$cur" in
 		-*)
-			COMPREPLY=( $( compgen -W "--help --kubeconfig" -- "$cur" ) )
+			COMPREPLY=( $( compgen -W "--help" -- "$cur" ) )
 			;;
 		*)
 			local counter=$(__docker_pos_first_nonflag)
@@ -2494,18 +2447,14 @@ _docker_context_rm() {
 
 _docker_context_update() {
 	case "$prev" in
-		--default-stack-orchestrator)
-			COMPREPLY=( $( compgen -W "all kubernetes swarm" -- "$cur" ) )
-			return
-			;;
-		--description|--docker|--kubernetes)
+		--description|--docker)
 			return
 			;;
 	esac
 
 	case "$cur" in
 		-*)
-			COMPREPLY=( $( compgen -W "--default-stack-orchestrator --description --docker --help --kubernetes" -- "$cur" ) )
+			COMPREPLY=( $( compgen -W "--description --docker --help" -- "$cur" ) )
 			;;
 		*)
 			local counter=$(__docker_pos_first_nonflag)
@@ -2572,9 +2521,6 @@ _docker_daemon() {
 		--bip
 		--bridge -b
 		--cgroup-parent
-		--cluster-advertise
-		--cluster-store
-		--cluster-store-opt
 		--config-file
 		--containerd
 		--containerd-namespace
@@ -2623,15 +2569,6 @@ _docker_daemon() {
 
 	__docker_complete_log_driver_options && return
 
- 	key=$(__docker_map_key_of_current_option '--cluster-store-opt')
- 	case "$key" in
- 		kv.*file)
-			cur=${cur##*=}
- 			_filedir
- 			return
- 			;;
- 	esac
-
  	local key=$(__docker_map_key_of_current_option '--storage-opt')
  	case "$key" in
  		dm.blkdiscard|dm.override_udev_sync_check|dm.use_deferred_removal|dm.use_deferred_deletion)
@@ -2656,16 +2593,6 @@ _docker_daemon() {
 	case "$prev" in
 		--authorization-plugin)
 			__docker_complete_plugins_bundled --type Authorization
-			return
-			;;
-		--cluster-store)
-			COMPREPLY=( $( compgen -W "consul etcd zk" -S "://" -- "$cur" ) )
-			__docker_nospace
-			return
-			;;
-		--cluster-store-opt)
-			COMPREPLY=( $( compgen -W "discovery.heartbeat discovery.ttl kv.cacertfile kv.certfile kv.keyfile kv.path" -S = -- "$cur" ) )
-			__docker_nospace
 			return
 			;;
 		--config-file|--containerd|--init-path|--pidfile|-p|--tlscacert|--tlscert|--tlskey|--userland-proxy-path)
@@ -2832,6 +2759,7 @@ _docker_image_build() {
 		--memory -m
 		--memory-swap
 		--network
+		--platform
 		--shm-size
 		--tag -t
 		--target
@@ -2852,9 +2780,6 @@ _docker_image_build() {
 	"
 
 	if __docker_server_is_experimental ; then
-		options_with_args+="
-			--platform
-		"
 		boolean_options+="
 			--squash
 		"
@@ -2863,7 +2788,6 @@ _docker_image_build() {
 	if [ "$DOCKER_BUILDKIT" = "1" ] ; then
 		options_with_args+="
 			--output -o
-			--platform
 			--progress
 			--secret
 			--ssh
@@ -2994,8 +2918,7 @@ _docker_image_import() {
 
 	case "$cur" in
 		-*)
-			local options="--change -c --help --message -m"
-			__docker_server_is_experimental && options+=" --platform"
+			local options="--change -c --help --message -m --platform"
 			COMPREPLY=( $( compgen -W "$options" -- "$cur" ) )
 			;;
 		*)
@@ -3103,9 +3026,7 @@ _docker_image_pull() {
 
 	case "$cur" in
 		-*)
-			local options="--all-tags -a --disable-content-trust=false --help --quiet -q"
-			__docker_server_is_experimental && options+=" --platform"
-
+			local options="--all-tags -a --disable-content-trust=false --help --platform --quiet -q"
 			COMPREPLY=( $( compgen -W "$options" -- "$cur" ) )
 			;;
 		*)
@@ -3494,7 +3415,7 @@ _docker_network_prune() {
 _docker_network_rm() {
 	case "$cur" in
 		-*)
-			COMPREPLY=( $( compgen -W "--help" -- "$cur" ) )
+			COMPREPLY=( $( compgen -W "--force -f --help" -- "$cur" ) )
 			;;
 		*)
 			__docker_complete_networks --filter type=custom
@@ -4881,6 +4802,7 @@ _docker_search() {
 
 _docker_stack() {
 	local subcommands="
+		config
 		deploy
 		ls
 		ps
@@ -4894,14 +4816,11 @@ _docker_stack() {
 		up
 	"
 
-	__docker_complete_stack_orchestrator_options && return
 	__docker_subcommands "$subcommands $aliases" && return
 
 	case "$cur" in
 		-*)
-			local options="--help --orchestrator"
-			__docker_stack_orchestrator_is kubernetes && options+=" --kubeconfig"
-			COMPREPLY=( $( compgen -W "$options" -- "$cur" ) )
+			COMPREPLY=( $( compgen -W "--help" -- "$cur" ) )
 			;;
 		*)
 			COMPREPLY=( $( compgen -W "$subcommands" -- "$cur" ) )
@@ -4909,9 +4828,22 @@ _docker_stack() {
 	esac
 }
 
-_docker_stack_deploy() {
-	__docker_complete_stack_orchestrator_options && return
+_docker_stack_config() {
+	case "$prev" in
+		--compose-file|-c)
+			_filedir yml
+			return
+			;;
+	esac
 
+	case "$cur" in
+		-*)
+			COMPREPLY=( $( compgen -W "--compose-file -c --help --skip-interpolation" -- "$cur" ) )
+			;;
+  esac
+}
+
+_docker_stack_deploy() {
 	case "$prev" in
 		--compose-file|-c)
 			_filedir yml
@@ -4925,13 +4857,10 @@ _docker_stack_deploy() {
 
 	case "$cur" in
 		-*)
-			local options="--compose-file -c --help --orchestrator"
-			__docker_stack_orchestrator_is kubernetes && options+=" --kubeconfig --namespace"
-			__docker_stack_orchestrator_is swarm && options+=" --prune --resolve-image --with-registry-auth"
-			COMPREPLY=( $( compgen -W "$options" -- "$cur" ) )
+			COMPREPLY=( $( compgen -W "--compose-file -c --help --prune --resolve-image --with-registry-auth" -- "$cur" ) )
 			;;
 		*)
-			local counter=$(__docker_pos_first_nonflag '--compose-file|-c|--kubeconfig|--namespace|--orchestrator|--resolve-image')
+			local counter=$(__docker_pos_first_nonflag '--compose-file|-c|--resolve-image')
 			if [ "$cword" -eq "$counter" ]; then
 				__docker_complete_stacks
 			fi
@@ -4948,8 +4877,6 @@ _docker_stack_list() {
 }
 
 _docker_stack_ls() {
-	__docker_complete_stack_orchestrator_options && return
-
 	case "$prev" in
 		--format)
 			return
@@ -4958,9 +4885,7 @@ _docker_stack_ls() {
 
 	case "$cur" in
 		-*)
-			local options="--format --help --orchestrator"
-			__docker_stack_orchestrator_is kubernetes && options+=" --all-namespaces --kubeconfig --namespace"
-			COMPREPLY=( $( compgen -W "$options" -- "$cur" ) )
+			COMPREPLY=( $( compgen -W "--format --help" -- "$cur" ) )
 			;;
 	esac
 }
@@ -4982,8 +4907,6 @@ _docker_stack_ps() {
 			;;
 	esac
 
-	__docker_complete_stack_orchestrator_options && return
-
 	case "$prev" in
 		--filter|-f)
 			COMPREPLY=( $( compgen -S = -W "id name desired-state" -- "$cur" ) )
@@ -4997,12 +4920,10 @@ _docker_stack_ps() {
 
 	case "$cur" in
 		-*)
-			local options="--filter -f --format --help --no-resolve --no-trunc --orchestrator --quiet -q"
-			__docker_stack_orchestrator_is kubernetes && options+=" --all-namespaces --kubeconfig --namespace"
-			COMPREPLY=( $( compgen -W "$options" -- "$cur" ) )
+			COMPREPLY=( $( compgen -W "--filter -f --format --help --no-resolve --no-trunc --quiet -q" -- "$cur" ) )
 			;;
 		*)
-			local counter=$(__docker_pos_first_nonflag '--all-namespaces|--filter|-f|--format|--kubeconfig|--namespace')
+			local counter=$(__docker_pos_first_nonflag '--filter|-f|--format')
 			if [ "$cword" -eq "$counter" ]; then
 				__docker_complete_stacks
 			fi
@@ -5015,13 +4936,9 @@ _docker_stack_remove() {
 }
 
 _docker_stack_rm() {
-	__docker_complete_stack_orchestrator_options && return
-
 	case "$cur" in
 		-*)
-			local options="--help --orchestrator"
-			__docker_stack_orchestrator_is kubernetes && options+=" --kubeconfig --namespace"
-			COMPREPLY=( $( compgen -W "$options" -- "$cur" ) )
+			COMPREPLY=( $( compgen -W "--help" -- "$cur" ) )
 			;;
 		*)
 			__docker_complete_stacks
@@ -5045,8 +4962,6 @@ _docker_stack_services() {
 			;;
 	esac
 
-	__docker_complete_stack_orchestrator_options && return
-
 	case "$prev" in
 		--filter|-f)
 			COMPREPLY=( $( compgen -S = -W "id label name" -- "$cur" ) )
@@ -5060,12 +4975,10 @@ _docker_stack_services() {
 
 	case "$cur" in
 		-*)
-			local options="--filter -f --format --help --orchestrator --quiet -q"
-			__docker_stack_orchestrator_is kubernetes && options+=" --kubeconfig --namespace"
-			COMPREPLY=( $( compgen -W "$options" -- "$cur" ) )
+			COMPREPLY=( $( compgen -W "--filter -f --format --help --quiet -q" -- "$cur" ) )
 			;;
 		*)
-			local counter=$(__docker_pos_first_nonflag '--filter|-f|--format|--kubeconfig|--namespace|--orchestrator')
+			local counter=$(__docker_pos_first_nonflag '--filter|-f|--format')
 			if [ "$cword" -eq "$counter" ]; then
 				__docker_complete_stacks
 			fi
@@ -5336,8 +5249,6 @@ _docker_top() {
 }
 
 _docker_version() {
-	__docker_complete_stack_orchestrator_options && return
-
 	case "$prev" in
 		--format|-f)
 			return
@@ -5346,9 +5257,7 @@ _docker_version() {
 
 	case "$cur" in
 		-*)
-			local options="--format -f --help"
-			__docker_stack_orchestrator_is kubernetes && options+=" --kubeconfig"
-			COMPREPLY=( $( compgen -W "$options" -- "$cur" ) )
+			COMPREPLY=( $( compgen -W "--format -f --help" -- "$cur" ) )
 			;;
 	esac
 }
@@ -5486,7 +5395,7 @@ _docker_wait() {
 	_docker_container_wait
 }
 
-COMPOSE_PLUGIN_PATH=$(docker info --format '{{json .ClientInfo.Plugins}}' | sed -n 's/.*"Path":"\([^"]\+docker-compose\)".*/\1/p')
+COMPOSE_PLUGIN_PATH=$(docker info --format '{{range .ClientInfo.Plugins}}{{if eq .Name "compose"}}{{.Path}}{{end}}{{end}}')
 
 _docker_compose() {
 	local completionCommand="__completeNoDesc"
@@ -5604,8 +5513,6 @@ _docker() {
 
 	# variables to cache server info, populated on demand for performance reasons
 	local info_fetched server_experimental server_os
-	# variables to cache client info, populated on demand for performance reasons
-	local stack_orchestrator_is_kubernetes stack_orchestrator_is_swarm
 
 	local host config context
 

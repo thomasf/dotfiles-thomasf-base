@@ -11,7 +11,7 @@ magenta="$(tput setaf 5  2>/dev/null||echo -n)"
 
 set -e
 # set -x
-set -euxo pipefail
+set -exo pipefail
 
 ts() {
   echo "${reset}[$(date +%T)] ${@}"
@@ -87,20 +87,24 @@ upgrader-go() {
       github.com/go-critic/go-critic/cmd/gocritic \
       honnef.co/go/tools/cmd/... \
       github.com/tsenart/vegeta \
+      github.com/cuonglm/gocmt \
+      mvdan.cc/gofumpt \
+      honnef.co/go/tools/cmd/staticcheck \
+      github.com/boyter/scc \
     ; do
     ts "${green}${l}${reset}"
     (
       go install "${l}@latest"
     ) || echo -e "\n${red}FAILED ${l}\n${yellow}${out}${reset}\n"
   done
-  for l in  \
-      github.com/boyter/scc@master \
-    ; do
-    ts "${green}${l}${reset}"
-    (
-      go install "${l}"
-    ) || echo -e "\n${red}FAILED ${l}\n${yellow}${out}${reset}\n"
-  done
+  # for l in  \
+  #     github.com/boyter/scc@master \
+  #   ; do
+  #   ts "${green}${l}${reset}"
+  #   (
+  #     go install "${l}"
+  #   ) || echo -e "\n${red}FAILED ${l}\n${yellow}${out}${reset}\n"
+  # done
 }
 
 upgrader-dunst() {
@@ -161,11 +165,11 @@ dp() {
 }
 
 upgrader-docker() {
-  dp golang:1.{11,12,13,14}{,-alpine}
-  dp python:{2.7,3.7,3.8}{,-alpine}
-  dp ubuntu:{16.04,18.04,20.04}
+  dp golang:1.{17,18,19}{,-alpine}
+  dp python:{2.7,3.7,3.8,3.9,3.10}{,-alpine}
+  dp ubuntu:{16.04,18.04,20.04,22.04}
   dp redis:{3,4,5}
-  dp postgres:{9,10,11,12}
+  dp postgres:{9,10,11,12,13,14}
   dp plugins/{docker,slack,git,s3,drone-git}
   dp thomasf/{twine,drone-devpi}
   dp minio/minio
