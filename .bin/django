@@ -1,14 +1,10 @@
 #!/usr/bin/env python
 
-
 import os
-import shutil
 import signal
 import subprocess
 import sys
-import tempfile
 from inspect import getframeinfo, stack
-from os.path import abspath, dirname
 from os.path import join as joinpath
 
 helptext = """Django manage wrapper.
@@ -260,58 +256,6 @@ def fml(ctx):
 fml.help = "Run custom command 'fmt' followed by 'lint'"
 
 
-def pg_dump(env_cmd, python_cmd, project_root, manage_py, *args):
-    # TODO: pg_dump does not work yet
-    if len(args) == 0:
-        print("usage: pg_dump filename.sql")
-        sys.exit(1)
-    dst_file = abspath(args[0])
-    log("dst_file", dst_file)
-    dst_dir = dirname(dst_file)
-    log("dst_dir", dst_dir)
-    log(env_cmd, python_cmd, project_root, manage_py, args)
-    container = subprocess.check_output(
-        ["docker-compose", "ps", "-q", "postgres"], stderr=sys.stderr
-    ).strip()
-    log("pg container:", container)
-
-    f = tempfile.NamedTemporaryFile(
-        delete=False, prefix="pg-", suffix=".sql", dir=dst_dir
-    )
-    log("tempfile:", f.name)
-    try:
-        command = [
-            "docker",
-            "exec",
-            container,
-            "sh",
-            "-c",
-            "echo pg_dump -U $POSTGRES_USER",
-        ]
-        log("command: ", command)
-        proc = subprocess.Popen(command, stdout=f, stderr=sys.stderr)
-        proc.wait()
-        f.close()
-        log("move", f.name, dst_file)
-        shutil.move(f.name, dst_file)
-    finally:
-        try:
-            f.close()
-        except Exception:
-            pass
-        try:
-            os.unlink(f.name)
-        except Exception:
-            pass
-    log("done")
-    sys.exit(0)
-
-
-pg_dump.help = (
-    "Create postgres sql dump file, expects a docker-compose setup "
-    "where the postgres container is named 'postgres'"
-)
-
 CALLS = {
     "kill_runservers": kill_runservers,
     "kill_manages": kill_manages,
@@ -321,7 +265,6 @@ CALLS = {
     "lint": lint,
     "fmt": fmt,
     "fml": fml,
-    # 'pg_dump': pg_dump,
 }
 
 stderr = None
