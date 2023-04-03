@@ -266,7 +266,7 @@ mkvirtualenv() {
   python3 -mvenv "${dir}" "${@}" || return 1
   . "${dir}/bin/activate" || return 1
   pip install --upgrade wheel setuptools pip
-  pip install python-lsp-server[rope] pdbpp funcsigs
+  pip install python-lsp-server[rope] pdbpp funcsigs epc importmagic
 }
 
 lsvirtualenvs() {
