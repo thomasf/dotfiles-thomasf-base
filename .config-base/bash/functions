@@ -360,7 +360,7 @@ cdup() {
   cd $new
 }
 
-dl() {
+cdl() {
   local target
   target=`resolvelink $PWD`
   [[ -z $target ]] && return 1
