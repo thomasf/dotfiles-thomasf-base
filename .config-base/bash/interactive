@@ -147,3 +147,22 @@ if hash fzf 2>/dev/null; then
   fi
 
 fi
+
+
+# docker logs
+dlog() {
+  local FZF_DOCKER_PS_FORMAT="table {{.ID}}\t{{.Names}}\t{{.Image}}\t{{.Ports}}"
+  local container=$(docker ps --format "${FZF_DOCKER_PS_FORMAT}" | fzf --header-lines=1 --bind 'enter:execute(echo {2})+abort')
+
+  local args="--tail 2000"
+  local container_id
+  while true; do
+    container_id=$(docker ps -f name="${container}" -q)
+    if [[ ! -z "$container_id" ]]; then
+      hr
+      docker logs -f ${args} "${container}"
+    fi
+    args="--tail 0"
+    sleep 0.1
+  done
+}
