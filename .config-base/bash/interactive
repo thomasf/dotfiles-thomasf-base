@@ -153,7 +153,9 @@ fi
 dlog() {
   local FZF_DOCKER_PS_FORMAT="table {{.ID}}\t{{.Names}}\t{{.Image}}\t{{.Ports}}"
   local container=$(docker ps --format "${FZF_DOCKER_PS_FORMAT}" | fzf --header-lines=1 --bind 'enter:execute(echo {2})+abort')
-
+  hr
+  hr
+  hr
   local args="--tail 2000"
   local container_id
   while true; do
@@ -163,6 +165,22 @@ dlog() {
       docker logs -f ${args} "${container}"
     fi
     args="--tail 0"
+    sleep 0.1
+  done
+}
+
+
+# docker attach
+dattach() {
+  local FZF_DOCKER_PS_FORMAT="table {{.ID}}\t{{.Names}}\t{{.Image}}\t{{.Ports}}"
+  local container=$(docker ps --format "${FZF_DOCKER_PS_FORMAT}" | fzf --header-lines=1 --bind 'enter:execute(echo {2})+abort')
+  local container_id
+  while true; do
+    container_id=$(docker ps -f name="${container}" -q)
+    if [[ ! -z "$container_id" ]]; then
+      hr
+      docker attach "${container}"
+    fi
     sleep 0.1
   done
 }
