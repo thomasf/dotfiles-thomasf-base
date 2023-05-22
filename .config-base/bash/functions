@@ -602,6 +602,9 @@ z() {
       2)
         cd "${HOME}/src/gitlab.23c.se"
         ;;
+      t)
+        cd "${HOME}/src/gitlab.tracklib.com/web"
+        ;;
 
       *)
         _last_z_args="$@"
