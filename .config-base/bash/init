@@ -257,6 +257,14 @@ workon() {
   fi
 }
 
+python-lsp-ensure() {
+  pip uninstall -y flake8 python-lsp-ruff
+  pip install --upgrade \
+      python-lsp-server[rope] \
+      pdbpp \
+      funcsigs
+}
+
 mkvirtualenv() {
   deactivate || true
   mkdir -p "${HOME}/.virtualenvs"
@@ -266,7 +274,7 @@ mkvirtualenv() {
   python3 -mvenv "${dir}" "${@}" || return 1
   . "${dir}/bin/activate" || return 1
   pip install --upgrade wheel setuptools pip
-  pip install python-lsp-server[rope] pdbpp funcsigs epc importmagic
+  python-lsp-ensure
 }
 
 lsvirtualenvs() {
