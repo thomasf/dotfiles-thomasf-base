@@ -31,6 +31,10 @@ if [ -d /var/lib/gems ]; then
   done
 fi
 
+if [ -e /opt/homebrew/bin/brew ]; then
+  eval "$(/opt/homebrew/bin/brew shellenv)"
+fi
+
 # osx (homebrew) global path prepends
 ppath /usr/local/opt/ruby/bin
 ppath /usr/local/opt/python/bin
@@ -231,3 +235,4 @@ EDITOR="editor" && export EDITOR
 VISUAL="${EDITOR}" && export VISUAL
 ALTERNATE_EDITOR="" && export ALTERNATE_EDITOR
 hash les 2>/dev/null && PAGER="less -R" && export PAGER
+. "$HOME/.cargo/env"
