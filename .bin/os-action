@@ -35,8 +35,8 @@ for arg in $*; do
     lock)
       # If running an xsession
       if [ -n "${DISPLAY}" ]; then
-        [ `which gnome-screensaver-command` ] \
-          && gnome-screensaver-command --lock
+        [ `which xscreensaver-command` ] \
+          && xscreensaver-command -lock
         [ `which xset` ] \
           && sleep 5 \
           && xset dpms force off
