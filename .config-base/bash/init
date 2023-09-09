@@ -222,10 +222,12 @@ log "bash completion"
   && ! shopt -oq posix \
   && . "/usr/local/etc/bash_completion"
 
+[ -f "/opt/homebrew/etc/bash_completion" ] \
+  && ! shopt -oq posix \
+  && . "/opt/homebrew/etc/bash_completion"
+
 for file in $(find $HOME/.config-base/bash/completion.d/ -mindepth 1 -maxdepth 1 -not -type d  ); do
-  if [ ! ${file} = ag ] && [ ! ${__OS} = darwin ]; then
-    source $file
-  fi
+  source $file
 done
 
 alias t=todo.sh
