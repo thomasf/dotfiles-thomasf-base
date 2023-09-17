@@ -250,8 +250,13 @@ export LSCOLORS=gxfxbEaEBxxEhEhBaDaCaD
 # super minimal virtualenvwrapper replacement
 
 workon() {
-  local activate="${HOME}/.virtualenvs/${1}/bin/activate"
-  if [ "$#" -eq 1 ] && [ -f "${activate}" ]; then
+  local name="${1}"
+  if [ -z "${name}" ]; then
+    name=$(lsvirtualenvs | fzf)
+  fi
+
+  local activate="${HOME}/.virtualenvs/${name}/bin/activate"
+  if [ -f "${activate}" ]; then
     source "${activate}"
   else
     echo "script not found: ${activate}"
