@@ -60,6 +60,7 @@ ppath ~/.npm-global/bin
 ppath ~/.local/bin
 ppath ~/.cargo/bin
 ppath "${PNPM_HOME}"
+ppath ~/.dotnet/tools
 
 # osx User home path prepends
 ppath ~/Library/Haskell/bin
