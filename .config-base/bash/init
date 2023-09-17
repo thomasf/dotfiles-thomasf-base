@@ -263,6 +263,7 @@ python-lsp-ensure() {
   pip uninstall -y flake8 python-lsp-ruff
   pip install --upgrade \
       python-lsp-server[rope] \
+      pylsp-rope \
       pdbpp \
       funcsigs
 }
