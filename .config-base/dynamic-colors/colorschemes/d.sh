@@ -1,1 +1,1 @@
-solarized-dark.sh
+selenized-dark.sh
