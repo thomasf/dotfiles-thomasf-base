@@ -1,1 +1,3 @@
-py-cmd-env
+#!/bin/bash
+
+exec docker compose "$@"

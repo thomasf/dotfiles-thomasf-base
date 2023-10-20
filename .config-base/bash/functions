@@ -370,7 +370,7 @@ alias t2='tree -d -L 2'
 alias t3='tree -d -L 3'
 
 alias p='python'
-alias doco='docker-compose'
+alias doco='docker compose'
 alias pb='ansible-playbook'
 
 dps() {
