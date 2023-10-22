@@ -237,3 +237,5 @@ VISUAL="${EDITOR}" && export VISUAL
 ALTERNATE_EDITOR="" && export ALTERNATE_EDITOR
 hash les 2>/dev/null && PAGER="less -R" && export PAGER
 . "$HOME/.cargo/env"
+
+export MGFXC_WINE_PATH="${HOME}/.winemonogame"
