@@ -69,6 +69,7 @@ ppath ~/Library/Haskell/bin
 
 # ~/.opt User home path prepends
 ppath ~/.opt/go/bin
+ppath ~/sdk/go/bin
 
 ppath ~/.opt/ec2-api-tools/bin \
     && EC2_HOME=~/.opt/ec2-api-tools \
@@ -93,6 +94,9 @@ ppath ~/src/github.com/pfalcon/esp-open-sdk/xtensa-lx106-elf/bin/
 # Default go env
 [ -d ~/.opt/go/bin ] &&
   export GOROOT=~/.opt/go
+[ -d ~/sdk/go/bin ] &&
+  export GOROOT=~/sdk/go
+
 export GOPATH="${HOME}"
 ppath "${GOPATH}/bin"
 export GO15VENDOREXPERIMENT=1
