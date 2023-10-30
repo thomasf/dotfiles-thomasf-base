@@ -6,6 +6,7 @@
 
 # set -x
 
+export WINIT_X11_SCALE_FACTOR=1.7
 export PNPM_HOME="${HOME}/.local/share/pnpm"
 
 # Prepend paths
