@@ -41,6 +41,8 @@ ppath /usr/local/opt/python/bin
 ppath /usr/local/opt/git/bin
 ppath ~/.pyenv/bin
 
+ppath ~/sdk/flutter/bin
+
 # User home path prepends
 ppath ~/.opt/depot_tools
 ppath ~/.cabal/bin
