@@ -396,7 +396,7 @@ agentGpg(){
   export SSH_AGENT_PID
 }
 
-alias apt-update-upgrade='sudo apt-get update && sudo apt-get dist-upgrade'
+alias apt-update-upgrade='sudo apt-get update ; sudo apt-get dist-upgrade'
 
 # ffmpeg - for - phone
 # ffmpeg-for-phone() {
