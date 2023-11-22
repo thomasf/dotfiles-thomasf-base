@@ -182,7 +182,8 @@ case $cmd in
     upgrader-${cmd}
     ;;
   all)
-    runCmd "sudo apt-get update ; sudo apt-get dist-upgrade"
+    # runCmd "sudo apt-get update ; sudo apt-get dist-upgrade"
+    runCmd "sudo nala upgrade"
     # runCmd "xmonadUpdate"
     # runCmd "${HOME}/.emacs.d/installDeps emacs"
     runCmd "hsadmin pull"
