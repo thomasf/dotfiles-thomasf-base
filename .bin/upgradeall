@@ -17,33 +17,6 @@ ts() {
   echo "${reset}[$(date +%T)] ${@}"
 }
 
-
-# cdo cd's into ~/.opt/$1
-cdo() {
-  cd "${HOME}/.opt/${1}"
-}
-export -f cdo
-
-# uptodate fetches a git repo and returns non 0 if HEAD is in sync with remote.
-uptodate() {
-  local dir=${1}
-  [ ! -d ${dir} ] && return 0
-  cd ${dir}
-  git fetch upstream master
-  local changes=$(git rev-list HEAD..upstream/master --count)
-  echo "uptodate ${dir} changes: ${changes}"
-  return $changes
-  # return 2
-}
-export -f uptodate
-
-# resetupstream resets a git working tree
-resetupstream() {
-  git log HEAD..upstream/master --oneline
-  git reset --hard upstream/master
-}
-export -f resetupstream
-
 # runCmd runs a command in a subshell, on graphical terminals this
 runCmd() {
   if [ -n "$DISPLAY" ] && [ `which urxvt` ]; then
@@ -97,34 +70,6 @@ upgrader-go() {
       go install "${l}@latest"
     ) || echo -e "\n${red}FAILED ${l}\n${yellow}${out}${reset}\n"
   done
-  # for l in  \
-  #     github.com/boyter/scc@master \
-  #   ; do
-  #   ts "${green}${l}${reset}"
-  #   (
-  #     go install "${l}"
-  #   ) || echo -e "\n${red}FAILED ${l}\n${yellow}${out}${reset}\n"
-  # done
-}
-
-upgrader-dunst() {
-  cdo dunst
-  resetupstream
-  make
-  sudo make install
-}
-
-upgrader-compton(){
-  cdo compton
-  resetupstream
-  make
-}
-
-upgrader-mu(){
-  cdo mu
-  resetupstream
-  make
-  sudo make install
 }
 
 upgrader-pip() {
@@ -157,6 +102,25 @@ upgrader-npm() {
 
 }
 
+upgrader-cargo() {
+  cargo install \
+        --locked \
+        csvlens \
+        diffr \
+        du-dust \
+        exa \
+        fblog \
+        fd-find \
+        gitu \
+        gitui \
+        hyperfine \
+        pastel \
+        ripgrep \
+        tokei \
+        watchexec-cli \
+    ;
+}
+
 dp() {
   for i in ${@}; do
     ts "${green}${i}${reset}"
@@ -178,20 +142,18 @@ upgrader-docker() {
 
 cmd=${1}
 case $cmd in
-  go|dust|compton|mu|npm|pip|docker)
+  go|npm|pip|docker|cargo)
     upgrader-${cmd}
     ;;
   all)
-    # runCmd "sudo apt-get update ; sudo apt-get dist-upgrade"
     runCmd "sudo nala upgrade"
-    # runCmd "xmonadUpdate"
-    # runCmd "${HOME}/.emacs.d/installDeps emacs"
     runCmd "hsadmin pull"
     runCmd "$0 go" &
     runCmd "$0 pip" &
+    runCmd "$0 cargo" &
     ;;
   *)
-    echo "$0 all go dust compton mu npm pip"
+    echo "$0 all cargo go npm pip"
     ;;
 esac
 
