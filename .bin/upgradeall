@@ -57,6 +57,7 @@ upgrader-go() {
       golang.org/x/tools/cmd/goimports \
       golang.org/x/tools/cmd/stringer \
       golang.org/x/tools/gopls \
+      golang.org/x/vuln/cmd/govulncheck \
       github.com/go-critic/go-critic/cmd/gocritic \
       honnef.co/go/tools/cmd/... \
       github.com/tsenart/vegeta \
