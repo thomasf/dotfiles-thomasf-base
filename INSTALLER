@@ -3,6 +3,9 @@
 # This file might be sourced during installation with hsadmin
 #
 
+[ -e "${HOME}/.config/gitu" ] \
+    || ln -fs "$(pwd)/.config-base/gitu" "${HOME}/.config/"
+
 [ -e "${HOME}/.config/pep8" ] \
     || ln -fs "$(pwd)/.config-base/pep8" "${HOME}/.config/"
 
