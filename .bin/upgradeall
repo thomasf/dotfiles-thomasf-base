@@ -65,6 +65,7 @@ upgrader-go() {
       mvdan.cc/gofumpt \
       honnef.co/go/tools/cmd/staticcheck \
       github.com/boyter/scc \
+      github.com/homeport/dyff/cmd/dyff \
     ; do
     ts "${green}${l}${reset}"
     (
