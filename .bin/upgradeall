@@ -66,6 +66,7 @@ upgrader-go() {
       honnef.co/go/tools/cmd/staticcheck \
       github.com/boyter/scc \
       github.com/homeport/dyff/cmd/dyff \
+      golang.org/x/pkgsite/cmd/pkgsite \
     ; do
     ts "${green}${l}${reset}"
     (
