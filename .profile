@@ -71,6 +71,7 @@ ppath ~/Library/Haskell/bin
 # ~/.opt User home path prepends
 ppath ~/.opt/go/bin
 ppath ~/sdk/go/bin
+ppath ~/sdk/zig
 
 ppath ~/.opt/ec2-api-tools/bin \
     && EC2_HOME=~/.opt/ec2-api-tools \
