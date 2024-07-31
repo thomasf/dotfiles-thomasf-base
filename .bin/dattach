@@ -5,11 +5,11 @@
 FZF_DOCKER_PS_FORMAT="table {{.ID}}\t{{.Names}}\t{{.Image}}\t{{.Ports}}"
 if [ $# -eq 0 ]
 then
-  container=$(docker ps --format "${FZF_DOCKER_PS_FORMAT}" | fzf --header-lines=1 --bind 'enter:execute(echo {2})+abort')
+  container=$(docker ps --format "${FZF_DOCKER_PS_FORMAT}" | fzf --header-lines=1 | awk '{print $2}')
 else
   container="${1}"
 fi
-[[ -z "$container" ]] && return
+[[ -z "$container" ]] && exit 1
 while true; do
   container_id=$(docker ps -f name="${container}" -q)
   if [[ -n "$container_id" ]]; then
