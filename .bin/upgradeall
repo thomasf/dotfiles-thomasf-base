@@ -49,6 +49,7 @@ upgrader-go() {
       github.com/go-critic/go-critic/cmd/gocritic \
       github.com/go-delve/delve/cmd/dlv \
       github.com/golangci/golangci-lint/cmd/golangci-lint \
+      github.com/gopasspw/gopass \
       github.com/google/gops \
       github.com/homeport/dyff/cmd/dyff \
       github.com/junegunn/fzf \
@@ -58,6 +59,7 @@ upgrader-go() {
       github.com/smartystreets/goconvey \
       github.com/tsenart/vegeta \
       github.com/x-motemen/ghq \
+      github.com/99designs/aws-vault/v7 \
       golang.org/x/perf/cmd/benchstat \
       golang.org/x/pkgsite/cmd/pkgsite \
       golang.org/x/tools/cmd/benchcmp \
