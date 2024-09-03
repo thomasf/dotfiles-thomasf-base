@@ -120,6 +120,11 @@ done
 
 export PATH
 
+AWS_VAULT_BACKEND=pass
+export AWS_VAULT_BACKEND
+AWS_VAULT_PASS_CMD=gopass
+export AWS_VAULT_PASS_CMD
+
 case ${OSTYPE} in
     darwin*)
         # do nothing
