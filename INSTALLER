@@ -34,122 +34,78 @@ gu() {
      ;;
  esac
 
-# disable advices
-gc advice.pushnonfastforward "false"
-gc advice.statushints "false"
-gc advice.commitbeforemerge "false"
-gc advice.resolveconflict "false"
-gc advice.implicitidentity "false"
-gc advice.detachedhead "false"
-gc help.autocorrect prompt
 
-gc column.ui auto
-gc tag.sort version:refname
-gc init.defaultBranch master
-
-# set up aliases
-gc alias.b "for-each-ref --sort=committerdate refs/heads/ --format='%(align:18)%(color:green)%(committerdate:relative)%(color:reset)%(end)%(color:cyan)%(align:18)%(authorname)%(end)%(color:reset) %(color:yellow)%(refname:short)%(color:reset) %(color:blue)-%(color:reset) %(contents:subject)'"
-
-gc alias.lg "log --date=relative --ignore-space-change --stat --pretty=format:'%C(yellow)%h%Creset %C(green)%ad%Creset %C(cyan)%ae%Creset %C(blue)%s%Creset'"
-gc alias.lgv "log -p --pretty=format:'%C(yellow)%h%Creset %C(cyan)%an <%ae>%Creset %Cgreen%cr%Creset %C(magenta)%s%Creset%C(yellow)%d%Creset'"
-gc alias.lgt "log --graph --all --pretty=format:'%C(yellow)%h%Creset %C(cyan)%ae%Creset %Cgreen%cr%Creset %s%C(yellow)%d%Creset' --abbrev-commit"
-gc alias.lgs "log --graph --pretty=format:'%Cred%h%Creset -%C(yellow)%d%Creset %s %Cgreen(%cr) %C(bold blue)<%an>%Creset' --abbrev-commit --date=relative"
-gc alias.staged "diff --cached"
-gc alias.showroot "rev-parse --show-toplevel"
-gc alias.verref "describe --tag HEAD"
-gc alias.ribbon "tag --force _ribbon origin/master"
-gc alias.catchup "log --patch --reverse --topo-order _ribbon..origin/master"
-gc alias.diffdir "difftool -t kdiff3 --dir-diff"
-gc alias.pu "pull"
-gc alias.ps "push"
-
-# misc settings
-
+# git config: core/git contrib
+ 
+gc advice.commitbeforemerge false
+gc advice.detachedhead false
+gc advice.implicitidentity false
+gc advice.pushnonfastforward false
+gc advice.resolveconflict false
+gc advice.statushints false
+gc branch.autosetuprebase always
+gc branch.sort -committerdate
 gc color.ui auto
-gc hub.autoUpdate "never"
-# gc init.templatedir "~/.config-base/git/templates"
-
-
+gc column.ui auto
 gc commit.verbose true
-
-# gc diff.tool kdiff3
-# gc difftool.prompt false
-# gc merge.tool kdiff3
-# gc alias.ks "difftool -y -t Kaleidoscope"
-
-# This gives us 'ours', 'base', and 'theirs', instead of just 'ours' and
-# 'theirs'. More details:
-#   http://psung.blogspot.com/2011/02/reducing-merge-headaches-git-meets.html
+gc core.autocrlf input
+gc core.editor ee
+gc core.excludesfile ~/.gitignore_global
+gc core.fsmonitor true
+gc core.untrackedCache true
+gc diff.algorithm histogram
+gc diff.colorMoved plain
+gc diff.mnemonicPrefix true
+gc diff.renamelimit 50000
+gc diff.renames true
+gc fetch.all true
+gc fetch.prune true
+gc fetch.pruneTags true
+gc format.pretty "format:%C(yellow)%h%Creset %C(green)%ad%Creset %C(cyan)%ae%Creset %s"
+gc help.autocorrect prompt
+gc init.defaultBranch master
 gc merge.conflictstyle zdiff3
-
-# Prevents us from having to do merge resolution for things we've already
-# resolved before; see http://git-scm.com/blog/2010/03/08/rerere.html
-gc rerere.enabled true
-gc rerere.autoupdate true
-
+gc mergetool.keepbackup false
+gc mergetool.keeptemporaries false
+gc mergetool.prompt true
+gc pull.rebase true
+gc push.autoSetupRemote true
+gc push.default upstream
 gc rebase.autoSquash true
 gc rebase.autoStash true
 gc rebase.updateRefs true
+gc rerere.autoupdate true
+gc rerere.enabled true
+gc tag.sort version:refname
 
-gc core.fsmonitor true
-gc core.untrackedCache true
+# git config: aliases
+gc alias.b "for-each-ref --sort=committerdate refs/heads/ --format='%(align:18)%(color:green)%(committerdate:relative)%(color:reset)%(end)%(color:cyan)%(align:18)%(authorname)%(end)%(color:reset) %(color:yellow)%(refname:short)%(color:reset) %(color:blue)-%(color:reset) %(contents:subject)'"
+gc alias.catchup "log --patch --reverse --topo-order _ribbon..origin/master"
+gc alias.diffdir "difftool -t kdiff3 --dir-diff"
+gc alias.lg "log --date=relative --ignore-space-change --stat --pretty=format:'%C(yellow)%h%Creset %C(green)%ad%Creset %C(cyan)%ae%Creset %C(blue)%s%Creset'"
+gc alias.lgs "log --graph --pretty=format:'%Cred%h%Creset -%C(yellow)%d%Creset %s %Cgreen(%cr) %C(bold blue)<%an>%Creset' --abbrev-commit --date=relative"
+gc alias.lgt "log --graph --all --pretty=format:'%C(yellow)%h%Creset %C(cyan)%ae%Creset %Cgreen%cr%Creset %s%C(yellow)%d%Creset' --abbrev-commit"
+gc alias.lgv "log -p --pretty=format:'%C(yellow)%h%Creset %C(cyan)%an <%ae>%Creset %Cgreen%cr%Creset %C(magenta)%s%Creset%C(yellow)%d%Creset'"
+gc alias.ps "push"
+gc alias.pu "pull"
+gc alias.ribbon "tag --force _ribbon origin/master"
+gc alias.showroot "rev-parse --show-toplevel"
+gc alias.staged "diff --cached"
+gc alias.verref "describe --tag HEAD"
 
-# With this, "git pull --rebase" is the default form of pull FOR NEWLY CREATED
-# BRANCHES; for branches created before this config option is set, pull.rebase
-# true handles that
-gc branch.autosetuprebase always
-gc branch.sort -committerdate
+# git config: third party tools
 
-# "git pull --rebase" is now the default for pull no matter what
-gc pull.rebase true
+gc ghq.root "${HOME}/src"
+gc hub.autoUpdate "never"
 
-# This makes sure that push pushes only the current branch, and pushes it to the
-# same branch pull would pull from
-gc push.default upstream
-gc push.autoSetupRemote true
+# git config: unset previosly used settings (for migration purposes)
 
-# This converts CRLF endings to LF endings on Mac & Lin and also keeps them in
-# the repo, but for Windows checkouts it converts LF to CRLF (and back to LF on
-# commits)
-gc core.autocrlf input
-
-# script_dir="$( cd "$( dirname "$0" )" && pwd )"
-
-# gc alias.meld "!$script_dir/bin/git-meld/git-meld.pl"
-
-gc core.excludesfile ~/.gitignore_global
-
-# Forces the use of SSH instead of HTTPS for any URLs that point to github.
-# This means that if a repo uses "https://github/..." for "origin", we will
-# automatically use SSH. No more password prompts!
 # gc url.ssh://git@github.com/.insteadOf https://github.com/
 gu url.ssh://git@github.com/.insteadOf
 
 # gc log.date "relative"
 gu log.date
 
-gc format.pretty "format:%C(yellow)%h%Creset %C(green)%ad%Creset %C(cyan)%ae%Creset %s"
-gc color.ui "auto"
-gc core.editor "ee"
-gc mergetool.keepbackup "false"
-gc mergetool.keeptemporaries "false"
-gc mergetool.prompt "true"
-gc diff.algorithm "histogram"
-gc diff.colorMoved plain
-gc diff.mnemonicPrefix true
-gc diff.renames true
-gc diff.renamelimit "50000"
-
-gc fetch.prune true
-gc fetch.pruneTags true
-gc fetch.all true
-
-# gc gui.fontdiff "-family \"Anonymous Pro\" -size 11 -weight normal -slant roman -underline 0 -overstrike 0"
-
-# gc gui.fontdiff "-family \"PragmataPro\" -size 11 -weight normal -slant roman -underline 0 -overstrike 0"
-# gc gui.fontiu "-family \"PragmataPro\" -size 11 -weight normal -slant roman -underline 0 -overstrike 0"
-
-gc ghq.root "${HOME}/src"
 
 unset -f gc
 unset -f gu
