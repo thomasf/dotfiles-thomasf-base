@@ -41,6 +41,11 @@ gc advice.commitbeforemerge "false"
 gc advice.resolveconflict "false"
 gc advice.implicitidentity "false"
 gc advice.detachedhead "false"
+gc help.autocorrect prompt
+
+gc column.ui auto
+gc tag.sort version:refname
+gc init.defaultBranch master
 
 # set up aliases
 gc alias.b "for-each-ref --sort=committerdate refs/heads/ --format='%(align:18)%(color:green)%(committerdate:relative)%(color:reset)%(end)%(color:cyan)%(align:18)%(authorname)%(end)%(color:reset) %(color:yellow)%(refname:short)%(color:reset) %(color:blue)-%(color:reset) %(contents:subject)'"
@@ -65,6 +70,8 @@ gc hub.autoUpdate "never"
 # gc init.templatedir "~/.config-base/git/templates"
 
 
+gc commit.verbose true
+
 # gc diff.tool kdiff3
 # gc difftool.prompt false
 # gc merge.tool kdiff3
@@ -73,16 +80,25 @@ gc hub.autoUpdate "never"
 # This gives us 'ours', 'base', and 'theirs', instead of just 'ours' and
 # 'theirs'. More details:
 #   http://psung.blogspot.com/2011/02/reducing-merge-headaches-git-meets.html
-gc merge.conflictstyle diff3
+gc merge.conflictstyle zdiff3
 
 # Prevents us from having to do merge resolution for things we've already
 # resolved before; see http://git-scm.com/blog/2010/03/08/rerere.html
 gc rerere.enabled true
+gc rerere.autoupdate true
+
+gc rebase.autoSquash true
+gc rebase.autoStash true
+gc rebase.updateRefs true
+
+gc core.fsmonitor true
+gc core.untrackedCache true
 
 # With this, "git pull --rebase" is the default form of pull FOR NEWLY CREATED
 # BRANCHES; for branches created before this config option is set, pull.rebase
 # true handles that
 gc branch.autosetuprebase always
+gc branch.sort -committerdate
 
 # "git pull --rebase" is now the default for pull no matter what
 gc pull.rebase true
@@ -90,6 +106,7 @@ gc pull.rebase true
 # This makes sure that push pushes only the current branch, and pushes it to the
 # same branch pull would pull from
 gc push.default upstream
+gc push.autoSetupRemote true
 
 # This converts CRLF endings to LF endings on Mac & Lin and also keeps them in
 # the repo, but for Windows checkouts it converts LF to CRLF (and back to LF on
@@ -117,8 +134,15 @@ gc core.editor "ee"
 gc mergetool.keepbackup "false"
 gc mergetool.keeptemporaries "false"
 gc mergetool.prompt "true"
-gc diff.renamelimit "50000"
 gc diff.algorithm "histogram"
+gc diff.colorMoved plain
+gc diff.mnemonicPrefix true
+gc diff.renames true
+gc diff.renamelimit "50000"
+
+gc fetch.prune true
+gc fetch.pruneTags true
+gc fetch.all true
 
 # gc gui.fontdiff "-family \"Anonymous Pro\" -size 11 -weight normal -slant roman -underline 0 -overstrike 0"
 
