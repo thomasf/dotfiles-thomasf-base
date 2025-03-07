@@ -80,15 +80,11 @@ gc tag.sort version:refname
 
 # git config: aliases
 gc alias.b "for-each-ref --sort=committerdate refs/heads/ --format='%(align:18)%(color:green)%(committerdate:relative)%(color:reset)%(end)%(color:cyan)%(align:18)%(authorname)%(end)%(color:reset) %(color:yellow)%(refname:short)%(color:reset) %(color:blue)-%(color:reset) %(contents:subject)'"
-gc alias.catchup "log --patch --reverse --topo-order _ribbon..origin/master"
 gc alias.diffdir "difftool -t kdiff3 --dir-diff"
 gc alias.lg "log --date=relative --ignore-space-change --stat --pretty=format:'%C(yellow)%h%Creset %C(green)%ad%Creset %C(cyan)%ae%Creset %C(blue)%s%Creset'"
 gc alias.lgs "log --graph --pretty=format:'%Cred%h%Creset -%C(yellow)%d%Creset %s %Cgreen(%cr) %C(bold blue)<%an>%Creset' --abbrev-commit --date=relative"
 gc alias.lgt "log --graph --all --pretty=format:'%C(yellow)%h%Creset %C(cyan)%ae%Creset %Cgreen%cr%Creset %s%C(yellow)%d%Creset' --abbrev-commit"
 gc alias.lgv "log -p --pretty=format:'%C(yellow)%h%Creset %C(cyan)%an <%ae>%Creset %Cgreen%cr%Creset %C(magenta)%s%Creset%C(yellow)%d%Creset'"
-gc alias.ps "push"
-gc alias.pu "pull"
-gc alias.ribbon "tag --force _ribbon origin/master"
 gc alias.showroot "rev-parse --show-toplevel"
 gc alias.staged "diff --cached"
 gc alias.verref "describe --tag HEAD"
@@ -100,12 +96,19 @@ gc hub.autoUpdate "never"
 
 # git config: unset previosly used settings (for migration purposes)
 
-# gc url.ssh://git@github.com/.insteadOf https://github.com/
-gu url.ssh://git@github.com/.insteadOf
-
+# gc alias.catchup "log --patch --reverse --topo-order _ribbon..origin/master"
+# gc alias.ps "push"
+# gc alias.pu "pull"
+# gc alias.ribbon "tag --force _ribbon origin/master"
 # gc log.date "relative"
-gu log.date
+# gc url.ssh://git@github.com/.insteadOf https://github.com/
 
+gu alias.catchup
+gu alias.ps
+gu alias.pu
+gu alias.ribbon
+gu log.date
+gu url.ssh://git@github.com/.insteadOf
 
 unset -f gc
 unset -f gu
