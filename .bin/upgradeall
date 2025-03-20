@@ -123,6 +123,7 @@ upgrader-cargo() {
         pastel \
         ripgrep \
         tokei \
+        vcprompt \
         watchexec-cli \
     ;
 }
