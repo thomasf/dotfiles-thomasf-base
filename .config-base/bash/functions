@@ -363,15 +363,14 @@ cdl() {
   cd $target
 }
 
-# alias c="cd"
 alias u="cdup"
 
 alias t2='tree -d -L 2'
 alias t3='tree -d -L 3'
 
-alias p='python'
+alias p='python3'
 alias doco='docker compose'
-alias pb='ansible-playbook'
+
 
 dps() {
   docker ps | cut -c-$(tput cols)
