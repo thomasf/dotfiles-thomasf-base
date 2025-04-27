@@ -111,6 +111,7 @@ upgrader-npm() {
 upgrader-cargo() {
   cargo install \
         --locked \
+        bat \
         csvlens \
         diffr \
         du-dust \
@@ -119,6 +120,7 @@ upgrader-cargo() {
         fd-find \
         gitu \
         gitui \
+        hexyl \
         hyperfine \
         pastel \
         ripgrep \
