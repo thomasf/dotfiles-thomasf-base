@@ -103,6 +103,8 @@ export GOPATH="${HOME}"
 ppath "${GOPATH}/bin"
 export GO15VENDOREXPERIMENT=1
 
+export DOCKER_CLI_HINTS=false
+
 # Perl local
 export PERL_LOCAL_LIB_ROOT="${HOME}/.config/perl5";
 export PERL_MB_OPT="--install_base ${PERL_LOCAL_LIB_ROOT}";
