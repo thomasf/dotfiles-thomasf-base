@@ -155,7 +155,8 @@ case $cmd in
     upgrader-${cmd}
     ;;
   all)
-    runCmd "sudo nala upgrade"
+    # runCmd "sudo nala upgrade"
+    runCmd "sudo apt-update-upgrade"
     runCmd "hsadmin pull"
     runCmd "$0 go" &
     runCmd "$0 pip" &
