@@ -20,7 +20,10 @@ ts() {
 # runCmd runs a command in a subshell, on graphical terminals this
 runCmd() {
   if [ -n "$DISPLAY" ] && [ `which urxvt` ]; then
-    exec urxvt -title upgradeall -name upgradeall -e bash -c \
+    exec alacritty \
+         --title "upgradeall" \
+         --class "upgradeall" \
+         -e bash -c \
          "termcolors; echo RUN \" $* \";
 $*
 echo ;
@@ -156,7 +159,7 @@ case $cmd in
     ;;
   all)
     # runCmd "sudo nala upgrade"
-    runCmd "sudo apt-update-upgrade"
+    runCmd "sudo apt update ; sudo apt dist-upgrade"
     runCmd "hsadmin pull"
     runCmd "$0 go" &
     runCmd "$0 pip" &
