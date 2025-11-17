@@ -25,6 +25,10 @@
 # Variable helpers
 
 
+# work related
+export UID=$(id -u) 2> /dev/null || true
+export GID=$(id -g)
+
 # __SHBASE contains the path to the base directory for shell scripts.
 __SHBASE="${HOME}/.config-base/bash"
 export __SHBASE
