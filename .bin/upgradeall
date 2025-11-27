@@ -133,6 +133,10 @@ upgrader-cargo() {
     ;
 }
 
+upgrader-chrome() {
+  (curl https://dl.google.com/linux/direct/google-chrome-stable_current_$(dpkg --print-architecture).deb> /tmp/chrome.deb ) && sudo dpkg -i /tmp/chrome.deb && rm /tmp/chrome.deb
+  }
+
 dp() {
   for i in ${@}; do
     ts "${green}${i}${reset}"
@@ -154,7 +158,7 @@ upgrader-docker() {
 
 cmd=${1}
 case $cmd in
-  go|npm|pip|docker|cargo)
+  go|npm|pip|docker|cargo|chrome)
     upgrader-${cmd}
     ;;
   all)
