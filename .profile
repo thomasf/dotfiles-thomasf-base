@@ -251,12 +251,12 @@ MPD_HOST=localhost && export MPD_HOST
 #
 [ -e "${HOME}/.profile-private" ] && . "${HOME}/.profile-private"
 [ -e "${HOME}/.profile-local" ] && . "${HOME}/.profile-local"
+[ -e "$HOME/.cargo/env" ] && . "$HOME/.cargo/env"
 
 # Application configuration
 EDITOR="editor" && export EDITOR
 VISUAL="${EDITOR}" && export VISUAL
 ALTERNATE_EDITOR="" && export ALTERNATE_EDITOR
 hash les 2>/dev/null && PAGER="less -R" && export PAGER
-. "$HOME/.cargo/env"
 
 export MGFXC_WINE_PATH="${HOME}/.winemonogame"
