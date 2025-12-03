@@ -265,11 +265,16 @@ workon() {
 }
 
 python-lsp-ensure() {
-  pip uninstall -y flake8 python-lsp-ruff
+  # pip uninstall -y flake8 python-lsp-ruff
+  pip uninstall -y flake8 python-lsp-ruff python-lsp-server
+  # pip install --upgrade \
+  #     python-lsp-server[rope] \
+  #     pylsp-rope \
+  #     pdbpp \
+  #     funcsigs
   pip install --upgrade \
-      python-lsp-server[rope] \
-      pylsp-rope \
-      pdbpp \
+      basedpyright \
+      ppdb \
       funcsigs
 }
 
