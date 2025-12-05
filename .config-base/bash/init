@@ -274,7 +274,7 @@ python-lsp-ensure() {
   #     funcsigs
   pip install --upgrade \
       basedpyright \
-      ppdb \
+      pdbpp \
       funcsigs
 }
 
