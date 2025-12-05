@@ -373,7 +373,7 @@ alias doco='docker compose'
 
 
 dps() {
-  docker ps | cut -c-$(tput cols)
+  docker ps --format "table {{ .ID }}\t{{.Names}}\t{{.Status}}\t{{.RunningFor}}\t{{.Command}}\t{{.Image}}" | cut -c-$(tput cols)
 }
 
 alias agent='eval $(ssh-agent); ssh-add;'
