@@ -26,8 +26,9 @@
 
 
 # work related
-export UID=$(id -u) 2> /dev/null || true
-export GID=$(id -g)
+export UID
+GID=$(id -g)
+export GID
 
 # __SHBASE contains the path to the base directory for shell scripts.
 __SHBASE="${HOME}/.config-base/bash"
