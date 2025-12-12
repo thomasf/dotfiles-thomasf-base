@@ -46,14 +46,16 @@ upgrader-go() {
   GOPATH=${HOME}
   export GOPATH;
   for l in  \
+      github.com/99designs/aws-vault/v7 \
       github.com/boyter/scc \
       github.com/cuonglm/gocmt \
+      github.com/direnv/direnv \
       github.com/github/hub \
       github.com/go-critic/go-critic/cmd/gocritic \
       github.com/go-delve/delve/cmd/dlv \
       github.com/golangci/golangci-lint/cmd/golangci-lint \
-      github.com/gopasspw/gopass \
       github.com/google/gops \
+      github.com/gopasspw/gopass \
       github.com/homeport/dyff/cmd/dyff \
       github.com/junegunn/fzf \
       github.com/monochromegane/the_platinum_searcher/cmd/pt \
@@ -62,7 +64,6 @@ upgrader-go() {
       github.com/smartystreets/goconvey \
       github.com/tsenart/vegeta \
       github.com/x-motemen/ghq \
-      github.com/99designs/aws-vault/v7 \
       golang.org/x/perf/cmd/benchstat \
       golang.org/x/pkgsite/cmd/pkgsite \
       golang.org/x/tools/cmd/benchcmp \
