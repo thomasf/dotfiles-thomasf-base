@@ -122,7 +122,7 @@ done
 
 export PATH
 
-PASSWORD_STORE_DIR="${HOME}/src/dotfiles/password-store"
+PASSWORD_STORE_DIR="${HOME}/src/dotfiles/pass"
 export PASSWORD_STORE_DIR
 AWS_VAULT_BACKEND=pass
 export AWS_VAULT_BACKEND
