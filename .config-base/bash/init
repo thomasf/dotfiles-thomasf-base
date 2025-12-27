@@ -328,19 +328,6 @@ if [ -n "$DISPLAY" ] && [ -x /usr/bin/xsel ] ; then
 fi
 
 
-# host tags
-case $HOST_TAGS in
-  *:minimalshell:*)
-  # nothing
-  ;;
-  *)
-    hash hub 2>/dev/null &&
-      alias git=hub
-    ;;
-esac
-
-
-
 # Activate the prompt
 log "activate prompt"
 
