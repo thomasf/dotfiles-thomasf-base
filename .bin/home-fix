@@ -12,6 +12,7 @@ set -e
 if [ -d "${HOME}/.ssh" ]; then
   chmod 700 ~/.ssh
   chmod 600 ~/.ssh/*
+  chmod +R+X ~/.ssh/*
 fi
 if [ -d "${HOME}/.gnupg" ]; then
   chmod -R 700 ~/.gnupg
