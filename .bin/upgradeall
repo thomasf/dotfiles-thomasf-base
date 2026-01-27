@@ -48,6 +48,7 @@ upgrader-go() {
   for l in  \
       github.com/99designs/aws-vault/v7 \
       github.com/boyter/scc \
+      github.com/charmbracelet/glow/v2 \
       github.com/cuonglm/gocmt \
       github.com/direnv/direnv \
       github.com/github/hub \
