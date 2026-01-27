@@ -264,6 +264,10 @@ workon() {
   fi
 }
 
+cdsitepackages() {
+  cd $(python3 -c "import sysconfig; print(sysconfig.get_path('platlib'))")
+}
+
 python-lsp-ensure() {
   # pip uninstall -y flake8 python-lsp-ruff
   pip uninstall -y flake8 python-lsp-ruff python-lsp-server
