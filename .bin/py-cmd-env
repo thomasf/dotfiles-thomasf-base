@@ -89,8 +89,9 @@ case ${bn} in
   git-goggles)
     packages="git-goggles termcolor"
     ;;
-  youtube-dl)
-    packages=youtube_dl
+  yt-dlp)
+    packages="yt-dlp yt-dlp-ejs"
+    env_name=yt-dlp
     ;;
   devpi*)
     packages="devpi-client devpi-server"
