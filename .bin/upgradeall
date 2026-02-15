@@ -63,6 +63,7 @@ upgrader-go() {
       github.com/profclems/glab/cmd/glab \
       github.com/shurcooL/markdownfmt \
       github.com/smartystreets/goconvey \
+      github.com/some-programs/tgo \
       github.com/tsenart/vegeta \
       github.com/x-motemen/ghq \
       golang.org/x/perf/cmd/benchstat \
