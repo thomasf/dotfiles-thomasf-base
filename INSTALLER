@@ -61,7 +61,7 @@ gc diff.renames true
 gc fetch.all true
 gc fetch.prune true
 gc fetch.pruneTags true
-gc format.pretty "format:%C(yellow)%h%Creset %C(green)%ad%Creset %C(cyan)%ae%Creset %s"
+gc format.pretty "format:%C(yellow)%H%Creset %C(green)%ad%Creset %C(cyan)%ae%Creset%n%n%s%n%n%b"
 gc help.autocorrect prompt
 gc init.defaultBranch master
 gc merge.conflictstyle zdiff3
