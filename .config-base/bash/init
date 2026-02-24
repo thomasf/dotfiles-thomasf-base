@@ -302,10 +302,22 @@ lsvirtualenvs() {
 # Misc
 #
 
-[ -f "${__BASH}/z" ] \
-  && log "z" \
-  && export _Z_CMD='__z' \
-  && . "${__BASH}/z"
+_z() {
+  case "$1" in
+    -l)
+      zzz "$@"
+      ;;
+    *)
+      local dir
+      dir=$(zzz "$@")
+      if [ -d "$dir" ]; then
+        cd "$dir"
+      else
+        echo "No match found"
+      fi
+      ;;
+  esac
+}
 
 if [ -x /usr/bin/lesspipe ]; then
   eval "$(SHELL=/bin/sh lesspipe)"

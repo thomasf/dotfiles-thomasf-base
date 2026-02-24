@@ -9,6 +9,9 @@
 [ -e "${HOME}/.config/pep8" ] \
     || ln -fs "$(pwd)/.config-base/pep8" "${HOME}/.config/"
 
+[ -e "${HOME}/.config/rmpc" ] \
+    || ln -fs "$(pwd)/.config-base/rpmc" "${HOME}/.config/"
+
 [ -e "${HOME}/.config/flake8" ] \
     || ln -fs "$(pwd)/.config-base/flake8" "${HOME}/.config/"
 
@@ -113,3 +116,9 @@ gu url.ssh://git@github.com/.insteadOf
 
 unset -f gc
 unset -f gu
+
+if hash go 2>/dev/null; then
+  go install ./cmd/...
+else
+  echo "go not found, skipping building"
+fi
