@@ -1,9 +1,15 @@
 package main
 
 import (
+	"bufio"
+	"bytes"
 	"cmp"
+	"errors"
+	"flag"
 	"fmt"
+	"io"
 	"os"
+	"os/exec"
 	"path/filepath"
 	"regexp"
 	"slices"
@@ -12,16 +18,68 @@ import (
 	"time"
 )
 
+// Flags holds the CLI configuration
+type Flags struct {
+	Add     string
+	List    bool
+	Cleanup bool
+	Debug   bool
+}
+
+func (f *Flags) Register(fs *flag.FlagSet) {
+	fs.StringVar(&f.Add, "add", "", "Add a new path to the database")
+	fs.BoolVar(&f.List, "l", false, "List matches with their scores")
+	fs.BoolVar(&f.Cleanup, "cleanup", false, "Remove entries that are no longer valid directories")
+	fs.BoolVar(&f.Debug, "debug", false, "print debug info")
+}
+
 type Entry struct {
 	Path  string
 	Rank  float64
 	Time  int64
-	Score float64 // Calculated frecency
+	Score float64
+}
+
+type Store struct {
+	Path   string
+	Stderr io.Writer
+}
+
+func (s *Store) Entries() ([]Entry, error) {
+	data, err := os.ReadFile(s.Path)
+	if err != nil {
+		return nil, err
+	}
+
+	var results []Entry
+	scanner := bufio.NewScanner(bytes.NewReader(data))
+	for scanner.Scan() {
+		line := scanner.Text()
+		if line == "" {
+			continue
+		}
+		parts := strings.Split(line, "|")
+		if len(parts) < 3 {
+			continue
+		}
+		rank, _ := strconv.ParseFloat(parts[1], 64)
+		t, _ := strconv.ParseInt(parts[2], 10, 64)
+		results = append(results, Entry{Path: parts[0], Rank: rank, Time: t})
+	}
+	return results, nil
+
+}
+
+func (s *Store) Save(entries []Entry) error {
+	var sb strings.Builder
+	for _, e := range entries {
+		sb.WriteString(fmt.Sprintf("%s|%v|%d\n", e.Path, e.Rank, e.Time))
+	}
+	return os.WriteFile(s.Path, []byte(sb.String()), 0644)
 }
 
 func frecent(rank float64, lastTime int64) float64 {
 	dx := time.Now().Unix() - lastTime
-	// Formula from original z.sh: 10000 * rank * (3.75/((0.0001 * dx + 1) + 0.25))
 	return 10000 * rank * (3.75 / (0.0001*float64(dx) + 1.25))
 }
 
@@ -31,96 +89,156 @@ func main() {
 		datafile = filepath.Join(os.Getenv("HOME"), ".z")
 	}
 
-	if len(os.Args) < 2 {
+	f := &Flags{}
+	f.Register(flag.CommandLine)
+	flag.Parse()
+
+	stderr := io.Discard
+	if f.Debug || os.Getenv("ZZZ_DEBUG") == "1" {
+		stderr = os.Stderr
+	}
+
+	store := &Store{Path: datafile, Stderr: stderr}
+
+	if f.Cleanup {
+		cleanupEntries(store)
 		return
 	}
 
-	if os.Args[1] == "--add" && len(os.Args) > 2 {
-		addEntry(datafile, os.Args[2])
+	if f.Add != "" {
+		addEntry(store, f.Add)
 		return
 	}
 
-	// TODO: add cleanup function to remove non directories
-
-	runSearch(datafile, os.Args[1:])
+	queryArgs := flag.Args()
+	if len(queryArgs) > 0 || f.List {
+		runSearch(store, queryArgs, f.List)
+	}
 }
 
-func addEntry(datafile, newPath string) {
+func cleanupEntries(s *Store) {
+	prevEntries, err := s.Entries()
+	if err != nil {
+		fmt.Fprintf(s.Stderr, "[zzz] error reading data file=%s\n", s.Path)
+		return
+	}
+
+	var nextEntries []Entry
+	for _, entry := range prevEntries {
+		info, err := os.Stat(entry.Path)
+		if err == nil && info.IsDir() {
+			nextEntries = append(nextEntries, entry)
+		} else {
+			fmt.Fprintf(s.Stderr, "[zzz] removing path=%s\n", entry.Path)
+		}
+	}
+
+	if err := s.Save(nextEntries); err != nil {
+		fmt.Fprintf(s.Stderr, "error saving database: %v\n", err)
+		return
+	}
+
+}
+
+func addEntry(s *Store, newPath string) {
 	if newPath == os.Getenv("HOME") || newPath == "/" {
 		return
 	}
+	prevEntries, err := s.Entries()
+	if err != nil && !errors.Is(err, os.ErrNotExist) {
+		fmt.Fprintf(s.Stderr, "[zzz] error reading data file path=%s\n", s.Path)
+	}
 
-	content, _ := os.ReadFile(datafile)
-	lines := strings.Split(string(content), "\n")
-	found := false
-	var out []string
+	var found bool
+	var totalRank float64
+	var nextEntries []Entry
 
-	totalRank := 0.0
-	for _, line := range lines {
-		if line == "" {
-			continue
-		}
-		parts := strings.Split(line, "|")
-		if parts[0] == newPath {
-			rank, _ := strconv.ParseFloat(parts[1], 64)
-			out = append(out, fmt.Sprintf("%s|%v|%d", parts[0], rank+1, time.Now().Unix()))
-			totalRank += rank + 1
+	for _, entry := range prevEntries {
+		if entry.Path == newPath {
+			entry.Rank++
+			fmt.Fprintf(s.Stderr, "[zzz] increase rank=%.2f path=%s\n", entry.Rank, newPath)
+			entry.Time = time.Now().Unix()
 			found = true
-		} else {
-			out = append(out, line)
-			r, _ := strconv.ParseFloat(parts[1], 64)
-			totalRank += r
+		}
+		totalRank += entry.Rank
+		nextEntries = append(nextEntries, entry)
+	}
+
+	// TODO: this probalby should change
+	if totalRank > 9000 {
+		for i := range nextEntries {
+			nextEntries[i].Rank *= 0.99
 		}
 	}
 
 	if !found {
-		out = append(out, fmt.Sprintf("%s|1|%d", newPath, time.Now().Unix()))
+		fmt.Fprintf(s.Stderr, "[zzz] add path=%s\n", newPath)
+		nextEntries = append(nextEntries, Entry{Path: newPath, Rank: 1, Time: time.Now().Unix()})
 	}
 
-	// Aging: if total rank > 9000, multiply all by 0.99
-	if totalRank > 9000 {
-		for i, line := range out {
-			p := strings.Split(line, "|")
-			r, _ := strconv.ParseFloat(p[1], 64)
-			out[i] = fmt.Sprintf("%s|%v|%s", p[0], r*0.99, p[2])
-		}
+	if err := s.Save(nextEntries); err != nil {
+		fmt.Fprintf(s.Stderr, "error saving database: %v\n", err)
+		return
 	}
 
-	os.WriteFile(datafile, []byte(strings.Join(out, "\n")), 0644)
+	checkAndTriggerCleanup(s)
 }
 
-func runSearch(datafile string, args []string) {
-	// Simple flag parsing
-	listMode := false
-	queryParts := []string{}
-	for _, arg := range args {
-		if arg == "-l" {
-			listMode = true
-		} else {
-			queryParts = append(queryParts, arg)
+func checkAndTriggerCleanup(s *Store) {
+	counterPath := s.Path + ".count"
+
+	// Read current count
+	data, _ := os.ReadFile(counterPath)
+	count, _ := strconv.Atoi(strings.TrimSpace(string(data)))
+
+	count++
+
+	if count >= 100 {
+		_ = os.WriteFile(counterPath, []byte("0"), 0644)
+
+		exe, err := os.Executable()
+		if err != nil {
+			exe = os.Args[0] // Fallback
 		}
+
+		cmd := exec.Command(exe, "-cleanup")
+
+		// Detach the process:
+		// We don't assign Stdout/Stderr so it doesn't hang the parent shell
+		cmd.Stdin = nil
+		cmd.Stdout = nil
+		cmd.Stderr = nil
+
+		if err := cmd.Start(); err != nil {
+			fmt.Fprintf(s.Stderr, "failed to start cleanup err=%v\n", err)
+		}
+	} else {
+		// Just update the count
+		_ = os.WriteFile(counterPath, []byte(strconv.Itoa(count)), 0644)
 	}
+}
 
-	content, _ := os.ReadFile(datafile)
-	lines := strings.Split(string(content), "\n")
+func runSearch(s *Store, queryParts []string, listMode bool) {
 	var matches []Entry
-
 	pattern := strings.Join(queryParts, ".*")
 	reg, _ := regexp.Compile("(?i)" + pattern)
 
-	for _, line := range lines {
-		if line == "" {
-			continue
-		}
-		p := strings.Split(line, "|")
-		if reg.MatchString(p[0]) {
-			rank, _ := strconv.ParseFloat(p[1], 64)
-			t, _ := strconv.ParseInt(p[2], 10, 64)
-			matches = append(matches, Entry{p[0], rank, t, frecent(rank, t)})
+	entries, err := s.Entries()
+	if err != nil {
+		fmt.Fprintf(s.Stderr, "[zzz] error reading data file=%s\n ", s.Path)
+		return
+	}
+
+	for _, entry := range entries {
+		if reg.MatchString(entry.Path) {
+			entry.Score = frecent(entry.Rank, entry.Time)
+			matches = append(matches, entry)
 		}
 	}
 
-	slices.SortFunc(matches, func(a, b Entry) int { return cmp.Compare(a.Score, b.Score) })
+	slices.SortFunc(matches, func(a, b Entry) int {
+		return cmp.Compare(a.Score, b.Score)
+	})
 
 	if listMode {
 		for _, m := range matches {
