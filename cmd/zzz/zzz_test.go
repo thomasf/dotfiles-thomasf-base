@@ -26,13 +26,13 @@ func TestCleanupEntries(t *testing.T) {
 		{Path: existingDir, Rank: 10, Time: 1000},
 		{Path: nonExistingDir, Rank: 5, Time: 500},
 	}
-	if err := store.Save(entries); err != nil {
+	if err := store.SaveEntries(entries); err != nil {
 		t.Fatal(err)
 	}
 
 	cleanupEntries(store)
 
-	nextEntries, err := store.Entries()
+	nextEntries, err := store.LoadEntries()
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -46,7 +46,7 @@ func TestCleanupEntries(t *testing.T) {
 	}
 }
 
-func TestAddEntry(t *testing.T) {
+func TestAddRemoveEntry(t *testing.T) {
 	tmpDir := t.TempDir()
 
 	dataFile := filepath.Join(tmpDir, "zzz.db")
@@ -56,26 +56,50 @@ func TestAddEntry(t *testing.T) {
 	addEntry(store, "/path/to/bar")
 	addEntry(store, "/path/to/foo") // Increase rank
 
-	entries, err := store.Entries()
-	if err != nil {
-		t.Fatal(err)
-	}
+	{
+		entries, err := store.LoadEntries()
+		if err != nil {
+			t.Fatal(err)
+		}
 
-	if len(entries) != 2 {
-		t.Errorf("expected 2 entries, got %d", len(entries))
-	}
+		if len(entries) != 2 {
+			t.Errorf("expected 2 entries, got %d", len(entries))
+		}
 
-	for _, e := range entries {
-		if e.Path == "/path/to/foo" {
-			if e.Rank != 2 {
-				t.Errorf("expected rank 2 for foo, got %f", e.Rank)
-			}
-		} else if e.Path == "/path/to/bar" {
-			if e.Rank != 1 {
-				t.Errorf("expected rank 1 for bar, got %f", e.Rank)
+		for _, e := range entries {
+			if e.Path == "/path/to/foo" {
+				if e.Rank != 2 {
+					t.Errorf("expected rank 2 for foo, got %f", e.Rank)
+				}
+			} else if e.Path == "/path/to/bar" {
+				if e.Rank != 1 {
+					t.Errorf("expected rank 1 for bar, got %f", e.Rank)
+				}
 			}
 		}
 	}
+
+	removeEntry(store, "/path/to/bar")
+
+	{
+		entries, err := store.LoadEntries()
+		if err != nil {
+			t.Fatal(err)
+		}
+
+		if len(entries) != 1 {
+			t.Errorf("expected 1 entries, got %d", len(entries))
+		}
+
+		for _, e := range entries {
+			if e.Path == "/path/to/foo" {
+				if e.Rank != 2 {
+					t.Errorf("expected rank 2 for foo, got %f", e.Rank)
+				}
+			}
+		}
+	}
+
 }
 
 func TestRunSearch(t *testing.T) {
@@ -89,7 +113,7 @@ func TestRunSearch(t *testing.T) {
 		{Path: "/foo/bar/baz", Rank: 10, Time: now},
 		{Path: "/apple/orange", Rank: 5, Time: now},
 	}
-	if err := store.Save(entries); err != nil {
+	if err := store.SaveEntries(entries); err != nil {
 		t.Fatal(err)
 	}
 

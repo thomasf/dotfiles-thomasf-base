@@ -18,9 +18,12 @@ import (
 	"time"
 )
 
+const CleanupInterval = 100 // remove dead entries every nth call to add.
+
 // Flags holds the CLI configuration
 type Flags struct {
 	Add     string
+	Remove  string
 	List    bool
 	Cleanup bool
 	Debug   bool
@@ -28,6 +31,7 @@ type Flags struct {
 
 func (f *Flags) Register(fs *flag.FlagSet) {
 	fs.StringVar(&f.Add, "add", "", "Add a new path to the database")
+	fs.StringVar(&f.Remove, "remove", "", "remove a path from the database")
 	fs.BoolVar(&f.List, "l", false, "List matches with their scores")
 	fs.BoolVar(&f.Cleanup, "cleanup", false, "Remove entries that are no longer valid directories")
 	fs.BoolVar(&f.Debug, "debug", false, "print debug info")
@@ -45,7 +49,26 @@ type Store struct {
 	Stderr io.Writer
 }
 
-func (s *Store) Entries() ([]Entry, error) {
+func (s *Store) LoadCounter() (int, error) {
+	data, err := os.ReadFile(s.Path + ".count")
+	if err != nil {
+		if errors.Is(err, os.ErrNotExist) {
+			return 0, nil
+		}
+		return 0, err
+	}
+	count, err := strconv.Atoi(strings.TrimSpace(string(data)))
+	if err != nil {
+		return 0, err
+	}
+	return count, nil
+}
+
+func (s *Store) SaveCounter(count int) error {
+	return os.WriteFile(s.Path+".count", []byte(strconv.Itoa(count)), 0644)
+}
+
+func (s *Store) LoadEntries() ([]Entry, error) {
 	data, err := os.ReadFile(s.Path)
 	if err != nil {
 		return nil, err
@@ -70,7 +93,7 @@ func (s *Store) Entries() ([]Entry, error) {
 
 }
 
-func (s *Store) Save(entries []Entry) error {
+func (s *Store) SaveEntries(entries []Entry) error {
 	var sb strings.Builder
 	for _, e := range entries {
 		sb.WriteString(fmt.Sprintf("%s|%v|%d\n", e.Path, e.Rank, e.Time))
@@ -109,6 +132,10 @@ func main() {
 		addEntry(store, f.Add)
 		return
 	}
+	if f.Remove != "" {
+		removeEntry(store, f.Remove)
+		return
+	}
 
 	queryArgs := flag.Args()
 	if len(queryArgs) > 0 || f.List {
@@ -117,7 +144,7 @@ func main() {
 }
 
 func cleanupEntries(s *Store) {
-	prevEntries, err := s.Entries()
+	prevEntries, err := s.LoadEntries()
 	if err != nil {
 		fmt.Fprintf(s.Stderr, "[zzz] error reading data file=%s\n", s.Path)
 		return
@@ -133,7 +160,7 @@ func cleanupEntries(s *Store) {
 		}
 	}
 
-	if err := s.Save(nextEntries); err != nil {
+	if err := s.SaveEntries(nextEntries); err != nil {
 		fmt.Fprintf(s.Stderr, "error saving database: %v\n", err)
 		return
 	}
@@ -144,7 +171,7 @@ func addEntry(s *Store, newPath string) {
 	if newPath == os.Getenv("HOME") || newPath == "/" {
 		return
 	}
-	prevEntries, err := s.Entries()
+	prevEntries, err := s.LoadEntries()
 	if err != nil && !errors.Is(err, os.ErrNotExist) {
 		fmt.Fprintf(s.Stderr, "[zzz] error reading data file path=%s\n", s.Path)
 	}
@@ -176,7 +203,7 @@ func addEntry(s *Store, newPath string) {
 		nextEntries = append(nextEntries, Entry{Path: newPath, Rank: 1, Time: time.Now().Unix()})
 	}
 
-	if err := s.Save(nextEntries); err != nil {
+	if err := s.SaveEntries(nextEntries); err != nil {
 		fmt.Fprintf(s.Stderr, "error saving database: %v\n", err)
 		return
 	}
@@ -184,27 +211,43 @@ func addEntry(s *Store, newPath string) {
 	checkAndTriggerCleanup(s)
 }
 
-func checkAndTriggerCleanup(s *Store) {
-	counterPath := s.Path + ".count"
+func removeEntry(s *Store, removePath string) {
+	if removePath == os.Getenv("HOME") || removePath == "/" {
+		return
+	}
+	entries, err := s.LoadEntries()
+	if err != nil && !errors.Is(err, os.ErrNotExist) {
+		fmt.Fprintf(s.Stderr, "[zzz] error reading data file path=%s\n", s.Path)
+	}
+	entries = slices.DeleteFunc(entries, func(entry Entry) bool {
+		return entry.Path == removePath
+	})
+	if err := s.SaveEntries(entries); err != nil {
+		fmt.Fprintf(s.Stderr, "error saving database: %v\n", err)
+		return
+	}
+	checkAndTriggerCleanup(s)
+}
 
-	// Read current count
-	data, _ := os.ReadFile(counterPath)
-	count, _ := strconv.Atoi(strings.TrimSpace(string(data)))
+func checkAndTriggerCleanup(s *Store) {
+	count, err := s.LoadCounter()
+	if err != nil {
+		fmt.Fprintf(s.Stderr, "failed to load counter err=%v\n", err)
+	}
 
 	count++
 
-	if count >= 100 {
-		_ = os.WriteFile(counterPath, []byte("0"), 0644)
+	if count >= CleanupInterval {
+		if err := s.SaveCounter(0); err != nil {
+			fmt.Fprintf(s.Stderr, "failed to save counter err=%v\n", err)
+		}
 
 		exe, err := os.Executable()
 		if err != nil {
-			exe = os.Args[0] // Fallback
+			exe = os.Args[0] // should not happen
 		}
 
 		cmd := exec.Command(exe, "-cleanup")
-
-		// Detach the process:
-		// We don't assign Stdout/Stderr so it doesn't hang the parent shell
 		cmd.Stdin = nil
 		cmd.Stdout = nil
 		cmd.Stderr = nil
@@ -213,17 +256,18 @@ func checkAndTriggerCleanup(s *Store) {
 			fmt.Fprintf(s.Stderr, "failed to start cleanup err=%v\n", err)
 		}
 	} else {
-		// Just update the count
-		_ = os.WriteFile(counterPath, []byte(strconv.Itoa(count)), 0644)
+		if err := s.SaveCounter(count); err != nil {
+			fmt.Fprintf(s.Stderr, "failed to save counter err=%v\n", err)
+		}
 	}
 }
 
 func runSearch(s *Store, queryParts []string, listMode bool) {
 	var matches []Entry
 	pattern := strings.Join(queryParts, ".*")
-	reg, _ := regexp.Compile("(?i)" + pattern)
+	reg := regexp.MustCompile("(?i)" + pattern)
 
-	entries, err := s.Entries()
+	entries, err := s.LoadEntries()
 	if err != nil {
 		fmt.Fprintf(s.Stderr, "[zzz] error reading data file=%s\n ", s.Path)
 		return
