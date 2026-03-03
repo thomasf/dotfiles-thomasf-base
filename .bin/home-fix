@@ -8,24 +8,19 @@
 
 set -e
 
-# Ensure sane file modes for some important files and directories
 if [ -d "${HOME}/.ssh" ]; then
-  chmod 700 ~/.ssh
-  chmod 600 ~/.ssh/*
-  chmod +rX ~/.ssh/*
+    chmod 700 ~/.ssh
+    find ~/.ssh -type d -exec chmod 700 {} +
+    find ~/.ssh -type f -exec chmod 600 {} +
+    find ~/.ssh -maxdepth 1 -name "*.pub" -exec chmod 644 {} +
 fi
+
+# Secure .gnupg directory
 if [ -d "${HOME}/.gnupg" ]; then
-  chmod -R 700 ~/.gnupg
+  chmod 700 ~/.gnupg
+  find ~/.gnupg -type d -exec chmod 700 {} +
+  find ~/.gnupg -type f -exec chmod 600 {} +
 fi
-
-[ -d "${HOME}/.subversion" ] && chmod 700 "${HOME}/.subversion"
-
-# Create default directories
-for dir in $HOMEDIRS; do
-  mkdir -p "${HOME}/${dir}"
-done
-
-
 
 # If option o is given, take ownership of some directories
 # that might have files accidently owned by root while sudoing.
