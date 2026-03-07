@@ -25,6 +25,7 @@ type Dotfiles struct {
 	DstPath   string
 	Force     bool
 	DryRun    bool
+	Verbose   bool
 
 	// Internal state
 	repos     []string
@@ -97,6 +98,7 @@ func (d *Dotfiles) Run(stdout, stderr io.Writer, args []string) error {
 	fs.StringVar(&d.DstPath, "dst", home, "target path (defaults to $HOME)")
 	fs.BoolVar(&d.Force, "f", false, "force overwrite existing files")
 	fs.BoolVar(&d.DryRun, "dry-run", false, "dry run (don't create symlinks; only for install command)")
+	fs.BoolVar(&d.Verbose, "v", false, "log more non errors")
 
 	if err := ff.Parse(fs, args, ff.WithEnvVarPrefix("DOTFILES")); err != nil {
 		return err
@@ -121,6 +123,8 @@ func (d *Dotfiles) Run(stdout, stderr io.Writer, args []string) error {
 		d.Publish()
 	case "pull":
 		d.Pull()
+		fmt.Fprintln(d.Stdout, "Installing...")
+		d.Install()
 	case "status", "s":
 		d.Status()
 	case "diff", "d":
@@ -275,6 +279,7 @@ func (d *Dotfiles) Pull() {
 		}(name, repoPath)
 	}
 	wg.Wait()
+
 }
 
 func (d *Dotfiles) Status() {
@@ -390,9 +395,13 @@ func (d *Dotfiles) sync(isPlan bool) {
 			fmt.Fprintf(d.Stdout, "plan: %s\n", script.String())
 			continue
 		}
-		fmt.Fprintf(d.Stdout, "%s\n", script.String())
+		if d.Verbose {
+			fmt.Fprintf(d.Stdout, "%s\n", script.String())
+		}
 		if err := script.Run(); err != nil {
-			fmt.Fprintf(d.Stderr, "error: %v\n", err)
+			if d.Verbose {
+				fmt.Fprintf(d.Stderr, "error: %v\n", err)
+			}
 			d.collectErr(fmt.Errorf("%s: %w", script.String(), err))
 		}
 	}

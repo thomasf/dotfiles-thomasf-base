@@ -11,9 +11,13 @@ func TestMountRoot(t *testing.T) {
 	dstDir := t.TempDir()
 
 	mfs := fstest.MapFS{
-		"bashrc":         &fstest.MapFile{Data: []byte("content"), Mode: 0o644},
-		"zshrc":          &fstest.MapFile{Data: []byte("content"), Mode: 0o644},
-		".dotfiles.toml": &fstest.MapFile{Data: []byte("[[mount]]\nsrc = \".\"\ndst = \"notes\""), Mode: 0o644},
+		"bashrc": &fstest.MapFile{Data: []byte("content"), Mode: 0o644},
+		"zshrc":  &fstest.MapFile{Data: []byte("content"), Mode: 0o644},
+		".dotfiles.toml": &fstest.MapFile{Data: []byte(`
+[[mount]]
+src = "."
+dst = "notes"
+`), Mode: 0o644},
 	}
 
 	if err := os.CopyFS(repoDir, mfs); err != nil {
