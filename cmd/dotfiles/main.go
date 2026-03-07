@@ -205,6 +205,28 @@ func (d *Dotfiles) Publish() {
 		wg.Add(1)
 		go func(name, path string) {
 			defer wg.Done()
+
+			cmd := exec.Command("git", "remote")
+			cmd.Dir = path
+			output, err := cmd.Output()
+			if err != nil {
+				fmt.Fprintf(d.Stderr, "error checking remotes in %s: %v\n", name, err)
+				return
+			}
+
+			hasPublish := false
+			for _, remote := range strings.Split(string(output), "\n") {
+				if strings.TrimSpace(remote) == "publish" {
+					hasPublish = true
+					break
+				}
+			}
+
+			if !hasPublish {
+				fmt.Fprintf(d.Stdout, "skipping publish for %s: remote 'publish' not found\n", name)
+				return
+			}
+
 			action := &ExecCommandAction{
 				RepoName: name,
 				RepoPath: path,
