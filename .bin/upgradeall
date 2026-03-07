@@ -167,7 +167,7 @@ case $cmd in
   all)
     # runCmd "sudo nala upgrade"
     runCmd "sudo apt update ; sudo apt dist-upgrade"
-    runCmd "hsadmin pull"
+    runCmd "dotfiles pull"
     runCmd "$0 go" &
     runCmd "$0 pip" &
     runCmd "$0 cargo" &
