@@ -98,15 +98,6 @@ gc alias.verref "describe --tag HEAD"
 gc ghq.root "${HOME}/src"
 gc hub.autoUpdate "never"
 
-# git config: unset previosly used settings (for migration purposes)
-
-# gc alias.catchup "log --patch --reverse --topo-order _ribbon..origin/master"
-# gc alias.ps "push"
-# gc alias.pu "pull"
-# gc alias.ribbon "tag --force _ribbon origin/master"
-# gc log.date "relative"
-# gc url.ssh://git@github.com/.insteadOf https://github.com/
-
 gu alias.catchup
 gu alias.ps
 gu alias.pu

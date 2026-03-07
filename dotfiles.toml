@@ -1,0 +1,86 @@
+ignore = []
+
+[[mount]]
+src = '.config-base/gitu'
+dst = '.config/gitu'
+
+[[mount]]
+src = '.config-base/pep8'
+dst = '.config/pep8'
+
+[[mount]]
+src = '.config-base/rpmc'
+dst = '.config/rpmc'
+
+[[mount]]
+src = '.config-base/flake8'
+dst = '.config/flake8'
+
+[[mount]]
+src = '.config-base/pudb'
+dst = '.config/pudb'
+
+[[mount]]
+src = '.config-base/pulse/default.pa'
+dst = '.pulse/default.pa'
+
+[git]
+'advice.commitbeforemerge' = 'false'
+'advice.detachedhead' = 'false'
+'advice.implicitidentity' = 'false'
+'advice.pushnonfastforward' = 'false'
+'advice.resolveconflict' = 'false'
+'advice.statushints' = 'false'
+'alias.b' = "for-each-ref --sort=committerdate refs/heads/ --format='%(align:18)%(color:green)%(committerdate:relative)%(color:reset)%(end)%(color:cyan)%(align:18)%(authorname)%(end)%(color:reset) %(color:yellow)%(refname:short)%(color:reset) %(color:blue)-%(color:reset) %(contents:subject)'"
+'alias.catchup' = ''
+'alias.diffdir' = 'difftool -t kdiff3 --dir-diff'
+'alias.lg' = "log --date=relative --ignore-space-change --stat --pretty=format:'%C(yellow)%h%Creset %C(green)%ad%Creset %C(cyan)%aE% Creset %C(blue)%s%Creset'"
+'alias.lgs' = "log --graph --pretty=format:'%Cred%h%Creset -%C(yellow)%d%Creset %s %Cgreen(%cr) %C(bold blue)<%aN>%Creset' --abbrev-commit --date=relative"
+'alias.lgt' = "log --graph --all --pretty=format:'%C(yellow)%h%Creset %C(cyan)%aE%Creset %Cgreen%cr%Creset %s%C(yellow)%d%Creset' --abbrev-commit"
+'alias.lgv' = "log -p --pretty=format:'%C(yellow)%h%Creset %C(cyan)%aN <%aE>%Creset %Cgreen%cr%Creset %C(magenta)%s%Creset%C(yellow)%d%Creset'"
+'alias.ps' = ''
+'alias.pu' = ''
+'alias.ribbon' = ''
+'alias.showroot' = 'rev-parse --show-toplevel'
+'alias.staged' = 'diff --cached'
+'alias.verref' = 'describe --tag HEAD'
+'branch.autosetuprebase' = 'always'
+'branch.sort' = '-committerdate'
+'color.ui' = 'auto'
+'column.ui' = 'auto'
+'commit.verbose' = 'true'
+'core.autocrlf' = 'input'
+'core.editor' = 'ee'
+'core.excludesfile' = '~/.gitignore_global'
+'core.fsmonitor' = 'true'
+'core.untrackedCache' = 'true'
+'diff.algorithm' = 'histogram'
+'diff.colorMoved' = 'plain'
+'diff.mnemonicPrefix' = 'true'
+'diff.renamelimit' = '50000'
+'diff.renames' = 'true'
+'fetch.all' = 'true'
+'fetch.prune' = 'true'
+'fetch.pruneTags' = 'true'
+'format.pretty' = 'format:%C(yellow)%H%Creset %C(green)%ad%Creset %C(cyan)%ae%Creset%n%n%s%n%n%b'
+'ghq.root' = '${HOME}/src'
+'help.autocorrect' = 'prompt'
+'hub.autoUpdate' = 'never'
+'init.defaultBranch' = 'master'
+'log.date' = ''
+'log.mailmap' = 'true'
+'merge.conflictstyle' = 'zdiff3'
+'mergetool.keepbackup' = 'false'
+'mergetool.keeptemporaries' = 'false'
+'mergetool.prompt' = 'true'
+'pull.rebase' = 'true'
+'push.autoSetupRemote' = 'true'
+'push.default' = 'upstream'
+'rebase.autoSquash' = 'true'
+'rebase.autoStash' = 'true'
+'rebase.updateRefs' = 'true'
+'rerere.autoupdate' = 'true'
+'rerere.enabled' = 'true'
+'tag.sort' = 'version:refname'
+'url.ssh://git@github.com/.insteadOf' = ''
+
