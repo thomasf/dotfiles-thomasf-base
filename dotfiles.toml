@@ -1,6 +1,5 @@
-ignore = []
-
-script-post = '''
+[[script]]
+src = '''
 .bin/home-fix
 '''
 
