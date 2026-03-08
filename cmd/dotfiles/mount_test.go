@@ -24,7 +24,7 @@ dst = "notes"
 		t.Fatal(err)
 	}
 
-	repo := NewRepository("testrepo", repoDir, false, dstDir)
+	repo := NewRepository(repoDir, dstDir, false)
 	err := repo.LoadConfig()
 	if err != nil {
 		t.Fatal(err)

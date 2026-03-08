@@ -10,29 +10,29 @@ func (r *Repository) Sync() ([]Action, error) {
 	var actions []Action
 	processed := make(map[string]bool)
 
-	for _, pkg := range r.config.Mount {
-		isGlob := strings.ContainsAny(pkg.Src, "*?[")
+	for _, mount := range r.config.Mount {
+		isGlob := strings.ContainsAny(mount.Src, "*?[")
 
 		if isGlob {
-			pattern := filepath.Join(r.srcPath, pkg.Src)
+			pattern := filepath.Join(r.srcRoot, mount.Src)
 			matches, err := filepath.Glob(pattern)
 			if err != nil {
 				return nil, err
 			}
 
 			for _, match := range matches {
-				rel, err := filepath.Rel(r.srcPath, match)
+				rel, err := filepath.Rel(r.srcRoot, match)
 				if err != nil {
 					return nil, err
 				}
 
 				root := strings.Split(rel, string(os.PathSeparator))[0]
-				actualDst := filepath.Join(pkg.Dst, filepath.Base(match))
+				actualDst := filepath.Join(mount.Dst, filepath.Base(match))
 				if rel == root || actualDst == r.dotName(root) || strings.HasPrefix(actualDst, r.dotName(root)+string(os.PathSeparator)) {
 					processed[root] = true
 				}
 
-				if !pkg.ShouldRun(r) {
+				if !mount.ShouldRun(r) {
 					continue
 				}
 
@@ -41,48 +41,48 @@ func (r *Repository) Sync() ([]Action, error) {
 				}
 
 				actions = append(actions, &SymLinker{
-					SrcRoot:  r.srcPath,
-					Src:      rel,
-					DstRoot:  r.dstPath,
-					Dst:      filepath.Join(pkg.Dst, filepath.Base(match)),
-					Force:    r.force,
+					SrcRoot: r.srcRoot,
+					Src:     rel,
+					DstRoot: r.dstRoot,
+					Dst:     filepath.Join(mount.Dst, filepath.Base(match)),
+					Force:   r.force,
 				})
 			}
 		} else {
-			srcRel := filepath.Clean(pkg.Src)
+			srcRel := filepath.Clean(mount.Src)
 			root := strings.Split(srcRel, string(os.PathSeparator))[0]
 
-			if srcRel == root || pkg.Dst == r.dotName(root) || strings.HasPrefix(pkg.Dst, r.dotName(root)+string(os.PathSeparator)) {
+			if srcRel == root || mount.Dst == r.dotName(root) || strings.HasPrefix(mount.Dst, r.dotName(root)+string(os.PathSeparator)) {
 				processed[root] = true
 			}
 
-			if !pkg.ShouldRun(r) {
+			if !mount.ShouldRun(r) {
 				continue
 			}
 
-			src := filepath.Join(r.srcPath, srcRel)
+			src := filepath.Join(r.srcRoot, srcRel)
 			if r.IsIgnored(src) {
 				continue
 			}
 
 			actions = append(actions, &SymLinker{
-				SrcRoot:  r.srcPath,
-				Src:      srcRel,
-				DstRoot:  r.dstPath,
-				Dst:      pkg.Dst,
-				Force:    r.force,
+				SrcRoot: r.srcRoot,
+				Src:     srcRel,
+				DstRoot: r.dstRoot,
+				Dst:     mount.Dst,
+				Force:   r.force,
 			})
 		}
 	}
 
-	entries, err := os.ReadDir(r.srcPath)
+	entries, err := os.ReadDir(r.srcRoot)
 	if err != nil {
 		return nil, err
 	}
 
 	for _, entry := range entries {
 		name := entry.Name()
-		path := filepath.Join(r.srcPath, name)
+		path := filepath.Join(r.srcRoot, name)
 		if r.IsIgnored(path) {
 			continue
 		}
@@ -109,9 +109,8 @@ func (r *Repository) Sync() ([]Action, error) {
 	for _, s := range r.config.Script {
 		if (s.Phase == "" || s.Phase == "default") && s.ShouldRun(r) {
 			actions = append(actions, &ScriptAction{
-				RepoName: r.name,
-				RepoPath: r.srcPath,
-				Script:   s.Src,
+				SrcRoot: r.srcRoot,
+				Script:  s.Src,
 			})
 		}
 	}
@@ -122,13 +121,12 @@ func (r *Repository) Sync() ([]Action, error) {
 func (r *Repository) GoInstall() []Action {
 	var actions []Action
 
-	if _, err := os.Stat(filepath.Join(r.srcPath, "go.mod")); err == nil {
+	if _, err := os.Stat(filepath.Join(r.srcRoot, "go.mod")); err == nil {
 		actions = append(actions, &GoInstallAction{
-			RepoPath: r.srcPath,
+			SrcRoot: r.srcRoot,
 		})
 	}
 	return actions
-
 }
 
 func (r *Repository) PreScript() []Action {
@@ -136,9 +134,8 @@ func (r *Repository) PreScript() []Action {
 	for _, s := range r.config.Script {
 		if s.Phase == "pre" && s.ShouldRun(r) {
 			actions = append(actions, &ScriptAction{
-				RepoName: r.name,
-				RepoPath: r.srcPath,
-				Script:   s.Src,
+				SrcRoot: r.srcRoot,
+				Script:  s.Src,
 			})
 		}
 	}
@@ -150,9 +147,8 @@ func (r *Repository) PostScript() []Action {
 	for _, s := range r.config.Script {
 		if s.Phase == "post" && s.ShouldRun(r) {
 			actions = append(actions, &ScriptAction{
-				RepoName: r.name,
-				RepoPath: r.srcPath,
-				Script:   s.Src,
+				SrcRoot: r.srcRoot,
+				Script:  s.Src,
 			})
 		}
 	}
@@ -163,11 +159,11 @@ func (r *Repository) syncRootItem(name string) (Action, error) {
 	targetName := r.dotName(name)
 
 	return &SymLinker{
-		SrcRoot:  r.srcPath,
-		Src:      name,
-		DstRoot:  r.dstPath,
-		Dst:      targetName,
-		Force:    r.force,
+		SrcRoot: r.srcRoot,
+		Src:     name,
+		DstRoot: r.dstRoot,
+		Dst:     targetName,
+		Force:   r.force,
 	}, nil
 }
 

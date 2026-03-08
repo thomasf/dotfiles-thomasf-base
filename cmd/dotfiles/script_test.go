@@ -16,9 +16,8 @@ func TestScriptAction(t *testing.T) {
 	script := "echo 'hello world' > output.txt"
 
 	action := &ScriptAction{
-		RepoName: "testrepo",
-		RepoPath: repoDir,
-		Script:   script,
+		SrcRoot: repoDir,
+		Script:  script,
 	}
 
 	err := action.Run()
@@ -43,9 +42,8 @@ func TestScriptActionEnv(t *testing.T) {
 	script := "FOO=bar; echo $FOO > env_output.txt"
 
 	action := &ScriptAction{
-		RepoName: "testrepo",
-		RepoPath: repoDir,
-		Script:   script,
+		SrcRoot: repoDir,
+		Script:  script,
 	}
 
 	err := action.Run()
@@ -87,7 +85,7 @@ src = "echo repo >> log.txt"
 		t.Fatal(err)
 	}
 
-	repo := NewRepository("testrepo", repoDir, false, dstDir)
+	repo := NewRepository(repoDir, dstDir, false)
 	err := repo.LoadConfig()
 	if err != nil {
 		t.Fatal(err)
@@ -158,7 +156,7 @@ src = "echo should-not-run >> log.txt"
 		t.Fatal(err)
 	}
 
-	repo := NewRepository("testrepo", repoDir, false, dstDir)
+	repo := NewRepository(repoDir, dstDir, false)
 	err := repo.LoadConfig()
 	if err != nil {
 		t.Fatal(err)
@@ -192,7 +190,7 @@ src = "echo hostname-match >> log.txt"
 		t.Fatal(err)
 	}
 
-	repo := NewRepository("testrepo", repoDir, false, dstDir)
+	repo := NewRepository(repoDir, dstDir, false)
 	err := repo.LoadConfig()
 	if err != nil {
 		t.Fatal(err)
@@ -219,10 +217,9 @@ func TestShellAction(t *testing.T) {
 	repoDir := t.TempDir()
 
 	action := &ExecCommandAction{
-		RepoName: "testrepo",
-		RepoPath: repoDir,
-		Command:  "touch",
-		Args:     []string{"touched.txt"},
+		SrcRoot: repoDir,
+		Command: "touch",
+		Args:    []string{"touched.txt"},
 	}
 
 	if err := action.Run(); err != nil {

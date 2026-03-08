@@ -42,7 +42,7 @@ dst = "my_bin"
 		t.Fatal(err)
 	}
 
-	repo := NewRepository("testrepo", repoDir, false, dstDir)
+	repo := NewRepository(repoDir, dstDir, false)
 	err := repo.LoadConfig()
 	if err != nil {
 		t.Fatal(err)
@@ -102,7 +102,7 @@ func TestForceSync(t *testing.T) {
 		t.Fatal(err)
 	}
 
-	repo := NewRepository("testrepo", repoDir, false, dstDir)
+	repo := NewRepository(repoDir, dstDir, false)
 	actions, err := repo.Sync()
 	if err != nil {
 		t.Fatal(err)
@@ -150,7 +150,7 @@ func TestGoInstallAction(t *testing.T) {
 		t.Fatal(err)
 	}
 
-	repo := NewRepository("testrepo", repoDir, false, dstDir)
+	repo := NewRepository(repoDir, dstDir, false)
 	actions := repo.GoInstall()
 
 	if len(actions) == 0 {

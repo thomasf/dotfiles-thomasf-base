@@ -90,20 +90,18 @@ type Config struct {
 }
 
 type Repository struct {
-	name       string
-	srcPath    string
-	config     Config
 	force      bool
-	dstPath    string
+	srcRoot    string
+	dstRoot    string
 	configPath string
+	config     Config
 }
 
-func NewRepository(name string, srcPath string, force bool, dstPath string) *Repository {
+func NewRepository(srcRoot, dstRoot string, force bool) *Repository {
 	return &Repository{
-		name:    name,
-		srcPath: srcPath,
+		srcRoot: srcRoot,
 		force:   force,
-		dstPath: dstPath,
+		dstRoot: dstRoot,
 	}
 }
 
@@ -112,7 +110,7 @@ func (r *Repository) LoadConfig() error {
 	var err error
 	var configPath string
 	for _, name := range RepositoryConfigFileNames {
-		configPath = filepath.Join(r.srcPath, name)
+		configPath = filepath.Join(r.srcRoot, name)
 		data, err = os.ReadFile(configPath)
 		if err == nil {
 			break
@@ -173,7 +171,7 @@ func (r *Repository) IsIgnored(path string) bool {
 		if err == nil && matched {
 			return true
 		}
-		rel, err := filepath.Rel(r.srcPath, path)
+		rel, err := filepath.Rel(r.srcRoot, path)
 		if err == nil {
 			matched, err = filepath.Match(pattern, rel)
 			if err == nil && matched {

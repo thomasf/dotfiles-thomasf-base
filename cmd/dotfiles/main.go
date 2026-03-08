@@ -187,10 +187,9 @@ func (d *Dotfiles) Push() {
 		go func(name, path string) {
 			defer wg.Done()
 			action := &ExecCommandAction{
-				RepoName: name,
-				RepoPath: path,
-				Command:  "git",
-				Args:     []string{"push", "-q", "origin", "master"},
+				SrcRoot: path,
+				Command: "git",
+				Args:    []string{"push", "-q", "origin", "master"},
 			}
 			fmt.Fprintln(d.Stdout, action.String())
 			if err := action.Run(); err != nil {
@@ -232,10 +231,9 @@ func (d *Dotfiles) Publish() {
 			}
 
 			action := &ExecCommandAction{
-				RepoName: name,
-				RepoPath: path,
-				Command:  "git",
-				Args:     []string{"push", "-q", "publish", "master"},
+				SrcRoot: path,
+				Command: "git",
+				Args:    []string{"push", "-q", "publish", "master"},
 			}
 			fmt.Fprintln(d.Stdout, action.String())
 			if err := action.Run(); err != nil {
@@ -256,16 +254,14 @@ func (d *Dotfiles) Pull() {
 			defer wg.Done()
 			actions := []Action{
 				&ExecCommandAction{
-					RepoName: name,
-					RepoPath: path,
-					Command:  "git",
-					Args:     []string{"fetch", "-q", "origin"},
+					SrcRoot: path,
+					Command: "git",
+					Args:    []string{"fetch", "-q", "origin"},
 				},
 				&ExecCommandAction{
-					RepoName: name,
-					RepoPath: path,
-					Command:  "git",
-					Args:     []string{"merge", "-q", "origin/master"},
+					SrcRoot: path,
+					Command: "git",
+					Args:    []string{"merge", "-q", "origin/master"},
 				},
 			}
 
@@ -364,7 +360,7 @@ func (d *Dotfiles) sync(isPlan bool) {
 
 	for _, repoPath := range d.repos {
 		name := filepath.Base(repoPath)
-		r := NewRepository(name, repoPath, d.Force, d.DstPath)
+		r := NewRepository(repoPath, d.DstPath, d.Force)
 		if err := r.LoadConfig(); err != nil {
 			if errors.Is(err, ErrConfigMissing) {
 				continue

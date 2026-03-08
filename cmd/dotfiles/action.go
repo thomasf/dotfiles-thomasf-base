@@ -129,7 +129,7 @@ func (g *GitConfigAction) Run() error {
 }
 
 type GoInstallAction struct {
-	RepoPath string
+	SrcRoot string
 }
 
 func (g *GoInstallAction) String() string {
@@ -138,20 +138,19 @@ func (g *GoInstallAction) String() string {
 
 func (g *GoInstallAction) Run() error {
 	cmd := exec.Command("go", "install", "./cmd/...")
-	cmd.Dir = g.RepoPath
+	cmd.Dir = g.SrcRoot
 	cmd.Stdout = os.Stdout
 	cmd.Stderr = os.Stderr
 	return cmd.Run()
 }
 
 type ScriptAction struct {
-	RepoName string
-	RepoPath string
-	Script   string
+	SrcRoot string
+	Script  string
 }
 
 func (s *ScriptAction) String() string {
-	return fmt.Sprintf("run script from %s", s.RepoName)
+	return fmt.Sprintf("run script from %s", filepath.Base(s.SrcRoot))
 }
 
 func (s *ScriptAction) Run() error {
@@ -159,7 +158,7 @@ func (s *ScriptAction) Run() error {
 		if err == nil {
 			return nil
 		}
-		return fmt.Errorf("script error in '%s': %w", s.RepoPath, err)
+		return fmt.Errorf("script error in '%s': %w", s.SrcRoot, err)
 	}
 
 	reader := strings.NewReader(s.Script)
@@ -168,7 +167,7 @@ func (s *ScriptAction) Run() error {
 		return wrapErr(err)
 	}
 	runner, err := interp.New(
-		interp.Dir(s.RepoPath),
+		interp.Dir(s.SrcRoot),
 		interp.StdIO(os.Stdin, os.Stdout, os.Stderr),
 		interp.Params("-e"),
 	)
@@ -180,19 +179,18 @@ func (s *ScriptAction) Run() error {
 }
 
 type ExecCommandAction struct {
-	RepoName string
-	RepoPath string
-	Command  string
-	Args     []string
+	SrcRoot string
+	Command string
+	Args    []string
 }
 
 func (s *ExecCommandAction) String() string {
-	return fmt.Sprintf("[%s] %s %s", s.RepoName, s.Command, strings.Join(s.Args, " "))
+	return fmt.Sprintf("[%s] %s %s", filepath.Base(s.SrcRoot), s.Command, strings.Join(s.Args, " "))
 }
 
 func (s *ExecCommandAction) Run() error {
 	cmd := exec.Command(s.Command, s.Args...)
-	cmd.Dir = s.RepoPath
+	cmd.Dir = s.SrcRoot
 	cmd.Stdout = os.Stdout
 	cmd.Stderr = os.Stderr
 	return cmd.Run()
