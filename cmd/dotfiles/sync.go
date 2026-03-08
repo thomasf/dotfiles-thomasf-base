@@ -3,7 +3,6 @@ package main
 import (
 	"os"
 	"path/filepath"
-	"sort"
 	"strings"
 )
 
@@ -110,18 +109,9 @@ func (r *Repository) Sync() ([]Action, error) {
 	}
 
 	if r.config.Git != nil {
-		var gitKeys []string
-		for k := range r.config.Git {
-			gitKeys = append(gitKeys, k)
-		}
-		sort.Strings(gitKeys)
-
-		for _, k := range gitKeys {
-			actions = append(actions, &GitConfigAction{
-				Key:   k,
-				Value: r.config.Git[k],
-			})
-		}
+		actions = append(actions, &GitConfigAction{
+			Config: r.config.Git,
+		})
 	}
 
 	for _, s := range r.config.Script {

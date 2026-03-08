@@ -15,7 +15,7 @@ func TestGitConfig(t *testing.T) {
 [git]
 "user.name" = "Test User"
 "user.email" = "test@example.com"
-"core.editor" = "vim"
+"core.editor" = "emacs"
 "advice.detachedHead" = ""
 `), Mode: 0o644},
 	}
@@ -34,33 +34,19 @@ func TestGitConfig(t *testing.T) {
 		t.Fatal(err)
 	}
 
-	// Verify expected actions
-	expectedActions := map[string]string{
-		"user.name":           "git config --global user.name Test User",
-		"user.email":          "git config --global user.email test@example.com",
-		"core.editor":         "git config --global core.editor vim",
-		"advice.detachedHead": "git config --global --unset advice.detachedHead",
-	}
+	expectedActionString := "git config: set 3, unset 1"
 
-	foundActions := make(map[string]bool)
-
+	found := false
 	for _, action := range actions {
-		if gitAction, ok := action.(*GitConfigAction); ok {
-			expected, exists := expectedActions[gitAction.Key]
-			if !exists {
-				t.Errorf("Unexpected git config action: %s", gitAction.Key)
-				continue
-			}
-			foundActions[gitAction.Key] = true
-			if action.String() != expected {
-				t.Errorf("Expected action string '%s', got '%s'", expected, action.String())
+		if _, ok := action.(*GitConfigAction); ok {
+			found = true
+			if action.String() != expectedActionString {
+				t.Errorf("Expected action string:\n%s\nGot:\n%s", expectedActionString, action.String())
 			}
 		}
 	}
 
-	for key := range expectedActions {
-		if !foundActions[key] {
-			t.Errorf("Missing git config action for key: %s", key)
-		}
+	if !found {
+		t.Error("Missing git config action")
 	}
 }

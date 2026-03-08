@@ -2,10 +2,12 @@ package main
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"os"
 	"os/exec"
 	"path/filepath"
+	"sort"
 	"strings"
 
 	"mvdan.cc/sh/v3/interp"
@@ -64,37 +66,63 @@ func (s *SymLinker) Run() error {
 }
 
 type GitConfigAction struct {
-	Key   string
-	Value string
+	Config map[string]string
 }
 
 func (g *GitConfigAction) String() string {
-	if g.Value == "" {
-		return fmt.Sprintf("git config --global --unset %s", g.Key)
+	var set, unset int
+	for _, v := range g.Config {
+		if v == "" {
+			unset++
+		} else {
+			set++
+		}
 	}
-	return fmt.Sprintf("git config --global %s %s", g.Key, g.Value)
+
+	var parts []string
+	if set > 0 {
+		parts = append(parts, fmt.Sprintf("set %d", set))
+	}
+	if unset > 0 {
+		parts = append(parts, fmt.Sprintf("unset %d", unset))
+	}
+
+	return "git config: " + strings.Join(parts, ", ")
 }
 
 func (g *GitConfigAction) Run() error {
-	var args []string
-	if g.Value == "" {
-		args = []string{"config", "--global", "--unset", g.Key}
-	} else {
-		args = []string{"config", "--global", g.Key, g.Value}
+	var keys []string
+	for k := range g.Config {
+		keys = append(keys, k)
 	}
+	sort.Strings(keys)
 
-	cmd := exec.Command("git", args...)
-	cmd.Stdout = os.Stdout
-	cmd.Stderr = os.Stderr
-	err := cmd.Run()
-	if err != nil && g.Value == "" {
-		if exitError, ok := err.(*exec.ExitError); ok {
-			if exitError.ExitCode() == 5 {
-				return nil
+	var errs []error
+	for _, k := range keys {
+		v := g.Config[k]
+		var args []string
+		if v == "" {
+			args = []string{"config", "--global", "--unset", k}
+		} else {
+			args = []string{"config", "--global", k, v}
+		}
+
+		cmd := exec.Command("git", args...)
+		cmd.Stdout = os.Stdout
+		cmd.Stderr = os.Stderr
+		err := cmd.Run()
+		if err != nil {
+			if v == "" {
+				if exitError, ok := err.(*exec.ExitError); ok {
+					if exitError.ExitCode() == 5 {
+						continue
+					}
+				}
 			}
+			errs = append(errs, fmt.Errorf("git config %s: %w", k, err))
 		}
 	}
-	return err
+	return errors.Join(errs...)
 }
 
 type GoInstallAction struct {
@@ -146,7 +174,6 @@ func (s *ScriptAction) Run() error {
 	}
 
 	return wrapErr(runner.Run(context.Background(), f))
-
 }
 
 type ExecCommandAction struct {
