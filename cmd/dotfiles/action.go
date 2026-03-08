@@ -21,32 +21,36 @@ type Action interface {
 
 type SymLinker struct {
 	RepoName string
+	SrcRoot  string
 	Src      string
-	SrcRel   string
+	DstRoot  string
 	Dst      string
 	Force    bool
 }
 
 func (s *SymLinker) String() string {
-	return fmt.Sprintf("symlink %s/%s -> %s", s.RepoName, s.SrcRel, s.Dst)
+	return fmt.Sprintf("symlink %s/%s -> %s", s.RepoName, s.Src, s.Dst)
 }
 
 func (s *SymLinker) Run() error {
-	absSrc, err := filepath.Abs(s.Src)
+	fullSrc := filepath.Join(s.SrcRoot, s.Src)
+	fullDst := filepath.Join(s.DstRoot, s.Dst)
+
+	absSrc, err := filepath.Abs(fullSrc)
 	if err != nil {
 		return err
 	}
 
-	dstDir := filepath.Dir(s.Dst)
+	dstDir := filepath.Dir(fullDst)
 	if _, err := os.Stat(dstDir); os.IsNotExist(err) {
 		if err := os.MkdirAll(dstDir, 0o755); err != nil {
 			return err
 		}
 	}
 
-	if info, err := os.Lstat(s.Dst); err == nil {
+	if info, err := os.Lstat(fullDst); err == nil {
 		if info.Mode()&os.ModeSymlink != 0 {
-			target, err := os.Readlink(s.Dst)
+			target, err := os.Readlink(fullDst)
 			if err == nil && target == absSrc {
 				// already correctly linked
 				return nil
@@ -54,15 +58,15 @@ func (s *SymLinker) Run() error {
 		}
 
 		if !s.Force {
-			return fmt.Errorf("target exists: %s", s.Dst)
+			return fmt.Errorf("target exists: %s", fullDst)
 		}
 
-		if err := os.RemoveAll(s.Dst); err != nil {
+		if err := os.RemoveAll(fullDst); err != nil {
 			return err
 		}
 	}
 
-	return os.Symlink(absSrc, s.Dst)
+	return os.Symlink(absSrc, fullDst)
 }
 
 type GitConfigAction struct {

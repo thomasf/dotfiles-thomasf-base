@@ -33,9 +33,10 @@ func (r *Repository) Sync() ([]Action, error) {
 					return nil, err
 				}
 
-				parts := strings.Split(rel, string(os.PathSeparator))
-				if len(parts) > 0 {
-					processed[parts[0]] = true
+				root := strings.Split(rel, string(os.PathSeparator))[0]
+				actualDst := filepath.Join(pkg.Dst, filepath.Base(match))
+				if rel == root || actualDst == r.dotName(root) || strings.HasPrefix(actualDst, r.dotName(root)+string(os.PathSeparator)) {
+					processed[root] = true
 				}
 
 				if !pkg.ShouldRun(r) {
@@ -46,38 +47,38 @@ func (r *Repository) Sync() ([]Action, error) {
 					continue
 				}
 
-				dst := filepath.Join(r.dstPath, pkg.Dst, filepath.Base(match))
-
 				actions = append(actions, &SymLinker{
 					RepoName: r.name,
-					Src:      match,
-					SrcRel:   rel,
-					Dst:      dst,
+					SrcRoot:  r.srcPath,
+					Src:      rel,
+					DstRoot:  r.dstPath,
+					Dst:      filepath.Join(pkg.Dst, filepath.Base(match)),
 					Force:    r.force,
 				})
 			}
 		} else {
-			parts := strings.Split(pkg.Src, string(os.PathSeparator))
-			if len(parts) > 0 {
-				processed[parts[0]] = true
+			srcRel := filepath.Clean(pkg.Src)
+			root := strings.Split(srcRel, string(os.PathSeparator))[0]
+
+			if srcRel == root || pkg.Dst == r.dotName(root) || strings.HasPrefix(pkg.Dst, r.dotName(root)+string(os.PathSeparator)) {
+				processed[root] = true
 			}
 
 			if !pkg.ShouldRun(r) {
 				continue
 			}
 
-			src := filepath.Join(r.srcPath, pkg.Src)
+			src := filepath.Join(r.srcPath, srcRel)
 			if r.IsIgnored(src) {
 				continue
 			}
 
-			dst := filepath.Join(r.dstPath, pkg.Dst)
-
 			actions = append(actions, &SymLinker{
 				RepoName: r.name,
-				Src:      src,
-				SrcRel:   pkg.Src,
-				Dst:      dst,
+				SrcRoot:  r.srcPath,
+				Src:      srcRel,
+				DstRoot:  r.dstPath,
+				Dst:      pkg.Dst,
 				Force:    r.force,
 			})
 		}
@@ -156,19 +157,21 @@ func (r *Repository) PostScript() []Action {
 }
 
 func (r *Repository) syncRootItem(name string) (Action, error) {
-	src := filepath.Join(r.srcPath, name)
-
-	targetName := name
-	if !strings.HasPrefix(targetName, ".") {
-		targetName = "." + targetName
-	}
-	dst := filepath.Join(r.dstPath, targetName)
+	targetName := r.dotName(name)
 
 	return &SymLinker{
 		RepoName: r.name,
-		Src:      src,
-		SrcRel:   name,
-		Dst:      dst,
+		SrcRoot:  r.srcPath,
+		Src:      name,
+		DstRoot:  r.dstPath,
+		Dst:      targetName,
 		Force:    r.force,
 	}, nil
+}
+
+func (r *Repository) dotName(name string) string {
+	if strings.HasPrefix(name, ".") || name == "." {
+		return name
+	}
+	return "." + name
 }
