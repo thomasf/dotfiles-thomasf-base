@@ -39,6 +39,10 @@ func (r *Repository) Sync() ([]Action, error) {
 					processed[parts[0]] = true
 				}
 
+				if !pkg.ShouldRun(r) {
+					continue
+				}
+
 				if r.IsIgnored(match) {
 					continue
 				}
@@ -54,12 +58,16 @@ func (r *Repository) Sync() ([]Action, error) {
 				})
 			}
 		} else {
-			src := filepath.Join(r.srcPath, pkg.Src)
 			parts := strings.Split(pkg.Src, string(os.PathSeparator))
 			if len(parts) > 0 {
 				processed[parts[0]] = true
 			}
 
+			if !pkg.ShouldRun(r) {
+				continue
+			}
+
+			src := filepath.Join(r.srcPath, pkg.Src)
 			if r.IsIgnored(src) {
 				continue
 			}
@@ -101,50 +109,60 @@ func (r *Repository) Sync() ([]Action, error) {
 		}
 	}
 
-	var gitKeys []string
-	for k := range r.config.Git {
-		gitKeys = append(gitKeys, k)
-	}
-	sort.Strings(gitKeys)
+	if r.config.Git != nil {
+		var gitKeys []string
+		for k := range r.config.Git {
+			gitKeys = append(gitKeys, k)
+		}
+		sort.Strings(gitKeys)
 
-	for _, k := range gitKeys {
-		actions = append(actions, &GitConfigAction{
-			Key:   k,
-			Value: r.config.Git[k],
-		})
+		for _, k := range gitKeys {
+			actions = append(actions, &GitConfigAction{
+				Key:   k,
+				Value: r.config.Git[k],
+			})
+		}
 	}
 
-	if r.config.Script != "" {
-		actions = append(actions, &ScriptAction{
-			RepoName: r.name,
-			RepoPath: r.srcPath,
-			Script:   r.config.Script,
-		})
+	for _, s := range r.config.Script {
+		if (s.Phase == "" || s.Phase == "default") && s.ShouldRun(r) {
+			actions = append(actions, &ScriptAction{
+				RepoName: r.name,
+				RepoPath: r.srcPath,
+				Script:   s.Src,
+			})
+		}
 	}
 
 	return actions, nil
 }
 
-func (r *Repository) PreScript() Action {
-	if r.config.ScriptPre == "" {
-		return nil
+func (r *Repository) PreScript() []Action {
+	var actions []Action
+	for _, s := range r.config.Script {
+		if s.Phase == "pre" && s.ShouldRun(r) {
+			actions = append(actions, &ScriptAction{
+				RepoName: r.name,
+				RepoPath: r.srcPath,
+				Script:   s.Src,
+			})
+		}
 	}
-	return &ScriptAction{
-		RepoName: r.name,
-		RepoPath: r.srcPath,
-		Script:   r.config.ScriptPre,
-	}
+	return actions
 }
 
-func (r *Repository) PostScript() Action {
-	if r.config.ScriptPost == "" {
-		return nil
+func (r *Repository) PostScript() []Action {
+	var actions []Action
+	for _, s := range r.config.Script {
+		if s.Phase == "post" && s.ShouldRun(r) {
+			actions = append(actions, &ScriptAction{
+				RepoName: r.name,
+				RepoPath: r.srcPath,
+				Script:   s.Src,
+			})
+		}
 	}
-	return &ScriptAction{
-		RepoName: r.name,
-		RepoPath: r.srcPath,
-		Script:   r.config.ScriptPost,
-	}
+	return actions
 }
 
 func (r *Repository) syncRootItem(name string) (Action, error) {

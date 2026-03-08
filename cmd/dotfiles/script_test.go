@@ -3,6 +3,7 @@ package main
 import (
 	"os"
 	"path/filepath"
+	"runtime"
 	"strings"
 	"testing"
 	"testing/fstest"
@@ -68,9 +69,18 @@ func TestScriptsPrePostRepo(t *testing.T) {
 
 	mfs := fstest.MapFS{
 		".dotfiles.toml": &fstest.MapFile{Data: []byte(`
-script-pre = "echo pre >> log.txt"
-script-post = "echo post >> log.txt"
-script = "echo repo >> log.txt"
+[[script]]
+condition = "os == '` + runtime.GOOS + `'"
+phase = "pre"
+src = "echo pre >> log.txt"
+
+[[script]]
+condition = "os != 'not-` + runtime.GOOS + `'"
+phase = "post"
+src = "echo post >> log.txt"
+
+[[script]]
+src = "echo repo >> log.txt"
 `), Mode: 0o644},
 	}
 	if err := os.CopyFS(repoDir, mfs); err != nil {
@@ -84,11 +94,13 @@ script = "echo repo >> log.txt"
 	}
 
 	pre := repo.PreScript()
-	if pre == nil {
-		t.Fatal("pre script should not be nil")
+	if len(pre) == 0 {
+		t.Fatal("pre scripts should not be empty")
 	}
-	if err := pre.Run(); err != nil {
-		t.Fatal(err)
+	for _, a := range pre {
+		if err := a.Run(); err != nil {
+			t.Fatal(err)
+		}
 	}
 
 	actions, err := repo.Sync()
@@ -110,11 +122,13 @@ script = "echo repo >> log.txt"
 	}
 
 	post := repo.PostScript()
-	if post == nil {
-		t.Fatal("post script should not be nil")
+	if len(post) == 0 {
+		t.Fatal("post scripts should not be empty")
 	}
-	if err := post.Run(); err != nil {
-		t.Fatal(err)
+	for _, a := range post {
+		if err := a.Run(); err != nil {
+			t.Fatal(err)
+		}
 	}
 
 	logFile := filepath.Join(repoDir, "log.txt")
@@ -126,6 +140,78 @@ script = "echo repo >> log.txt"
 	expected := "pre\nrepo\npost\n"
 	if string(data) != expected {
 		t.Errorf("expected log %q, got %q", expected, string(data))
+	}
+}
+
+func TestScriptConditionFalse(t *testing.T) {
+	repoDir := t.TempDir()
+	dstDir := t.TempDir()
+
+	mfs := fstest.MapFS{
+		".dotfiles.toml": &fstest.MapFile{Data: []byte(`
+[[script]]
+condition = "os == 'not-an-os'"
+src = "echo should-not-run >> log.txt"
+`), Mode: 0o644},
+	}
+	if err := os.CopyFS(repoDir, mfs); err != nil {
+		t.Fatal(err)
+	}
+
+	repo := NewRepository("testrepo", repoDir, false, dstDir)
+	err := repo.LoadConfig()
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	actions, err := repo.Sync()
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	for _, a := range actions {
+		if _, ok := a.(*ScriptAction); ok {
+			t.Fatal("script action should not have been created for false condition")
+		}
+	}
+}
+
+func TestScriptConditionHostname(t *testing.T) {
+	repoDir := t.TempDir()
+	dstDir := t.TempDir()
+	hostname, _ := os.Hostname()
+
+	mfs := fstest.MapFS{
+		".dotfiles.toml": &fstest.MapFile{Data: []byte(`
+[[script]]
+condition = "hostname == '` + hostname + `'"
+src = "echo hostname-match >> log.txt"
+`), Mode: 0o644},
+	}
+	if err := os.CopyFS(repoDir, mfs); err != nil {
+		t.Fatal(err)
+	}
+
+	repo := NewRepository("testrepo", repoDir, false, dstDir)
+	err := repo.LoadConfig()
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	actions, err := repo.Sync()
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	found := false
+	for _, a := range actions {
+		if _, ok := a.(*ScriptAction); ok {
+			found = true
+			break
+		}
+	}
+	if !found {
+		t.Errorf("expected script action to be created for matching hostname %q", hostname)
 	}
 }
 

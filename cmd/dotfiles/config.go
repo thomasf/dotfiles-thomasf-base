@@ -2,9 +2,12 @@ package main
 
 import (
 	"errors"
+	"fmt"
 	"os"
 	"path/filepath"
+	"runtime"
 
+	"github.com/expr-lang/expr"
 	"github.com/pelletier/go-toml/v2"
 )
 
@@ -13,25 +16,78 @@ var RepositoryConfigFileNames = []string{"dotfiles.toml", ".dotfiles.toml"}
 var ErrConfigMissing = errors.New("config file missing")
 
 type Mount struct {
-	Src string `toml:"src"`
-	Dst string `toml:"dst"`
+	Src       string `toml:"src"`
+	Dst       string `toml:"dst"`
+	Condition string `toml:"condition,omitempty"`
+}
+
+func evalCondition(configPath, element, condition string) bool {
+	if condition == "" {
+		return true
+	}
+
+	hostname, _ := os.Hostname()
+	env := map[string]any{
+		"os":       runtime.GOOS,
+		"hostname": hostname,
+	}
+
+	program, err := expr.Compile(condition, expr.Env(env), expr.AsBool())
+	if err != nil {
+		fmt.Fprintf(os.Stderr, "Error compiling expression in file: %s, element: %s\n", configPath, element)
+		fmt.Fprintf(os.Stderr, "Condition: %s\n", condition)
+		fmt.Fprintf(os.Stderr, "Error: %v\n", err)
+		os.Exit(1)
+	}
+
+	out, err := expr.Run(program, env)
+	if err != nil {
+		fmt.Fprintf(os.Stderr, "Error running expression in file: %s, element: %s\n", configPath, element)
+		fmt.Fprintf(os.Stderr, "Condition: %s\n", condition)
+		fmt.Fprintf(os.Stderr, "Error: %v\n", err)
+		os.Exit(1)
+	}
+
+	return out.(bool)
+}
+
+func (m Mount) ShouldRun(r *Repository) bool {
+	return evalCondition(r.configPath, fmt.Sprintf("Mount(src=%s, dst=%s)", m.Src, m.Dst), m.Condition)
+}
+
+type Script struct {
+	Condition string `toml:"condition,omitempty"`
+	Phase     string `toml:"phase,omitempty"` // pre, post or default empty/not set
+	Src       string `toml:"src"`
+}
+
+func (s Script) ShouldRun(r *Repository) bool {
+	return evalCondition(r.configPath, fmt.Sprintf("Script(src=%s, phase=%s)", s.Src, s.Phase), s.Condition)
+}
+
+type Ignore struct {
+	Condition string   `toml:"condition,omitempty"`
+	Match     []string `toml:"match"`
+}
+
+func (i Ignore) ShouldRun(r *Repository) bool {
+	return evalCondition(r.configPath, fmt.Sprintf("Ignore(match=%v)", i.Match), i.Condition)
 }
 
 type Config struct {
-	Ignore     []string          `toml:"ignore"`
-	Mount      []Mount           `toml:"mount"`
-	Git        map[string]string `toml:"git"`
-	Script     string            `toml:"script"`
-	ScriptPre  string            `toml:"script-pre"`
-	ScriptPost string            `toml:"script-post"`
+	Ignore []Ignore          `toml:"ignore"`
+	Mount  []Mount           `toml:"mount"`
+	Git    map[string]string `toml:"git"`
+	Script []Script          `toml:"script"`
 }
 
 type Repository struct {
-	name    string
-	srcPath string
-	config  Config
-	force   bool
-	dstPath string
+	name       string
+	srcPath    string
+	config     Config
+	force      bool
+	dstPath    string
+	configPath string
 }
 
 func NewRepository(name string, srcPath string, force bool, dstPath string) *Repository {
@@ -46,8 +102,9 @@ func NewRepository(name string, srcPath string, force bool, dstPath string) *Rep
 func (r *Repository) LoadConfig() error {
 	var data []byte
 	var err error
+	var configPath string
 	for _, name := range RepositoryConfigFileNames {
-		configPath := filepath.Join(r.srcPath, name)
+		configPath = filepath.Join(r.srcPath, name)
 		data, err = os.ReadFile(configPath)
 		if err == nil {
 			break
@@ -57,6 +114,8 @@ func (r *Repository) LoadConfig() error {
 	if err != nil {
 		return ErrConfigMissing
 	}
+
+	r.configPath = configPath
 
 	var config Config
 
@@ -68,8 +127,6 @@ func (r *Repository) LoadConfig() error {
 	r.config.Mount = config.Mount
 	r.config.Git = config.Git
 	r.config.Script = config.Script
-	r.config.ScriptPre = config.ScriptPre
-	r.config.ScriptPost = config.ScriptPost
 
 	return nil
 }
@@ -96,7 +153,15 @@ func (r *Repository) IsIgnored(path string) bool {
 	if alwaysIgnoredFiles[base] {
 		return true
 	}
-	for _, pattern := range append([]string{".#.*"}, r.config.Ignore...) {
+
+	patterns := []string{".#.*"}
+	for _, i := range r.config.Ignore {
+		if i.ShouldRun(r) {
+			patterns = append(patterns, i.Match...)
+		}
+	}
+
+	for _, pattern := range patterns {
 		matched, err := filepath.Match(pattern, base)
 		if err == nil && matched {
 			return true

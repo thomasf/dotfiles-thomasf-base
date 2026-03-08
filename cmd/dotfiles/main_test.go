@@ -20,7 +20,8 @@ func TestSync(t *testing.T) {
 		"config/awesome":  &fstest.MapFile{Data: []byte("awesome content"), Mode: 0o644},
 		"docs/readme.txt": &fstest.MapFile{Data: []byte("docs content"), Mode: 0o644},
 		".dotfiles.toml": &fstest.MapFile{Data: []byte(`
-ignore = ["ignored_file"]
+[[ignore]]
+match = ["ignored_file"]
 
 [[mount]]
 src = "config/*"

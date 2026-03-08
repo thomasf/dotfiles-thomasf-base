@@ -279,7 +279,6 @@ func (d *Dotfiles) Pull() {
 		}(name, repoPath)
 	}
 	wg.Wait()
-
 }
 
 func (d *Dotfiles) Status() {
@@ -382,12 +381,8 @@ func (d *Dotfiles) sync(isPlan bool) {
 		}
 		allActions = append(allActions, actions...)
 
-		if pre := r.PreScript(); pre != nil {
-			allPreScripts = append(allPreScripts, pre)
-		}
-		if post := r.PostScript(); post != nil {
-			allPostScripts = append(allPostScripts, post)
-		}
+		allPreScripts = append(allPreScripts, r.PreScript()...)
+		allPostScripts = append(allPostScripts, r.PostScript()...)
 	}
 
 	for _, script := range slices.Concat(allPreScripts, allActions, allPostScripts) {

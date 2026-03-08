@@ -26,7 +26,7 @@ ignore = ["*.log", "temp/", "local-config"]
 ### Mount
 
 Explicitly map source files or directories in the repository to specific
-destinations in the target path. Supports wildcards.
+destinations in the target path. Supports wildcards and conditional execution.
 
 ```toml
 [[mount]]
@@ -34,6 +34,7 @@ src = "config/awesome"
 dst = ".config/awesome"
 
 [[mount]]
+condition = "os == 'linux'"
 src = "bin/*"
 dst = "bin"
 ```
@@ -58,17 +59,32 @@ To unset a git configuration value, set it to an empty string.
 Run shell scripts at different stages of the synchronization process. Scripts
 are executed using an embedded shell interpreter.
 
-- **script-pre**: Runs before any other actions in the repository.
-- **script**: Runs after all other actions in the repository have been planned
+- **phase = "pre"**: Runs before any other actions in the repository.
+- **phase = "default"** (or empty): Runs after all other actions in the repository have been planned
   or executed.
-- **script-post**: Runs after all other actions in the repository have been
+- **phase = "post"**: Runs after all other actions in the repository have been
   completed.
 
 ```toml
-script-pre = "echo Starting sync..."
-script = "./setup-extra.sh"
-script-post = "echo Sync complete."
+[[script]]
+phase = "pre"
+src = "echo Starting sync..."
+
+[[script]]
+condition = "os == 'darwin'"
+src = "echo Syncing on macOS..."
+
+[[script]]
+phase = "post"
+src = "echo Sync complete."
 ```
+
+### Conditions
+
+The `condition` field in `[[mount]]` and `[[script]]` uses
+[expr](github.com/expr-lang/expr) to determine if the action should be
+performed. The current operating system is available as the `os` variable and
+the system hostname as `hostname`.
 
 ### Default Root Item Handling
 
