@@ -20,16 +20,15 @@ type Action interface {
 }
 
 type SymLinker struct {
-	RepoName string
-	SrcRoot  string
-	Src      string
-	DstRoot  string
-	Dst      string
-	Force    bool
+	SrcRoot string
+	Src     string
+	DstRoot string
+	Dst     string
+	Force   bool
 }
 
 func (s *SymLinker) String() string {
-	return fmt.Sprintf("symlink %s/%s -> %s", s.RepoName, s.Src, s.Dst)
+	return fmt.Sprintf("symlink %s/%s -> %s", filepath.Base(s.SrcRoot), s.Src, s.Dst)
 }
 
 func (s *SymLinker) Run() error {

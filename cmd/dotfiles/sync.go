@@ -41,7 +41,6 @@ func (r *Repository) Sync() ([]Action, error) {
 				}
 
 				actions = append(actions, &SymLinker{
-					RepoName: r.name,
 					SrcRoot:  r.srcPath,
 					Src:      rel,
 					DstRoot:  r.dstPath,
@@ -67,7 +66,6 @@ func (r *Repository) Sync() ([]Action, error) {
 			}
 
 			actions = append(actions, &SymLinker{
-				RepoName: r.name,
 				SrcRoot:  r.srcPath,
 				Src:      srcRel,
 				DstRoot:  r.dstPath,
@@ -165,7 +163,6 @@ func (r *Repository) syncRootItem(name string) (Action, error) {
 	targetName := r.dotName(name)
 
 	return &SymLinker{
-		RepoName: r.name,
 		SrcRoot:  r.srcPath,
 		Src:      name,
 		DstRoot:  r.dstPath,
