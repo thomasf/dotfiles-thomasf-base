@@ -21,17 +21,24 @@ type Mount struct {
 	Condition string `toml:"condition,omitempty"`
 }
 
+type ConditionEnvironment struct {
+	OS       string `expr:"os"`
+	Hostname string `expr:"hostname"`
+}
+
+func (c ConditionEnvironment) Getenv(key string) string {
+	return os.Getenv(key)
+}
+
 func evalCondition(configPath, element, condition string) bool {
 	if condition == "" {
 		return true
 	}
-
 	hostname, _ := os.Hostname()
-	env := map[string]any{
-		"os":       runtime.GOOS,
-		"hostname": hostname,
+	env := ConditionEnvironment{
+		OS:       runtime.GOOS,
+		Hostname: hostname,
 	}
-
 	program, err := expr.Compile(condition, expr.Env(env), expr.AsBool())
 	if err != nil {
 		fmt.Fprintf(os.Stderr, "Error compiling expression in file: %s, element: %s\n", configPath, element)

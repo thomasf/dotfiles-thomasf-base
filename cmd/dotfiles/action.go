@@ -124,21 +124,29 @@ func (s *ScriptAction) String() string {
 }
 
 func (s *ScriptAction) Run() error {
+	wrapErr := func(err error) error {
+		if err == nil {
+			return nil
+		}
+		return fmt.Errorf("script error in '%s': %w", s.RepoPath, err)
+	}
+
 	reader := strings.NewReader(s.Script)
 	f, err := syntax.NewParser().Parse(reader, "")
 	if err != nil {
-		return err
+		return wrapErr(err)
 	}
-
 	runner, err := interp.New(
 		interp.Dir(s.RepoPath),
 		interp.StdIO(os.Stdin, os.Stdout, os.Stderr),
+		interp.Params("-e"),
 	)
 	if err != nil {
-		return err
+		return wrapErr(err)
 	}
 
-	return runner.Run(context.Background(), f)
+	return wrapErr(runner.Run(context.Background(), f))
+
 }
 
 type ExecCommandAction struct {
