@@ -1,6 +1,7 @@
 package main
 
 import (
+	"bytes"
 	"errors"
 	"fmt"
 	"os"
@@ -126,7 +127,9 @@ func (r *Repository) LoadConfig() error {
 
 	var config Config
 
-	if err := toml.Unmarshal(data, &config); err != nil {
+	dec := toml.NewDecoder(bytes.NewReader(data))
+	dec.DisallowUnknownFields()
+	if err := dec.Decode(&config); err != nil {
 		return err
 	}
 
