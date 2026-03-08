@@ -141,9 +141,6 @@ func (r *Repository) LoadConfig() error {
 var alwaysIgnoredFiles = map[string]bool{
 	"dotfiles.toml":  true,
 	".dotfiles.toml": true,
-	".dotfilesrc":    true, // TODO: remove after complete migration
-	"INSTALLER":      true, // TODO: handle
-	"PREINSTALLER":   true, // TODO: handle
 	".git":           true,
 	".gitignore":     true,
 	"go.mod":         true,
