@@ -1,2 +1,0 @@
-[dotfiles]
-ignore = [ '.DS_Store', '.git', '.gitignore', 'README.md', 'INSTALLER', '.dotfilesrc', '.#.*', 'go.mod', 'go.sum', 'cmd', 'pkg', "dotfiles.toml" ]
