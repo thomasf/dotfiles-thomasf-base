@@ -357,6 +357,7 @@ func (d *Dotfiles) Plan()    { d.sync(true) }
 func (d *Dotfiles) sync(isPlan bool) {
 	var (
 		allActions     []Action
+		allGoInstall   []Action
 		allPreScripts  []Action
 		allPostScripts []Action
 	)
@@ -383,9 +384,10 @@ func (d *Dotfiles) sync(isPlan bool) {
 
 		allPreScripts = append(allPreScripts, r.PreScript()...)
 		allPostScripts = append(allPostScripts, r.PostScript()...)
+		allGoInstall = append(allGoInstall, r.GoInstall()...)
 	}
 
-	for _, script := range slices.Concat(allPreScripts, allActions, allPostScripts) {
+	for _, script := range slices.Concat(allGoInstall, allPreScripts, allActions, allPostScripts) {
 		if isPlan {
 			fmt.Fprintf(d.Stdout, "plan: %s\n", script.String())
 			continue

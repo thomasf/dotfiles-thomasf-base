@@ -8,13 +8,6 @@ import (
 
 func (r *Repository) Sync() ([]Action, error) {
 	var actions []Action
-
-	if _, err := os.Stat(filepath.Join(r.srcPath, "go.mod")); err == nil {
-		actions = append(actions, &GoInstallAction{
-			RepoPath: r.srcPath,
-		})
-	}
-
 	processed := make(map[string]bool)
 
 	for _, pkg := range r.config.Mount {
@@ -126,6 +119,18 @@ func (r *Repository) Sync() ([]Action, error) {
 	}
 
 	return actions, nil
+}
+
+func (r *Repository) GoInstall() []Action {
+	var actions []Action
+
+	if _, err := os.Stat(filepath.Join(r.srcPath, "go.mod")); err == nil {
+		actions = append(actions, &GoInstallAction{
+			RepoPath: r.srcPath,
+		})
+	}
+	return actions
+
 }
 
 func (r *Repository) PreScript() []Action {

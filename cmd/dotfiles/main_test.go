@@ -151,10 +151,7 @@ func TestGoInstallAction(t *testing.T) {
 	}
 
 	repo := NewRepository("testrepo", repoDir, false, dstDir)
-	actions, err := repo.Sync()
-	if err != nil {
-		t.Fatal(err)
-	}
+	actions := repo.GoInstall()
 
 	if len(actions) == 0 {
 		t.Fatal("expected at least one action")
