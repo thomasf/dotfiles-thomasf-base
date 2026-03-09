@@ -102,7 +102,8 @@ func (r *Repository) Sync() ([]Action, error) {
 
 	if r.config.Git != nil {
 		actions = append(actions, &GitConfigAction{
-			Config: r.config.Git,
+			SrcRoot: r.srcRoot,
+			Config:  r.config.Git,
 		})
 	}
 

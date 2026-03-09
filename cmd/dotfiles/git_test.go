@@ -2,12 +2,13 @@ package main
 
 import (
 	"os"
+	"path/filepath"
 	"testing"
 	"testing/fstest"
 )
 
 func TestGitConfig(t *testing.T) {
-	repoDir := t.TempDir()
+	repoDir := filepath.Join(t.TempDir(), "testrepo")
 	dstDir := t.TempDir()
 
 	mfs := fstest.MapFS{
@@ -34,7 +35,7 @@ func TestGitConfig(t *testing.T) {
 		t.Fatal(err)
 	}
 
-	expectedActionString := "git config: set 3, unset 1"
+	expectedActionString := "[testrepo] git config: set 3, unset 1"
 
 	found := false
 	for _, action := range actions {

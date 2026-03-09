@@ -28,7 +28,7 @@ type SymLinker struct {
 }
 
 func (s *SymLinker) String() string {
-	return fmt.Sprintf("symlink %s/%s -> %s", filepath.Base(s.SrcRoot), s.Src, s.Dst)
+	return fmt.Sprintf("[%s] symlink: %s -> %s", filepath.Base(s.SrcRoot), s.Src, s.Dst)
 }
 
 func (s *SymLinker) Run() error {
@@ -69,7 +69,8 @@ func (s *SymLinker) Run() error {
 }
 
 type GitConfigAction struct {
-	Config map[string]string
+	SrcRoot string
+	Config  map[string]string
 }
 
 func (g *GitConfigAction) String() string {
@@ -90,7 +91,7 @@ func (g *GitConfigAction) String() string {
 		parts = append(parts, fmt.Sprintf("unset %d", unset))
 	}
 
-	return "git config: " + strings.Join(parts, ", ")
+	return fmt.Sprintf("[%s] git config: %s", filepath.Base(g.SrcRoot), strings.Join(parts, ", "))
 }
 
 func (g *GitConfigAction) Run() error {
@@ -133,7 +134,7 @@ type GoInstallAction struct {
 }
 
 func (g *GoInstallAction) String() string {
-	return "go install ./cmd/..."
+	return fmt.Sprintf("[%s] go install ./cmd/...", filepath.Base(g.SrcRoot))
 }
 
 func (g *GoInstallAction) Run() error {
@@ -150,7 +151,7 @@ type ScriptAction struct {
 }
 
 func (s *ScriptAction) String() string {
-	return fmt.Sprintf("run script from %s", filepath.Base(s.SrcRoot))
+	return fmt.Sprintf("[%s] run script: %s", filepath.Base(s.SrcRoot), ellipsis(s.Script, 66))
 }
 
 func (s *ScriptAction) Run() error {
@@ -194,4 +195,23 @@ func (s *ExecCommandAction) Run() error {
 	cmd.Stdout = os.Stdout
 	cmd.Stderr = os.Stderr
 	return cmd.Run()
+}
+
+func ellipsis(input string, maxLen int) string {
+	var lines []string
+	for l := range strings.Lines(input) {
+		l = strings.TrimSpace(l)
+		if l != "" {
+			lines = append(lines, l)
+		}
+	}
+	cleaned := strings.Join(lines, "⏎")
+	if len(cleaned) <= maxLen {
+		return cleaned
+	}
+	runes := []rune(cleaned)
+	if len(runes) > maxLen {
+		return string(runes[:maxLen]) + "…"
+	}
+	return cleaned
 }

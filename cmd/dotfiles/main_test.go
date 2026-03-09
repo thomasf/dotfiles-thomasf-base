@@ -306,7 +306,7 @@ func TestDotfilesRun(t *testing.T) {
 	}
 
 	out := stdout.String()
-	if !strings.Contains(out, "plan: symlink testrepo/bashrc") {
+	if !strings.Contains(out, "plan: [testrepo] symlink: bashrc -> .bashrc") {
 		t.Errorf("expected plan output, got: %s", out)
 	}
 }
