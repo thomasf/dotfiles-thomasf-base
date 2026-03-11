@@ -42,7 +42,7 @@ dst = "my_bin"
 		t.Fatal(err)
 	}
 
-	repo := NewRepository(repoDir, dstDir, false)
+	repo := NewRepository(repoDir, dstDir)
 	err := repo.LoadConfig()
 	if err != nil {
 		t.Fatal(err)
@@ -102,7 +102,7 @@ func TestForceSync(t *testing.T) {
 		t.Fatal(err)
 	}
 
-	repo := NewRepository(repoDir, dstDir, false)
+	repo := NewRepository(repoDir, dstDir)
 	actions, err := repo.Sync()
 	if err != nil {
 		t.Fatal(err)
@@ -150,7 +150,7 @@ func TestGoInstallAction(t *testing.T) {
 		t.Fatal(err)
 	}
 
-	repo := NewRepository(repoDir, dstDir, false)
+	repo := NewRepository(repoDir, dstDir)
 	actions := repo.GoInstall()
 
 	if len(actions) == 0 {
@@ -308,5 +308,32 @@ func TestDotfilesRun(t *testing.T) {
 	out := stdout.String()
 	if !strings.Contains(out, "plan: [testrepo] symlink: bashrc -> .bashrc") {
 		t.Errorf("expected plan output, got: %s", out)
+	}
+}
+
+func TestDotfilesRunCopy(t *testing.T) {
+	repoDir := t.TempDir()
+	dstDir := t.TempDir()
+
+	mfs := fstest.MapFS{
+		"src/dotfiles/testrepo/.dotfiles.toml": &fstest.MapFile{Data: []byte(""), Mode: 0o644},
+		"src/dotfiles/testrepo/bashrc":         &fstest.MapFile{Data: []byte("content"), Mode: 0o644},
+	}
+	if err := os.CopyFS(repoDir, mfs); err != nil {
+		t.Fatal(err)
+	}
+
+	d := &Dotfiles{}
+	stdout := &strings.Builder{}
+	stderr := &strings.Builder{}
+
+	args := []string{"-repos", filepath.Join(repoDir, "src", "dotfiles"), "-dst", dstDir, "-copy", "plan"}
+	if err := d.Run(stdout, stderr, args); err != nil {
+		t.Fatalf("Dotfiles.Run failed: %v\nStderr: %s", err, stderr.String())
+	}
+
+	out := stdout.String()
+	if !strings.Contains(out, "plan: [testrepo] copy: bashrc -> .bashrc") {
+		t.Errorf("expected copy plan output, got: %s", out)
 	}
 }

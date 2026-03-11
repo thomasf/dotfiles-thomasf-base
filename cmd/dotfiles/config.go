@@ -91,18 +91,36 @@ type Config struct {
 
 type Repository struct {
 	force      bool
+	copy       bool
 	srcRoot    string
 	dstRoot    string
 	configPath string
 	config     Config
 }
 
-func NewRepository(srcRoot, dstRoot string, force bool) *Repository {
-	return &Repository{
+type Option func(*Repository)
+
+func WithForce(force bool) Option {
+	return func(r *Repository) {
+		r.force = force
+	}
+}
+
+func WithCopy(copy bool) Option {
+	return func(r *Repository) {
+		r.copy = copy
+	}
+}
+
+func NewRepository(srcRoot, dstRoot string, opts ...Option) *Repository {
+	r := &Repository{
 		srcRoot: srcRoot,
-		force:   force,
 		dstRoot: dstRoot,
 	}
+	for _, opt := range opts {
+		opt(r)
+	}
+	return r
 }
 
 func (r *Repository) LoadConfig() error {

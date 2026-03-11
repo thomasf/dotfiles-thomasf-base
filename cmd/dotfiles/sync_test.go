@@ -28,7 +28,7 @@ dst = "second-config"
 		t.Fatal(err)
 	}
 
-	repo := NewRepository(repoDir, dstDir, false)
+	repo := NewRepository(repoDir, dstDir)
 	if err := repo.LoadConfig(); err != nil {
 		t.Fatal(err)
 	}

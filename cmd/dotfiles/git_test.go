@@ -24,7 +24,7 @@ func TestGitConfig(t *testing.T) {
 		t.Fatal(err)
 	}
 
-	repo := NewRepository(repoDir, dstDir, false)
+	repo := NewRepository(repoDir, dstDir)
 	err := repo.LoadConfig()
 	if err != nil {
 		t.Fatal(err)

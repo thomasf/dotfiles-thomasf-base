@@ -40,13 +40,23 @@ func (r *Repository) Sync() ([]Action, error) {
 					continue
 				}
 
-				actions = append(actions, &SymLinker{
-					SrcRoot: r.srcRoot,
-					Src:     rel,
-					DstRoot: r.dstRoot,
-					Dst:     filepath.Join(mount.Dst, filepath.Base(match)),
-					Force:   r.force,
-				})
+				if r.copy {
+					actions = append(actions, &CopyFile{
+						SrcRoot: r.srcRoot,
+						Src:     rel,
+						DstRoot: r.dstRoot,
+						Dst:     filepath.Join(mount.Dst, filepath.Base(match)),
+						Force:   r.force,
+					})
+				} else {
+					actions = append(actions, &SymLinker{
+						SrcRoot: r.srcRoot,
+						Src:     rel,
+						DstRoot: r.dstRoot,
+						Dst:     filepath.Join(mount.Dst, filepath.Base(match)),
+						Force:   r.force,
+					})
+				}
 			}
 		} else {
 			srcRel := filepath.Clean(mount.Src)
@@ -65,13 +75,23 @@ func (r *Repository) Sync() ([]Action, error) {
 				continue
 			}
 
-			actions = append(actions, &SymLinker{
-				SrcRoot: r.srcRoot,
-				Src:     srcRel,
-				DstRoot: r.dstRoot,
-				Dst:     mount.Dst,
-				Force:   r.force,
-			})
+			if r.copy {
+				actions = append(actions, &CopyFile{
+					SrcRoot: r.srcRoot,
+					Src:     srcRel,
+					DstRoot: r.dstRoot,
+					Dst:     mount.Dst,
+					Force:   r.force,
+				})
+			} else {
+				actions = append(actions, &SymLinker{
+					SrcRoot: r.srcRoot,
+					Src:     srcRel,
+					DstRoot: r.dstRoot,
+					Dst:     mount.Dst,
+					Force:   r.force,
+				})
+			}
 		}
 	}
 
@@ -159,6 +179,15 @@ func (r *Repository) PostScript() []Action {
 func (r *Repository) syncRootItem(name string) (Action, error) {
 	targetName := r.dotName(name)
 
+	if r.copy {
+		return &CopyFile{
+			SrcRoot: r.srcRoot,
+			Src:     name,
+			DstRoot: r.dstRoot,
+			Dst:     targetName,
+			Force:   r.force,
+		}, nil
+	}
 	return &SymLinker{
 		SrcRoot: r.srcRoot,
 		Src:     name,

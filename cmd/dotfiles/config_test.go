@@ -20,7 +20,7 @@ match = ["hidden_ignore"]
 		t.Fatal(err)
 	}
 
-	repo := NewRepository(repoDir, dstDir, false)
+	repo := NewRepository(repoDir, dstDir)
 	err := repo.LoadConfig()
 	if err != nil {
 		t.Errorf("failed to load hidden config: %v", err)
@@ -45,7 +45,7 @@ match = ["normal_ignore"]
 		t.Fatal(err)
 	}
 
-	repo := NewRepository(repoDir, dstDir, false)
+	repo := NewRepository(repoDir, dstDir)
 	err := repo.LoadConfig()
 	if err != nil {
 		t.Errorf("failed to load normal config: %v", err)

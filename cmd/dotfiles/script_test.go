@@ -85,7 +85,7 @@ src = "echo repo >> log.txt"
 		t.Fatal(err)
 	}
 
-	repo := NewRepository(repoDir, dstDir, false)
+	repo := NewRepository(repoDir, dstDir)
 	err := repo.LoadConfig()
 	if err != nil {
 		t.Fatal(err)
@@ -156,7 +156,7 @@ src = "echo should-not-run >> log.txt"
 		t.Fatal(err)
 	}
 
-	repo := NewRepository(repoDir, dstDir, false)
+	repo := NewRepository(repoDir, dstDir)
 	err := repo.LoadConfig()
 	if err != nil {
 		t.Fatal(err)
@@ -190,7 +190,7 @@ src = "echo hostname-match >> log.txt"
 		t.Fatal(err)
 	}
 
-	repo := NewRepository(repoDir, dstDir, false)
+	repo := NewRepository(repoDir, dstDir)
 	err := repo.LoadConfig()
 	if err != nil {
 		t.Fatal(err)

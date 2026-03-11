@@ -24,6 +24,7 @@ type Dotfiles struct {
 	ReposPath string
 	DstPath   string
 	Force     bool
+	Copy      bool
 	DryRun    bool
 	Verbose   bool
 
@@ -97,6 +98,7 @@ func (d *Dotfiles) Run(stdout, stderr io.Writer, args []string) error {
 	fs.StringVar(&d.ReposPath, "repos", filepath.Join(home, "src", "dotfiles"), "repositories path (defaults to $HOME/src/dotfiles)")
 	fs.StringVar(&d.DstPath, "dst", home, "target path (defaults to $HOME)")
 	fs.BoolVar(&d.Force, "f", false, "force overwrite existing files")
+	fs.BoolVar(&d.Copy, "copy", false, "copy files instead of symlinking")
 	fs.BoolVar(&d.DryRun, "dry-run", false, "dry run (don't create symlinks; only for install command)")
 	fs.BoolVar(&d.Verbose, "v", false, "log more non errors")
 
@@ -360,7 +362,7 @@ func (d *Dotfiles) sync(isPlan bool) {
 
 	for _, repoPath := range d.repos {
 		name := filepath.Base(repoPath)
-		r := NewRepository(repoPath, d.DstPath, d.Force)
+		r := NewRepository(repoPath, d.DstPath, WithForce(d.Force), WithCopy(d.Copy))
 		if err := r.LoadConfig(); err != nil {
 			if errors.Is(err, ErrConfigMissing) {
 				continue
