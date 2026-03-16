@@ -125,7 +125,7 @@ if [ ! ${__OS} = darwin ]; then
   shopt -s cdspell
   shopt -s dirspell
 fi
-export HISTFILE="~/.bash_history.${UID}"
+export HISTFILE="${HOME}/.bash_history.${UID}"
 shopt -s histappend
 export HISTCONTROL=ignoredups
 export HISTSIZE=50000
