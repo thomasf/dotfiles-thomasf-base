@@ -210,15 +210,56 @@ type GoInstallAction struct {
 }
 
 func (g *GoInstallAction) String() string {
-	return fmt.Sprintf("[%s] go install ./cmd/...", filepath.Base(g.SrcRoot))
+	return fmt.Sprintf("[%s] go install cmd/*", filepath.Base(g.SrcRoot))
 }
 
 func (g *GoInstallAction) Run() error {
-	cmd := exec.Command("go", "install", "./cmd/...")
-	cmd.Dir = g.SrcRoot
-	cmd.Stdout = os.Stdout
-	cmd.Stderr = os.Stderr
-	return cmd.Run()
+	cmdPath := filepath.Join(g.SrcRoot, "cmd")
+	entries, err := os.ReadDir(cmdPath)
+	if err != nil {
+		if os.IsNotExist(err) {
+			return nil
+		}
+		return err
+	}
+
+	var errs []error
+	for _, entry := range entries {
+		if !entry.IsDir() {
+			continue
+		}
+		dirPath := filepath.Join(cmdPath, entry.Name())
+		hasGo, err := hasGoFiles(dirPath)
+		if err != nil {
+			errs = append(errs, err)
+			continue
+		}
+		if !hasGo {
+			continue
+		}
+
+		cmd := exec.Command("go", "install", ".")
+		cmd.Dir = dirPath
+		cmd.Stdout = os.Stdout
+		cmd.Stderr = os.Stderr
+		if err := cmd.Run(); err != nil {
+			errs = append(errs, fmt.Errorf("go install in %s: %w", entry.Name(), err))
+		}
+	}
+	return errors.Join(errs...)
+}
+
+func hasGoFiles(dir string) (bool, error) {
+	entries, err := os.ReadDir(dir)
+	if err != nil {
+		return false, err
+	}
+	for _, entry := range entries {
+		if !entry.IsDir() && strings.HasSuffix(entry.Name(), ".go") {
+			return true, nil
+		}
+	}
+	return false, nil
 }
 
 type ScriptAction struct {

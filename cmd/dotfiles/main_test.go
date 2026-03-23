@@ -139,27 +139,29 @@ func TestForceSync(t *testing.T) {
 }
 
 func TestGoInstallAction(t *testing.T) {
-	repoDir := t.TempDir()
-	dstDir := t.TempDir()
+	t.Run("with cmd dir", func(t *testing.T) {
+		repoDir := t.TempDir()
+		dstDir := t.TempDir()
 
-	mfs := fstest.MapFS{
-		".dotfiles.toml": &fstest.MapFile{Data: []byte(""), Mode: 0o644},
-		"go.mod":         &fstest.MapFile{Data: []byte("module test"), Mode: 0o644},
-	}
-	if err := os.CopyFS(repoDir, mfs); err != nil {
-		t.Fatal(err)
-	}
+		mfs := fstest.MapFS{
+			".dotfiles.toml": &fstest.MapFile{Data: []byte(""), Mode: 0o644},
+			"cmd/foo/foo.go": &fstest.MapFile{Data: []byte("package main"), Mode: 0o644},
+		}
+		if err := os.CopyFS(repoDir, mfs); err != nil {
+			t.Fatal(err)
+		}
 
-	repo := NewRepository(repoDir, dstDir)
-	actions := repo.GoInstall()
+		repo := NewRepository(repoDir, dstDir)
+		actions := repo.GoInstall()
 
-	if len(actions) == 0 {
-		t.Fatal("expected at least one action")
-	}
+		if len(actions) == 0 {
+			t.Fatal("expected at least one action")
+		}
 
-	if _, ok := actions[0].(*GoInstallAction); !ok {
-		t.Errorf("expected first action to be GoInstallAction, got %T", actions[0])
-	}
+		if _, ok := actions[0].(*GoInstallAction); !ok {
+			t.Errorf("expected first action to be GoInstallAction, got %T", actions[0])
+		}
+	})
 }
 
 func TestHasChanges(t *testing.T) {

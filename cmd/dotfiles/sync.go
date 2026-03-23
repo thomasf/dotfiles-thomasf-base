@@ -141,8 +141,7 @@ func (r *Repository) Sync() ([]Action, error) {
 
 func (r *Repository) GoInstall() []Action {
 	var actions []Action
-
-	if _, err := os.Stat(filepath.Join(r.srcRoot, "go.mod")); err == nil {
+	if stat, err := os.Stat(filepath.Join(r.srcRoot, "cmd")); err == nil && stat.IsDir() {
 		actions = append(actions, &GoInstallAction{
 			SrcRoot: r.srcRoot,
 		})
