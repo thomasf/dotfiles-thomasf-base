@@ -1,4 +1,4 @@
-module dotfiles/base
+module dotfiles/base/cmd/dotfiles
 
 go 1.25.0
 
