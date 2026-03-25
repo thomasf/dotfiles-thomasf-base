@@ -90,18 +90,6 @@ ingitdirs() {
          "__exec_in_git_dir '{}' ${*}" \;
 }
 
-mgall() {
-  local dirs=""
-  for dir in $(find -L . -name .git -execdir dirname {} \;); do
-    dirs=$dirs$(builtin cd $dir && command git rev-parse 2>/dev/null && [[ ! $(command git status --porcelain) = "" ]] && echo -n " $dir" )
-  done
-  if [ -n "$dirs" ]; then
-    magit ${dirs}
-  else
-    echo "no uncommited"
-  fi
-
-}
 
 rmosx() {
   echo -n "recursivley delete all __MACOSX, .DS_Store files?"
@@ -205,19 +193,6 @@ wsenv-source() {
       return 1
     fi
   fi
-}
-
-awscredentials() {
-  local account="aws-$1"
-  local access_key=$(acc ${account} access-key-id)
-  local access_key_secret=$(acc ${account} secret-access-key)
-  local url=$(acc ${account} ec2-url)
-  export AWS_ACCESS_KEY_ID=$access_key
-  export AWS_SECRET_ACCESS_KEY=$access_key_secret
-  export AWS_ACCESS_KEY=$access_key
-  export AWS_SECRET_KEY=$access_key_secret
-  export EC2_URL=$url
-  echo " $access_key : $access_key_secret : $url"
 }
 
 eless() {
