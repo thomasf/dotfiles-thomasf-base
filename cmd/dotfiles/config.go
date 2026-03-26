@@ -83,6 +83,7 @@ func (i Ignore) ShouldRun(r *Repository) bool {
 }
 
 type Config struct {
+	Public bool              `toml:"public,omitempty,omitzero"`
 	Ignore []Ignore          `toml:"ignore"`
 	Mount  []Mount           `toml:"mount"`
 	Git    map[string]string `toml:"git"`
