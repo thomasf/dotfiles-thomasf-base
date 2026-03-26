@@ -104,14 +104,6 @@ if [ $UID != 0 ]; then
   # mkdir -p "${HOME}/.cache/pip_download" \
   #   && export PIP_DOWNLOAD_CACHE="${HOME}/.cache/pip_download"
   mkdir -p "${HOME}/.cache/pip_download"
-
-  # Maybe load Node version manager
-  [ ! "$(type -t nvm)" = "function" ] \
-    && [ -f "${HOME}/.opt/nvm/nvm.sh" ] \
-    && log "nvm" \
-    && source "${HOME}/.opt/nvm/nvm.sh"
-
-
 fi
 
 # ------------------------------------------------------------------------------
