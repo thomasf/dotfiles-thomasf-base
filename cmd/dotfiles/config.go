@@ -143,17 +143,13 @@ func (r *Repository) LoadConfig() error {
 	r.configPath = configPath
 
 	var config Config
-
 	dec := toml.NewDecoder(bytes.NewReader(data))
 	dec.DisallowUnknownFields()
 	if err := dec.Decode(&config); err != nil {
 		return err
 	}
 
-	r.config.Ignore = config.Ignore
-	r.config.Mount = config.Mount
-	r.config.Git = config.Git
-	r.config.Script = config.Script
+	r.config = config
 
 	return nil
 }

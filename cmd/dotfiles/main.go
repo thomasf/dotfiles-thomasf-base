@@ -79,9 +79,9 @@ func (d *Dotfiles) Run(stdout, stderr io.Writer, args []string) error {
 		fmt.Fprintf(stderr, "\nCommands:\n")
 		fmt.Fprintf(stderr, "  install   Synchronize dotfiles (create symlinks)\n")
 		fmt.Fprintf(stderr, "  plan      Print synchronization plan without taking action\n")
-		fmt.Fprintf(stderr, "  push      Run git push origin master on all repos in parallel\n")
-		fmt.Fprintf(stderr, "  publish   Run git push publish master on all repos in parallel\n")
-		fmt.Fprintf(stderr, "  pull      Run git fetch origin && git merge origin/master on all repos in parallel\n")
+		fmt.Fprintf(stderr, "  push      Run git push on all repos in parallel\n")
+		fmt.Fprintf(stderr, "  publish   Run git push publish on all repos in parallel\n")
+		fmt.Fprintf(stderr, "  pull      Run git pull origin on all repos in parallel\n")
 		fmt.Fprintf(stderr, "  status, s Run git status on all repos (only if changes exist)\n")
 		fmt.Fprintf(stderr, "  diff, d   Run git diff on all repos\n")
 		fmt.Fprintf(stderr, "  magit     Open magit-status in emacs for all repos with changes\n")
@@ -188,19 +188,72 @@ func (d *Dotfiles) Push() {
 		wg.Add(1)
 		go func(name, path string) {
 			defer wg.Done()
-			action := &ExecCommandAction{
-				SrcRoot: path,
-				Command: "git",
-				Args:    []string{"push", "-q", "origin", "master"},
+
+			remotes, err := d.getPushRemotes(path)
+			if err != nil {
+				fmt.Fprintf(d.Stderr, "error finding remotes in %s: %v\n", name, err)
+				return
 			}
-			fmt.Fprintln(d.Stdout, action.String())
-			if err := action.Run(); err != nil {
-				fmt.Fprintf(d.Stderr, "error in %s: %v\n", name, err)
-				d.collectErr(fmt.Errorf("%s: %w", action.String(), err))
+
+			branch := d.getMainBranch(path)
+			for _, remote := range remotes {
+				action := &ExecCommandAction{
+					SrcRoot: path,
+					Command: "git",
+					Args:    []string{"push", "-q", remote, branch},
+				}
+				fmt.Fprintln(d.Stdout, action.String())
+				if err := action.Run(); err != nil {
+					fmt.Fprintf(d.Stderr, "error in %s (%s): %v\n", name, remote, err)
+					d.collectErr(fmt.Errorf("%s: %w", action.String(), err))
+				}
 			}
 		}(name, repoPath)
 	}
 	wg.Wait()
+}
+
+func (d *Dotfiles) getPushRemotes(path string) ([]string, error) {
+	cmd := exec.Command("git", "remote")
+	cmd.Dir = path
+	output, err := cmd.Output()
+	if err != nil {
+		return nil, err
+	}
+
+	lines := strings.Split(strings.TrimSpace(string(output)), "\n")
+	var remotes []string
+	for _, line := range lines {
+		remote := strings.TrimSpace(line)
+		if remote == "" {
+			continue
+		}
+
+		if remote == "origin" || strings.HasPrefix(remote, "backup.") {
+			remotes = append(remotes, remote)
+		}
+	}
+
+	if len(remotes) == 0 {
+		return []string{"origin"}, nil
+	}
+
+	return remotes, nil
+}
+
+func (d *Dotfiles) getMainBranch(path string) string {
+	cmd := exec.Command("git", "branch", "--list", "main", "master")
+	cmd.Dir = path
+	output, _ := cmd.Output()
+	lines := strings.Split(strings.TrimSpace(string(output)), "\n")
+	for _, line := range lines {
+		line = strings.TrimSpace(line)
+		line = strings.TrimPrefix(line, "* ")
+		if line == "main" || line == "master" {
+			return line
+		}
+	}
+	return "master"
 }
 
 func (d *Dotfiles) Publish() {
@@ -210,6 +263,21 @@ func (d *Dotfiles) Publish() {
 		wg.Add(1)
 		go func(name, path string) {
 			defer wg.Done()
+
+			repo := NewRepository(path, d.DstPath)
+			if err := repo.LoadConfig(); err != nil {
+				if !errors.Is(err, ErrConfigMissing) {
+					fmt.Fprintf(d.Stderr, "error loading config in %s: %v\n", name, err)
+					return
+				}
+			}
+
+			if !repo.config.Public {
+				if d.Verbose {
+					fmt.Fprintf(d.Stdout, "skipping publish for %s: repository is not public\n", name)
+				}
+				return
+			}
 
 			cmd := exec.Command("git", "remote")
 			cmd.Dir = path
@@ -232,10 +300,11 @@ func (d *Dotfiles) Publish() {
 				return
 			}
 
+			branch := d.getMainBranch(path)
 			action := &ExecCommandAction{
 				SrcRoot: path,
 				Command: "git",
-				Args:    []string{"push", "-q", "publish", "master"},
+				Args:    []string{"push", "-q", "publish", branch},
 			}
 			fmt.Fprintln(d.Stdout, action.String())
 			if err := action.Run(); err != nil {
@@ -254,25 +323,18 @@ func (d *Dotfiles) Pull() {
 		wg.Add(1)
 		go func(name, path string) {
 			defer wg.Done()
-			actions := []Action{
-				&ExecCommandAction{
-					SrcRoot: path,
-					Command: "git",
-					Args:    []string{"fetch", "-q", "origin"},
-				},
-				&ExecCommandAction{
-					SrcRoot: path,
-					Command: "git",
-					Args:    []string{"merge", "-q", "origin/master"},
-				},
+
+			branch := d.getMainBranch(path)
+			action := &ExecCommandAction{
+				SrcRoot: path,
+				Command: "git",
+				Args:    []string{"pull", "-q", "origin", branch},
 			}
 
-			for _, action := range actions {
-				fmt.Fprintln(d.Stdout, action.String())
-				if err := action.Run(); err != nil {
-					fmt.Fprintf(d.Stderr, "error in %s: %v\n", name, err)
-					d.collectErr(fmt.Errorf("%s: %w", action.String(), err))
-				}
+			fmt.Fprintln(d.Stdout, action.String())
+			if err := action.Run(); err != nil {
+				fmt.Fprintf(d.Stderr, "error in %s: %v\n", name, err)
+				d.collectErr(fmt.Errorf("%s: %w", action.String(), err))
 			}
 		}(name, repoPath)
 	}
