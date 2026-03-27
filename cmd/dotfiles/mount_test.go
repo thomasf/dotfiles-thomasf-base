@@ -7,6 +7,7 @@ import (
 )
 
 func TestMountRoot(t *testing.T) {
+	t.Parallel()
 	repoDir := t.TempDir()
 	dstDir := t.TempDir()
 

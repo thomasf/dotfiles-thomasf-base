@@ -20,6 +20,7 @@ func gitRun(t *testing.T, dir string, args ...string) {
 }
 
 func TestPublishSkip(t *testing.T) {
+	t.Parallel()
 	repoDir := t.TempDir()
 
 	mfs := fstest.MapFS{
@@ -54,6 +55,7 @@ func TestPublishSkip(t *testing.T) {
 }
 
 func TestPublishRemoteExists(t *testing.T) {
+	t.Parallel()
 	repoDir := t.TempDir()
 	remoteDir := t.TempDir()
 
@@ -92,6 +94,7 @@ func TestPublishRemoteExists(t *testing.T) {
 }
 
 func TestPublishNotPublic(t *testing.T) {
+	t.Parallel()
 	repoDir := t.TempDir()
 	remoteDir := t.TempDir()
 

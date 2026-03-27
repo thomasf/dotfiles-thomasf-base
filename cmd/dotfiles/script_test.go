@@ -10,6 +10,7 @@ import (
 )
 
 func TestScriptAction(t *testing.T) {
+	t.Parallel()
 	repoDir := t.TempDir()
 
 	outputFile := filepath.Join(repoDir, "output.txt")
@@ -36,6 +37,7 @@ func TestScriptAction(t *testing.T) {
 }
 
 func TestScriptActionEnv(t *testing.T) {
+	t.Parallel()
 	repoDir := t.TempDir()
 
 	outputFile := filepath.Join(repoDir, "env_output.txt")
@@ -62,6 +64,7 @@ func TestScriptActionEnv(t *testing.T) {
 }
 
 func TestScriptsPrePostRepo(t *testing.T) {
+	t.Parallel()
 	repoDir := t.TempDir()
 	dstDir := t.TempDir()
 
@@ -142,6 +145,7 @@ src = "echo repo >> log.txt"
 }
 
 func TestScriptConditionFalse(t *testing.T) {
+	t.Parallel()
 	repoDir := t.TempDir()
 	dstDir := t.TempDir()
 
@@ -175,6 +179,7 @@ src = "echo should-not-run >> log.txt"
 }
 
 func TestScriptConditionHostname(t *testing.T) {
+	t.Parallel()
 	repoDir := t.TempDir()
 	dstDir := t.TempDir()
 	hostname, _ := os.Hostname()
@@ -214,6 +219,7 @@ src = "echo hostname-match >> log.txt"
 }
 
 func TestShellAction(t *testing.T) {
+	t.Parallel()
 	repoDir := t.TempDir()
 
 	action := &ExecCommandAction{

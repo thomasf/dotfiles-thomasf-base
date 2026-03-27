@@ -11,6 +11,7 @@ import (
 )
 
 func TestPushWithMasterBranch(t *testing.T) {
+	t.Parallel()
 	repoDir := t.TempDir()
 
 	mfs := fstest.MapFS{
@@ -56,6 +57,7 @@ func TestPushWithMasterBranch(t *testing.T) {
 }
 
 func TestPushWithMainBranch(t *testing.T) {
+	t.Parallel()
 	repoDir := t.TempDir()
 
 	mfs := fstest.MapFS{
