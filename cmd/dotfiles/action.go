@@ -188,8 +188,9 @@ func (g *GitConfigAction) Run() error {
 		}
 
 		cmd := exec.Command("git", args...)
-		cmd.Stdout = os.Stdout
-		cmd.Stderr = os.Stderr
+		prefix := fmt.Sprintf("[%s] git config %s: ", filepath.Base(g.SrcRoot), k)
+		cmd.Stdout = newPrefixWriter(os.Stdout, prefix)
+		cmd.Stderr = newPrefixWriter(os.Stderr, prefix)
 		err := cmd.Run()
 		if err != nil {
 			if v == "" {
@@ -240,8 +241,9 @@ func (g *GoInstallAction) Run() error {
 
 		cmd := exec.Command("go", "install", ".")
 		cmd.Dir = dirPath
-		cmd.Stdout = os.Stdout
-		cmd.Stderr = os.Stderr
+		prefix := fmt.Sprintf("[%s] go install %s: ", filepath.Base(g.SrcRoot), entry.Name())
+		cmd.Stdout = newPrefixWriter(os.Stdout, prefix)
+		cmd.Stderr = newPrefixWriter(os.Stderr, prefix)
 		if err := cmd.Run(); err != nil {
 			errs = append(errs, fmt.Errorf("go install in %s: %w", entry.Name(), err))
 		}
@@ -284,9 +286,10 @@ func (s *ScriptAction) Run() error {
 	if err != nil {
 		return wrapErr(err)
 	}
+	prefix := fmt.Sprintf("[%s] script: ", filepath.Base(s.SrcRoot))
 	runner, err := interp.New(
 		interp.Dir(s.SrcRoot),
-		interp.StdIO(os.Stdin, os.Stdout, os.Stderr),
+		interp.StdIO(os.Stdin, newPrefixWriter(os.Stdout, prefix), newPrefixWriter(os.Stderr, prefix)),
 		interp.Params("-e"),
 	)
 	if err != nil {
@@ -307,10 +310,11 @@ func (s *ExecCommandAction) String() string {
 }
 
 func (s *ExecCommandAction) Run() error {
+	prefix := s.String() + ": "
 	cmd := exec.Command(s.Command, s.Args...)
 	cmd.Dir = s.SrcRoot
-	cmd.Stdout = os.Stdout
-	cmd.Stderr = os.Stderr
+	cmd.Stdout = newPrefixWriter(os.Stdout, prefix)
+	cmd.Stderr = newPrefixWriter(os.Stderr, prefix)
 	return cmd.Run()
 }
 

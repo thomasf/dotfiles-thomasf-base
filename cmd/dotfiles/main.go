@@ -402,8 +402,9 @@ func (d *Dotfiles) Magit() {
 	} else {
 		evalStr := fmt.Sprintf("(progn %s (delete-other-windows) )", strings.Join(magitArgs, " "))
 		cmd := exec.Command("emacs", "-eval", evalStr)
-		cmd.Stdout = d.Stdout
-		cmd.Stderr = d.Stderr
+		prefix := "magit: "
+		cmd.Stdout = newPrefixWriter(d.Stdout, prefix)
+		cmd.Stderr = newPrefixWriter(d.Stderr, prefix)
 		if err := cmd.Run(); err != nil {
 			fmt.Fprintf(d.Stderr, "error: %v\n", err)
 			d.collectErr(fmt.Errorf("magit: %w", err))
