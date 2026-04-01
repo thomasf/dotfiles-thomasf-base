@@ -1,6 +1,8 @@
 package main
 
 import (
+	"errors"
+	"fmt"
 	"os"
 	"path/filepath"
 	"strings"
@@ -8,6 +10,7 @@ import (
 
 func (r *Repository) Sync() ([]Action, error) {
 	var actions []Action
+	var errs []error
 	processed := make(map[string]bool)
 
 	for _, mount := range r.config.Mount {
@@ -17,13 +20,15 @@ func (r *Repository) Sync() ([]Action, error) {
 			pattern := filepath.Join(r.srcRoot, mount.Src)
 			matches, err := filepath.Glob(pattern)
 			if err != nil {
-				return nil, err
+				errs = append(errs, fmt.Errorf("glob error for mount src %s: %w", mount.Src, err))
+				continue
 			}
 
 			for _, match := range matches {
 				rel, err := filepath.Rel(r.srcRoot, match)
 				if err != nil {
-					return nil, err
+					errs = append(errs, fmt.Errorf("rel path error for match %s: %w", match, err))
+					continue
 				}
 
 				root := strings.Split(rel, string(os.PathSeparator))[0]
@@ -97,26 +102,27 @@ func (r *Repository) Sync() ([]Action, error) {
 
 	entries, err := os.ReadDir(r.srcRoot)
 	if err != nil {
-		return nil, err
-	}
+		errs = append(errs, fmt.Errorf("readdir error for srcRoot %s: %w", r.srcRoot, err))
+	} else {
+		for _, entry := range entries {
+			name := entry.Name()
+			path := filepath.Join(r.srcRoot, name)
+			if r.IsIgnored(path) {
+				continue
+			}
 
-	for _, entry := range entries {
-		name := entry.Name()
-		path := filepath.Join(r.srcRoot, name)
-		if r.IsIgnored(path) {
-			continue
-		}
+			if processed[name] || processed["."] {
+				continue
+			}
 
-		if processed[name] || processed["."] {
-			continue
-		}
-
-		action, err := r.syncRootItem(name)
-		if err != nil {
-			return nil, err
-		}
-		if action != nil {
-			actions = append(actions, action)
+			action, err := r.syncRootItem(name)
+			if err != nil {
+				errs = append(errs, fmt.Errorf("sync error for root item %s: %w", name, err))
+				continue
+			}
+			if action != nil {
+				actions = append(actions, action)
+			}
 		}
 	}
 
@@ -136,7 +142,7 @@ func (r *Repository) Sync() ([]Action, error) {
 		}
 	}
 
-	return actions, nil
+	return actions, errors.Join(errs...)
 }
 
 func (r *Repository) GoInstall() []Action {
