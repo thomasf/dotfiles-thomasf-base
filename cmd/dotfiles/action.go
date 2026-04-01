@@ -20,12 +20,20 @@ type Action interface {
 	String() string
 }
 
+type Targeter interface {
+	DstAbsolutePath() string
+}
+
 type SymLinker struct {
 	SrcRoot string
 	Src     string
 	DstRoot string
 	Dst     string
 	Force   bool
+}
+
+func (s *SymLinker) DstAbsolutePath() string {
+	return filepath.Join(s.DstRoot, s.Dst)
 }
 
 func (s *SymLinker) String() string {
@@ -75,6 +83,10 @@ type CopyFile struct {
 	DstRoot string
 	Dst     string
 	Force   bool
+}
+
+func (c *CopyFile) DstAbsolutePath() string {
+	return filepath.Join(c.DstRoot, c.Dst)
 }
 
 func (c *CopyFile) String() string {

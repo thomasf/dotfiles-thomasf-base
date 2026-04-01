@@ -339,3 +339,46 @@ func TestDotfilesRunCopy(t *testing.T) {
 		t.Errorf("expected copy plan output, got: %s", out)
 	}
 }
+
+func TestDuplicateDestinationWarning(t *testing.T) {
+	repoDir := t.TempDir()
+	dstDir := t.TempDir()
+
+	mfs := fstest.MapFS{
+		"repo1/.dotfiles.toml": &fstest.MapFile{Data: []byte(`
+[[mount]]
+src = "shared"
+dst = "target"
+`), Mode: 0o644},
+		"repo1/shared": &fstest.MapFile{Data: []byte("content1"), Mode: 0o644},
+		"repo2/.dotfiles.toml": &fstest.MapFile{Data: []byte(`
+[[mount]]
+src = "shared"
+dst = "target"
+`), Mode: 0o644},
+		"repo2/shared": &fstest.MapFile{Data: []byte("content2"), Mode: 0o644},
+	}
+	if err := os.CopyFS(repoDir, mfs); err != nil {
+		t.Fatal(err)
+	}
+
+	d := &Dotfiles{}
+	stdout := &strings.Builder{}
+	stderr := &strings.Builder{}
+
+	args := []string{"-repos", repoDir, "-dst", dstDir, "plan"}
+	if err := d.Run(stdout, stderr, args); err != nil {
+		t.Fatalf("Dotfiles.Run failed: %v\nStderr: %s", err, stderr.String())
+	}
+
+	errOut := stderr.String()
+	expectedWarning := "Warning: multiple actions target the same destination:"
+	if !strings.Contains(errOut, expectedWarning) {
+		t.Errorf("expected warning in stderr, got: %s", errOut)
+	}
+
+	targetPath := filepath.Join(dstDir, "target")
+	if !strings.Contains(errOut, targetPath) {
+		t.Errorf("expected warning to contain target path %s, got: %s", targetPath, errOut)
+	}
+}

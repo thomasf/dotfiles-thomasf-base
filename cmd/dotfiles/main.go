@@ -448,7 +448,29 @@ func (d *Dotfiles) sync(isPlan bool) {
 		allGoInstall = append(allGoInstall, r.GoInstall()...)
 	}
 
-	for _, script := range slices.Concat(allGoInstall, allPreScripts, allActions, allPostScripts) {
+	all := slices.Concat(allGoInstall, allPreScripts, allActions, allPostScripts)
+
+	// Check for multiple actions targeting the same destination path
+	destMap := make(map[string][]Action)
+	for _, action := range all {
+		if t, ok := action.(Targeter); ok {
+			dst := t.DstAbsolutePath()
+			if dst != "" {
+				destMap[dst] = append(destMap[dst], action)
+			}
+		}
+	}
+
+	for dst, actions := range destMap {
+		if len(actions) > 1 {
+			fmt.Fprintf(d.Stderr, "Warning: multiple actions target the same destination: %s\n", dst)
+			for _, action := range actions {
+				fmt.Fprintf(d.Stderr, "  - %s\n", action.String())
+			}
+		}
+	}
+
+	for _, script := range all {
 		if isPlan {
 			fmt.Fprintf(d.Stdout, "plan: %s\n", script.String())
 			continue
