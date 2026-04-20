@@ -146,10 +146,38 @@ func (r *Repository) Sync() ([]Action, error) {
 }
 
 func (r *Repository) GoInstall() []Action {
+	processed := make(map[string]bool)
 	var actions []Action
-	if stat, err := os.Stat(filepath.Join(r.srcRoot, "cmd")); err == nil && stat.IsDir() {
+
+	for _, g := range r.config.Go {
+		relPath := filepath.Clean(g.Src)
+		processed[relPath] = true
+		if g.ShouldRun(r) {
+			actions = append(actions, &GoInstallAction{
+				SrcRoot: r.srcRoot,
+				Path:    relPath,
+			})
+		}
+	}
+
+	cmdPath := filepath.Join(r.srcRoot, "cmd")
+	entries, err := os.ReadDir(cmdPath)
+	if err != nil {
+		return actions
+	}
+
+	for _, entry := range entries {
+		if !entry.IsDir() {
+			continue
+		}
+		relPath := filepath.Join("cmd", entry.Name())
+		if processed[relPath] {
+			continue
+		}
+
 		actions = append(actions, &GoInstallAction{
 			SrcRoot: r.srcRoot,
+			Path:    relPath,
 		})
 	}
 	return actions

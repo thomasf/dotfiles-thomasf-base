@@ -220,47 +220,32 @@ func (g *GitConfigAction) Run() error {
 
 type GoInstallAction struct {
 	SrcRoot string
+	Path    string
 }
 
 func (g *GoInstallAction) String() string {
-	return fmt.Sprintf("[%s] go install cmd/*", filepath.Base(g.SrcRoot))
+	return fmt.Sprintf("[%s] go install %s", filepath.Base(g.SrcRoot), g.Path)
 }
 
 func (g *GoInstallAction) Run() error {
-	cmdPath := filepath.Join(g.SrcRoot, "cmd")
-	entries, err := os.ReadDir(cmdPath)
+	dirPath := filepath.Join(g.SrcRoot, g.Path)
+	hasGo, err := hasGoFiles(dirPath)
 	if err != nil {
-		if os.IsNotExist(err) {
-			return nil
-		}
 		return err
 	}
-
-	var errs []error
-	for _, entry := range entries {
-		if !entry.IsDir() {
-			continue
-		}
-		dirPath := filepath.Join(cmdPath, entry.Name())
-		hasGo, err := hasGoFiles(dirPath)
-		if err != nil {
-			errs = append(errs, err)
-			continue
-		}
-		if !hasGo {
-			continue
-		}
-
-		cmd := exec.Command("go", "install", ".")
-		cmd.Dir = dirPath
-		prefix := fmt.Sprintf("[%s] go install %s: ", filepath.Base(g.SrcRoot), entry.Name())
-		cmd.Stdout = newPrefixWriter(os.Stdout, prefix)
-		cmd.Stderr = newPrefixWriter(os.Stderr, prefix)
-		if err := cmd.Run(); err != nil {
-			errs = append(errs, fmt.Errorf("go install in %s: %w", entry.Name(), err))
-		}
+	if !hasGo {
+		return fmt.Errorf("no go files in %s", dirPath)
 	}
-	return errors.Join(errs...)
+
+	cmd := exec.Command("go", "install", ".")
+	cmd.Dir = dirPath
+	prefix := fmt.Sprintf("[%s] go install %s: ", filepath.Base(g.SrcRoot), g.Path)
+	cmd.Stdout = newPrefixWriter(os.Stdout, prefix)
+	cmd.Stderr = newPrefixWriter(os.Stderr, prefix)
+	if err := cmd.Run(); err != nil {
+		return fmt.Errorf("go install in %s: %w", g.Path, err)
+	}
+	return nil
 }
 
 func hasGoFiles(dir string) (bool, error) {

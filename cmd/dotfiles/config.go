@@ -73,6 +73,15 @@ func (s Script) ShouldRun(r *Repository) bool {
 	return evalCondition(r.configPath, fmt.Sprintf("Script(src=%s, phase=%s)", s.Src, s.Phase), s.Condition)
 }
 
+type Go struct {
+	Src       string `toml:"src"`
+	Condition string `toml:"condition,omitempty"`
+}
+
+func (g Go) ShouldRun(r *Repository) bool {
+	return evalCondition(r.configPath, fmt.Sprintf("Go(src=%s)", g.Src), g.Condition)
+}
+
 type Ignore struct {
 	Condition string   `toml:"condition,omitempty"`
 	Match     []string `toml:"match"`
@@ -88,6 +97,7 @@ type Config struct {
 	Mount  []Mount           `toml:"mount"`
 	Git    map[string]string `toml:"git"`
 	Script []Script          `toml:"script"`
+	Go     []Go              `toml:"go"`
 }
 
 type Repository struct {
