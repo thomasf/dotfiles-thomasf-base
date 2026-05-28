@@ -128,6 +128,7 @@ upgrader-cargo() {
         gitui \
         hexyl \
         hyperfine \
+        just \
         pastel \
         ripgrep \
         tokei \
