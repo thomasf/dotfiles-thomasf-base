@@ -465,10 +465,9 @@ _jump_repo_find() {
 
 _jump_repo_ghq() {
   local query="$@"
-  local selected=$(cd "${basedir}" && ghq list |
+  local selected=$(ghq list |
                         selectline --query="$query") || return 1
-  local target="${basedir}/${selected}"
-  target="$(ghq root ${target})${target}"
+  target="$(ghq root)/${selected}"
   cd "$target"
 }
 
