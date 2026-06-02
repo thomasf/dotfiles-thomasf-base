@@ -54,3 +54,4 @@ projectile-bookmarks.eld
 
 /.vscode/
 /.clinic/
+**/.claude/settings.local.json
