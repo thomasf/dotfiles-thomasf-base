@@ -59,6 +59,7 @@ upgrader-go() {
       github.com/gopasspw/gopass \
       github.com/homeport/dyff/cmd/dyff \
       github.com/junegunn/fzf \
+      github.com/magefile/mage \
       github.com/monochromegane/the_platinum_searcher/cmd/pt \
       github.com/profclems/glab/cmd/glab \
       github.com/shurcooL/markdownfmt \
