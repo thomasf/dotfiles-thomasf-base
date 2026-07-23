@@ -80,7 +80,7 @@ type Go struct {
 
 func (g Go) ShouldRun(r *Repository) bool {
 	return evalCondition(r.configPath, fmt.Sprintf("Go(src=%s)", g.Src), g.Condition)
-np}
+}
 
 type Ignore struct {
 	Condition string   `toml:"condition,omitempty"`
