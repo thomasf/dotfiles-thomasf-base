@@ -131,9 +131,11 @@ upgrader-cargo() {
         hexyl \
         hyperfine \
         just \
+        mise \
         pastel \
         ripgrep \
         tokei \
+        usage-cli \
         vcprompt \
         watchexec-cli \
     ;
