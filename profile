@@ -72,6 +72,7 @@ ppath ~/Library/Haskell/bin
 ppath ~/.opt/go/bin
 ppath ~/sdk/go/bin
 ppath ~/sdk/zig
+ppath ~/sdk/odin
 
 ppath ~/.opt/ec2-api-tools/bin \
     && EC2_HOME=~/.opt/ec2-api-tools \
