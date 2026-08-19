@@ -128,6 +128,21 @@ func TestBuildModEdits(t *testing.T) {
 				"-replace=example.com/new=example.com/new@v1.9.0",
 			},
 		},
+		{
+			name: "tool directive pointing at old path is updated",
+			mod: &goMod{
+				Tool: []goModTool{
+					{Path: "example.com/old/cmd/mytool"},
+					{Path: "example.com/other/tool"},
+				},
+			},
+			oldPath: "example.com/old",
+			newPath: "example.com/new",
+			want: []string{
+				"-droptool=example.com/old/cmd/mytool",
+				"-tool=example.com/new/cmd/mytool",
+			},
+		},
 	}
 
 	for _, tt := range tests {
@@ -249,6 +264,7 @@ var projectFS = fstest.MapFS{
 	"sub/untouched.go":     &fstest.MapFile{Data: []byte("package sub\n\nimport \"example.com/keep\"\n")},
 	"vendor/v/vendored.go": &fstest.MapFile{Data: []byte("package v\n\nimport \"example.com/old/pkg\"\n")},
 	".hidden/hidden.go":    &fstest.MapFile{Data: []byte("package h\n\nimport \"example.com/old/pkg\"\n")},
+	"_ignored/ignored.go":  &fstest.MapFile{Data: []byte("package ign\n\nimport \"example.com/old/pkg\"\n")},
 	"notgo.txt":            &fstest.MapFile{Data: []byte("example.com/old\n")},
 	"broken/broken.go.bad": &fstest.MapFile{Data: []byte("package broken\n\nimport \"example.com/old\"\n")},
 	"broken/really_bad.go": &fstest.MapFile{Data: []byte("this is not go source\n")},
@@ -274,6 +290,7 @@ func TestRewriteImports(t *testing.T) {
 		"sub/untouched.go":     projectFS["sub/untouched.go"],
 		"vendor/v/vendored.go": projectFS["vendor/v/vendored.go"],
 		".hidden/hidden.go":    projectFS[".hidden/hidden.go"],
+		"_ignored/ignored.go":  projectFS["_ignored/ignored.go"],
 		"notgo.txt":            projectFS["notgo.txt"],
 		"broken/broken.go.bad": projectFS["broken/broken.go.bad"],
 		"broken/really_bad.go": projectFS["broken/really_bad.go"],

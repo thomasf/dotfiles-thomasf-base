@@ -15,6 +15,7 @@ type goMod struct {
 	Module  goModModule
 	Require []goModRequire
 	Replace []goModReplace
+	Tool    []goModTool
 }
 
 type goModModule struct {
@@ -35,6 +36,10 @@ type goModVersion struct {
 type goModReplace struct {
 	Old goModVersion
 	New goModVersion
+}
+
+type goModTool struct {
+	Path string
 }
 
 func switchUsage(fs *flag.FlagSet) func() {
@@ -58,13 +63,22 @@ func runSwitch(args []string) {
 	fs.Usage = switchUsage(fs)
 	_ = fs.Parse(args)
 
-	if *oldPathFlag == "" || *newPathFlag == "" {
+	oldPath := strings.TrimRight(strings.TrimSpace(*oldPathFlag), "/")
+	newPath := strings.TrimRight(strings.TrimSpace(*newPathFlag), "/")
+	version := strings.TrimSpace(*versionFlag)
+
+	if oldPath == "" || newPath == "" {
 		fmt.Fprintln(os.Stderr, "Error: both -old and -new are required.")
 		fs.Usage()
 		os.Exit(1)
 	}
-	if *oldPathFlag == *newPathFlag {
+	if oldPath == newPath {
 		fmt.Fprintln(os.Stderr, "Error: -old and -new are identical.")
+		os.Exit(1)
+	}
+
+	if *forceFlag && *dryRunFlag {
+		fmt.Fprintln(os.Stderr, "Error: cannot specify both -f and -dry-run.")
 		os.Exit(1)
 	}
 
@@ -78,20 +92,20 @@ func runSwitch(args []string) {
 		fmt.Fprintf(os.Stderr, "Error reading go.mod: %v\n", err)
 		os.Exit(1)
 	}
-	if mod.Module.Path == *oldPathFlag {
-		fmt.Fprintf(os.Stderr, "Error: %s is this project's own module; use the rename command instead.\n", *oldPathFlag)
+	if mod.Module.Path == oldPath {
+		fmt.Fprintf(os.Stderr, "Error: %s is this project's own module; use the rename command instead.\n", oldPath)
 		os.Exit(1)
 	}
 
-	edits := buildModEdits(mod, *oldPathFlag, *newPathFlag, *versionFlag)
+	edits := buildModEdits(mod, oldPath, newPath, version)
 
 	if !*forceFlag && !*dryRunFlag {
-		fmt.Printf("Project module: %s\nUse -f to rewrite %s -> %s, or -dry-run to preview.\n", mod.Module.Path, *oldPathFlag, *newPathFlag)
+		fmt.Fprintf(os.Stderr, "Project module: %s\nUse -f to rewrite %s -> %s, or -dry-run to preview.\n", mod.Module.Path, oldPath, newPath)
 		os.Exit(1)
 	}
 
 	if len(edits) == 0 {
-		fmt.Printf("Note: %s is not required or replaced in go.mod; only imports are rewritten.\n", *oldPathFlag)
+		fmt.Printf("Note: %s is not required or replaced in go.mod; only imports are rewritten.\n", oldPath)
 	} else if *dryRunFlag {
 		fmt.Printf("[Dry-Run] Would run: go mod edit %s\n", strings.Join(edits, " "))
 	} else {
@@ -102,7 +116,7 @@ func runSwitch(args []string) {
 		}
 	}
 
-	changed, err := rewriteImports(".", *oldPathFlag, *newPathFlag, *dryRunFlag)
+	changed, err := rewriteImports(".", oldPath, newPath, *dryRunFlag)
 	if err != nil {
 		fmt.Fprintf(os.Stderr, "Error: %v\n", err)
 		os.Exit(1)
@@ -112,9 +126,9 @@ func runSwitch(args []string) {
 		fmt.Println("Skipping 'go mod tidy'; go.sum is probably stale.")
 		// "go mod edit -require" cannot set the marker back, so only tidy can
 		// restore it.
-		if req, ok := findRequire(mod, *oldPathFlag); ok && req.Indirect {
+		if req, ok := findRequire(mod, oldPath); ok && req.Indirect {
 			fmt.Printf("Note: %s was an indirect requirement; %s is now recorded as a direct one.\n",
-				*oldPathFlag, *newPathFlag)
+				oldPath, newPath)
 		}
 	} else if *dryRunFlag {
 		fmt.Println("[Dry-Run] Would run: go mod tidy")
@@ -122,12 +136,12 @@ func runSwitch(args []string) {
 		fmt.Fprintf(os.Stderr, "Warning: 'go mod tidy' failed: %v\n", err)
 	}
 
-	warnPackageName(*oldPathFlag, *newPathFlag)
+	warnPackageName(oldPath, newPath)
 	fmt.Printf("Finished. %d file(s) with updated imports.\n", changed)
 }
 
-// buildModEdits returns the "go mod edit" flags needed to point every require
-// and replace directive mentioning oldPath at newPath.
+// buildModEdits returns the "go mod edit" flags needed to point every require,
+// replace, and tool directive mentioning oldPath at newPath.
 func buildModEdits(mod *goMod, oldPath, newPath, version string) []string {
 	var edits []string
 
@@ -163,6 +177,15 @@ func buildModEdits(mod *goMod, oldPath, newPath, version string) []string {
 		}
 	}
 
+	for _, t := range mod.Tool {
+		if t.Path == oldPath || strings.HasPrefix(t.Path, oldPath+"/") {
+			newTool := newPath + strings.TrimPrefix(t.Path, oldPath)
+			edits = append(edits,
+				"-droptool="+t.Path,
+				"-tool="+newTool)
+		}
+	}
+
 	return edits
 }
 
@@ -187,7 +210,7 @@ func readGoMod() (*goMod, error) {
 	if err != nil {
 		var exitErr *exec.ExitError
 		if errors.As(err, &exitErr) && len(exitErr.Stderr) > 0 {
-			return nil, fmt.Errorf("%s", exitErr.Stderr)
+			return nil, fmt.Errorf("%s", strings.TrimSpace(string(exitErr.Stderr)))
 		}
 		return nil, err
 	}

@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"os"
 	"os/exec"
+	"strings"
 )
 
 func renameUsage(fs *flag.FlagSet) func() {
@@ -25,9 +26,17 @@ func runRename(args []string) {
 	fs.Usage = renameUsage(fs)
 	_ = fs.Parse(args)
 
-	if *newPathFlag == "" {
+	newPath := strings.TrimRight(strings.TrimSpace(*newPathFlag), "/")
+	oldPath := strings.TrimRight(strings.TrimSpace(*oldPathFlag), "/")
+
+	if newPath == "" {
 		fmt.Fprintln(os.Stderr, "Error: -new path is required.")
 		fs.Usage()
+		os.Exit(1)
+	}
+
+	if *forceFlag && *dryRunFlag {
+		fmt.Fprintln(os.Stderr, "Error: cannot specify both -f and -dry-run.")
 		os.Exit(1)
 	}
 
@@ -36,7 +45,6 @@ func runRename(args []string) {
 		os.Exit(1)
 	}
 
-	oldPath := *oldPathFlag
 	if oldPath == "" {
 		mod, err := readGoMod()
 		if err != nil {
@@ -47,34 +55,34 @@ func runRename(args []string) {
 			fmt.Fprintln(os.Stderr, "Error: go.mod has no module directive; pass -old explicitly.")
 			os.Exit(1)
 		}
-		oldPath = mod.Module.Path
+		oldPath = strings.TrimRight(mod.Module.Path, "/")
 	}
 
-	if oldPath == *newPathFlag {
+	if oldPath == newPath {
 		fmt.Printf("Module path is already %s; nothing to do.\n", oldPath)
 		return
 	}
 
 	if !*forceFlag && !*dryRunFlag {
-		fmt.Printf("Detected module: %s\nUse -f to apply changes to -new %s, or -dry-run to preview.\n", oldPath, *newPathFlag)
+		fmt.Fprintf(os.Stderr, "Detected module: %s\nUse -f to apply changes to -new %s, or -dry-run to preview.\n", oldPath, newPath)
 		os.Exit(1)
 	}
 
 	if *dryRunFlag {
-		fmt.Printf("[Dry-Run] Target: %s -> %s\n", oldPath, *newPathFlag)
-		fmt.Printf("[Dry-Run] Would run: go mod edit -module %s\n", *newPathFlag)
-	} else if err := updateGoMod(*newPathFlag); err != nil {
+		fmt.Printf("[Dry-Run] Target: %s -> %s\n", oldPath, newPath)
+		fmt.Printf("[Dry-Run] Would run: go mod edit -module %s\n", newPath)
+	} else if err := updateGoMod(newPath); err != nil {
 		fmt.Fprintf(os.Stderr, "Error updating go.mod: %v\n", err)
 		os.Exit(1)
 	}
 
-	changed, err := rewriteImports(".", oldPath, *newPathFlag, *dryRunFlag)
+	changed, err := rewriteImports(".", oldPath, newPath, *dryRunFlag)
 	if err != nil {
 		fmt.Fprintf(os.Stderr, "Error: %v\n", err)
 		os.Exit(1)
 	}
 
-	warnPackageName(oldPath, *newPathFlag)
+	warnPackageName(oldPath, newPath)
 	fmt.Printf("Finished. %d file(s) with updated imports.\n", changed)
 }
 

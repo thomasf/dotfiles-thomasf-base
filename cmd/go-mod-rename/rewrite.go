@@ -10,6 +10,7 @@ import (
 	"path"
 	"path/filepath"
 	"regexp"
+	"strconv"
 	"strings"
 )
 
@@ -17,7 +18,6 @@ import (
 // package below it, to newPath. Files that fail to parse are reported and
 // skipped. It returns the number of files that changed.
 func rewriteImports(root, oldPath, newPath string, dryRun bool) (int, error) {
-	fset := token.NewFileSet()
 	changed := 0
 
 	err := filepath.WalkDir(root, func(p string, d os.DirEntry, err error) error {
@@ -34,9 +34,9 @@ func rewriteImports(root, oldPath, newPath string, dryRun bool) (int, error) {
 			return nil
 		}
 
-		modified, err := refactorFile(fset, p, oldPath, newPath, dryRun)
+		modified, err := refactorFile(p, oldPath, newPath, dryRun)
 		if err != nil {
-			fmt.Printf("Skipping %s: %v\n", p, err)
+			fmt.Fprintf(os.Stderr, "Skipping %s: %v\n", p, err)
 			return nil
 		}
 		if modified {
@@ -52,12 +52,16 @@ func skipDir(name string) bool {
 	if name == "vendor" || name == "node_modules" {
 		return true
 	}
+	if strings.HasPrefix(name, "_") {
+		return true
+	}
 	return strings.HasPrefix(name, ".") && name != "." && name != ".."
 }
 
 // refactorFile rewrites the imports of a single file, reporting whether it
 // contained anything to change.
-func refactorFile(fset *token.FileSet, path, old, new string, dryRun bool) (bool, error) {
+func refactorFile(path, old, new string, dryRun bool) (bool, error) {
+	fset := token.NewFileSet()
 	file, err := parser.ParseFile(fset, path, nil, parser.ParseComments)
 	if err != nil {
 		return false, err
@@ -65,10 +69,13 @@ func refactorFile(fset *token.FileSet, path, old, new string, dryRun bool) (bool
 
 	modified := false
 	for _, imp := range file.Imports {
-		val := strings.Trim(imp.Path.Value, `"`)
+		val, err := strconv.Unquote(imp.Path.Value)
+		if err != nil {
+			val = strings.Trim(imp.Path.Value, `"`+"`")
+		}
 		if val == old || strings.HasPrefix(val, old+"/") {
 			newVal := new + strings.TrimPrefix(val, old)
-			imp.Path.Value = fmt.Sprintf(`"%s"`, newVal)
+			imp.Path.Value = strconv.Quote(newVal)
 			modified = true
 		}
 	}

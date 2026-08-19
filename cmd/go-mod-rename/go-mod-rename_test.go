@@ -2,7 +2,6 @@ package main
 
 import (
 	goformat "go/format"
-	"go/token"
 	"os"
 	"path/filepath"
 	"strings"
@@ -34,6 +33,16 @@ import "old/pkg"
 
 import "new/pkg"
 `,
+			wantModified: true,
+			wantErr:      false,
+		},
+		{
+			name: "rename backtick quoted import",
+			src: "package foo\n\nimport `old/pkg`\n",
+			oldMod: "old",
+			newMod: "new",
+			dryRun: false,
+			wantSrc: "package foo\n\nimport \"new/pkg\"\n",
 			wantModified: true,
 			wantErr:      false,
 		},
@@ -154,8 +163,7 @@ import "old/pkg"
 			dir := copyFS(t, fstest.MapFS{"test.go": &fstest.MapFile{Data: []byte(tt.src)}})
 			tmpFile := filepath.Join(dir, "test.go")
 
-			fset := token.NewFileSet()
-			modified, err := refactorFile(fset, tmpFile, tt.oldMod, tt.newMod, tt.dryRun)
+			modified, err := refactorFile(tmpFile, tt.oldMod, tt.newMod, tt.dryRun)
 			if (err != nil) != tt.wantErr {
 				t.Errorf("refactorFile() error = %v, wantErr %v", err, tt.wantErr)
 				return
