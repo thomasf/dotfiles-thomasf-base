@@ -217,16 +217,21 @@ var languages = []LangInfo{
 	{Name: "zig", Org: "maxxnino"},
 }
 
-func getParserABIVersion(repoPath, sourceDir string) int {
-	content, err := os.ReadFile(filepath.Join(repoPath, sourceDir, "parser.c"))
-	if err != nil {
+var languageVersionRegex = regexp.MustCompile(`#define\s+(?:TREE_SITTER_)?LANGUAGE_VERSION\s+[\(]?(\d+)[\)]?`)
+
+func (a *App) getParserABIVersionFromRef(repoPath, ref, sourceDir string) int {
+	cmd := exec.Command("git", "-C", repoPath, "show", ref+":"+sourceDir+"/parser.c")
+	var out bytes.Buffer
+	cmd.Stdout = &out
+	if err := cmd.Run(); err != nil {
 		return -1
 	}
-	re := regexp.MustCompile(`#define\s+LANGUAGE_VERSION\s+(\d+)`)
-	match := re.FindStringSubmatch(string(content))
+	match := languageVersionRegex.FindSubmatch(out.Bytes())
 	if len(match) > 1 {
-		ver, _ := strconv.Atoi(match[1])
-		return ver
+		ver, err := strconv.Atoi(string(match[1]))
+		if err == nil {
+			return ver
+		}
 	}
 	return -1
 }
@@ -278,10 +283,33 @@ func (a *App) processLanguage(info LangInfo, wg *sync.WaitGroup, sem chan struct
 	}
 
 	candidates := []string{}
-	if info.Branch != "" {
-		candidates = append(candidates, info.Branch, "origin/"+info.Branch)
+	seen := make(map[string]bool)
+	addCandidate := func(ref string) {
+		ref = strings.TrimSpace(ref)
+		if ref != "" && !seen[ref] {
+			seen[ref] = true
+			candidates = append(candidates, ref)
+		}
 	}
-	candidates = append(candidates, "origin/master", "origin/main", "master", "main")
+
+	if info.Branch != "" {
+		addCandidate("origin/" + info.Branch)
+		addCandidate(info.Branch)
+	}
+
+	// Dynamically detect upstream default branch (e.g. origin/main, origin/master, origin/trunk)
+	if headOut, err := la.runCmdWithOutput("git", "-C", repoPath, "symbolic-ref", "--short", "refs/remotes/origin/HEAD"); err == nil {
+		defaultBranch := strings.TrimSpace(string(headOut))
+		if defaultBranch != "" {
+			addCandidate(defaultBranch)
+			addCandidate(strings.TrimPrefix(defaultBranch, "origin/"))
+		}
+	}
+
+	addCandidate("origin/main")
+	addCandidate("origin/master")
+	addCandidate("main")
+	addCandidate("master")
 
 	tagsOut, _ := la.runCmdWithOutput("git", "-C", repoPath, "tag", "-l", "--sort=-v:refname")
 	tags := strings.Split(string(tagsOut), "\n")
@@ -289,7 +317,7 @@ func (a *App) processLanguage(info LangInfo, wg *sync.WaitGroup, sem chan struct
 	for _, tag := range tags {
 		tag = strings.TrimSpace(tag)
 		if tag != "" {
-			candidates = append(candidates, tag)
+			addCandidate(tag)
 			tagCount++
 		}
 	}
@@ -300,7 +328,7 @@ func (a *App) processLanguage(info LangInfo, wg *sync.WaitGroup, sem chan struct
 		la.vprintf("    No tags found, trying all revisions\n")
 		revsOut, _ := la.runCmdWithOutput("git", "-C", repoPath, "log", "--format=%H")
 		for _, rev := range strings.Fields(string(revsOut)) {
-			candidates = append(candidates, rev)
+			addCandidate(rev)
 		}
 	}
 
@@ -309,17 +337,11 @@ func (a *App) processLanguage(info LangInfo, wg *sync.WaitGroup, sem chan struct
 	matchedABI := -1
 	for _, tag := range candidates {
 		la.vprintf("    Evaluating candidate: %s\n", tag)
-		la.runCmd("git", "-C", repoPath, "reset", "--hard", "HEAD")
-		la.runCmd("git", "-C", repoPath, "clean", "-fd")
-		checkoutArgs := []string{"checkout", "--force", "--quiet", tag, "--"}
-		if la.Verbose {
-			checkoutArgs = []string{"checkout", "--force", tag, "--"}
-		}
-		if err := la.runCmd("git", append([]string{"-C", repoPath}, checkoutArgs...)...); err != nil {
-			la.vprintf("    Failed to checkout %s: %v\n", tag, err)
+		currentParserABI := a.getParserABIVersionFromRef(repoPath, tag, info.GetSourceDir())
+		if currentParserABI < 0 {
+			la.vprintf("    %s -> no valid parser.c\n", tag)
 			continue
 		}
-		currentParserABI := getParserABIVersion(repoPath, info.GetSourceDir())
 		la.vprintf("    %s -> ABI %d (accept %d..%d)\n", tag, currentParserABI, la.MinABI, la.TargetABI)
 		// Tree-sitter ABIs are backward compatible: Emacs loads any grammar
 		// whose parser ABI is within [MinABI, TargetABI]. Candidates are
@@ -337,6 +359,20 @@ func (a *App) processLanguage(info LangInfo, wg *sync.WaitGroup, sem chan struct
 	if !foundMatch {
 		la.printf("  [!] Could not find a parser with ABI in %d..%d. Skipping.\n", la.MinABI, la.TargetABI)
 		a.recordResult(info.Name, false, fmt.Sprintf("no parser with ABI in %d..%d", la.MinABI, la.TargetABI))
+		return
+	}
+
+	// Single checkout of the matched revision
+	la.vprintf("    Checking out matched revision: %s\n", matchedTag)
+	la.runCmd("git", "-C", repoPath, "reset", "--hard", "HEAD")
+	la.runCmd("git", "-C", repoPath, "clean", "-fd")
+	checkoutArgs := []string{"checkout", "--force", "--quiet", matchedTag, "--"}
+	if la.Verbose {
+		checkoutArgs = []string{"checkout", "--force", matchedTag, "--"}
+	}
+	if err := la.runCmd("git", append([]string{"-C", repoPath}, checkoutArgs...)...); err != nil {
+		la.printf("  [!] Failed to checkout %s: %v\n", matchedTag, err)
+		a.recordResult(info.Name, false, fmt.Sprintf("failed to checkout %s: %v", matchedTag, err))
 		return
 	}
 
