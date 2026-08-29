@@ -16,6 +16,12 @@ import (
 	"sync"
 )
 
+type LangResult struct {
+	Name    string
+	Success bool
+	Reason  string
+}
+
 type App struct {
 	TargetABI   int
 	MinABI      int
@@ -28,6 +34,24 @@ type App struct {
 	Stderr      io.Writer
 	MaxNameLen  int
 	mu          sync.Mutex
+	repoLocks   sync.Map
+	resultsMu   sync.Mutex
+	results     []LangResult
+}
+
+func (a *App) getRepoLock(repoName string) *sync.Mutex {
+	val, _ := a.repoLocks.LoadOrStore(repoName, &sync.Mutex{})
+	return val.(*sync.Mutex)
+}
+
+func (a *App) recordResult(name string, success bool, reason string) {
+	a.resultsMu.Lock()
+	defer a.resultsMu.Unlock()
+	a.results = append(a.results, LangResult{
+		Name:    name,
+		Success: success,
+		Reason:  reason,
+	})
 }
 
 type EmacsABI struct {
@@ -137,7 +161,7 @@ var languages = []LangInfo{
 	{Name: "c-sharp"},
 	{Name: "clojure", Org: "sogaiu"},
 	{Name: "cmake", Org: "uyha"},
-	{Name: "cpp", Branch: "v0.22.0"},
+	{Name: "cpp"},
 	{Name: "css"},
 	{Name: "cylc", Org: "elliotfontaine"},
 	{Name: "dart", Org: "ast-grep"},
@@ -218,6 +242,10 @@ func (a *App) processLanguage(info LangInfo, wg *sync.WaitGroup, sem chan struct
 	la.Stdout = &prefixWriter{w: a.Stdout, prefix: prefix, atBOL: true, mu: &a.mu}
 	la.Stderr = &prefixWriter{w: a.Stderr, prefix: prefix, atBOL: true, mu: &a.mu}
 
+	repoLock := a.getRepoLock(info.GetRepoName())
+	repoLock.Lock()
+	defer repoLock.Unlock()
+
 	repoURL := info.GetRepoURL()
 	repoPath := filepath.Join(la.CacheDir, info.GetRepoName())
 
@@ -235,24 +263,25 @@ func (a *App) processLanguage(info LangInfo, wg *sync.WaitGroup, sem chan struct
 		}
 		if err := la.runCmd("git", gitArgs...); err != nil {
 			la.printf("  [!] Error cloning: %v\n", err)
+			a.recordResult(info.Name, false, fmt.Sprintf("error cloning: %v", err))
 			return
 		}
 	} else {
 		la.vprintf("    Cleaning and fetching latest tags in %s\n", repoPath)
 		la.runCmd("git", "-C", repoPath, "reset", "--hard", "HEAD")
 		la.runCmd("git", "-C", repoPath, "clean", "-fd")
-		gitArgs := []string{"fetch", "--quiet", "--tags"}
+		gitArgs := []string{"fetch", "--quiet", "--tags", "origin"}
 		if la.Verbose {
-			gitArgs = []string{"fetch", "--tags"}
+			gitArgs = []string{"fetch", "--tags", "origin"}
 		}
 		la.runCmd("git", append([]string{"-C", repoPath}, gitArgs...)...)
 	}
 
 	candidates := []string{}
 	if info.Branch != "" {
-		candidates = append(candidates, info.Branch)
+		candidates = append(candidates, info.Branch, "origin/"+info.Branch)
 	}
-	candidates = append(candidates, "master", "main")
+	candidates = append(candidates, "origin/master", "origin/main", "master", "main")
 
 	tagsOut, _ := la.runCmdWithOutput("git", "-C", repoPath, "tag", "-l", "--sort=-v:refname")
 	tags := strings.Split(string(tagsOut), "\n")
@@ -307,6 +336,7 @@ func (a *App) processLanguage(info LangInfo, wg *sync.WaitGroup, sem chan struct
 
 	if !foundMatch {
 		la.printf("  [!] Could not find a parser with ABI in %d..%d. Skipping.\n", la.MinABI, la.TargetABI)
+		a.recordResult(info.Name, false, fmt.Sprintf("no parser with ABI in %d..%d", la.MinABI, la.TargetABI))
 		return
 	}
 
@@ -339,26 +369,32 @@ func (a *App) processLanguage(info LangInfo, wg *sync.WaitGroup, sem chan struct
 	parserObj := filepath.Join(la.BuildTmpDir, info.Name+"-parser.o")
 	if err := la.runCmd(cc, "-fPIC", "-O2", "-c", "-I", srcDir, filepath.Join(srcDir, "parser.c"), "-o", parserObj); err != nil {
 		la.printf("    Error compiling parser.c: %v\n", err)
+		a.recordResult(info.Name, false, "error compiling parser.c")
 		return
 	}
+	defer os.Remove(parserObj)
 	objs = append(objs, parserObj)
 
 	if hasScannerC {
 		scannerObj := filepath.Join(la.BuildTmpDir, info.Name+"-scanner.o")
 		if err := la.runCmd(cc, "-fPIC", "-O2", "-c", "-I", srcDir, filepath.Join(srcDir, "scanner.c"), "-o", scannerObj); err != nil {
 			la.printf("    Error compiling scanner.c: %v\n", err)
-		} else {
-			objs = append(objs, scannerObj)
+			a.recordResult(info.Name, false, "error compiling scanner.c")
+			return
 		}
+		defer os.Remove(scannerObj)
+		objs = append(objs, scannerObj)
 	}
 
 	if hasScannerCC {
 		scannerObj := filepath.Join(la.BuildTmpDir, info.Name+"-scanner-cc.o")
 		if err := la.runCmd(cxx, "-fPIC", "-O2", "-c", "-I", srcDir, filepath.Join(srcDir, "scanner.cc"), "-o", scannerObj); err != nil {
 			la.printf("    Error compiling scanner.cc: %v\n", err)
-		} else {
-			objs = append(objs, scannerObj)
+			a.recordResult(info.Name, false, "error compiling scanner.cc")
+			return
 		}
+		defer os.Remove(scannerObj)
+		objs = append(objs, scannerObj)
 	}
 
 	linkCmd := cc
@@ -369,13 +405,12 @@ func (a *App) processLanguage(info LangInfo, wg *sync.WaitGroup, sem chan struct
 	args := append([]string{"-shared", "-fPIC", "-o", outPath}, objs...)
 	if err := la.runCmd(linkCmd, args...); err != nil {
 		la.printf("    Error linking: %v\n", err)
-	} else {
-		la.printf("  [✓] Installed (%s, ABI %d)\n", matchedTag, matchedABI)
+		a.recordResult(info.Name, false, fmt.Sprintf("error linking: %v", err))
+		return
 	}
 
-	for _, obj := range objs {
-		os.Remove(obj)
-	}
+	la.printf("  [✓] Installed (%s, ABI %d)\n", matchedTag, matchedABI)
+	a.recordResult(info.Name, true, fmt.Sprintf("%s, ABI %d", matchedTag, matchedABI))
 }
 
 func main() {
@@ -476,7 +511,25 @@ func main() {
 	}
 
 	wg.Wait()
-	app.printf("All done.\n")
+
+	failedCount := 0
+	for _, r := range app.results {
+		if !r.Success {
+			failedCount++
+		}
+	}
+
+	if failedCount > 0 {
+		app.printf("\nCompleted with %d failure(s) out of %d target(s):\n", failedCount, len(app.results))
+		for _, r := range app.results {
+			if !r.Success {
+				app.printf("  - %*s : %s\n", app.MaxNameLen, r.Name, r.Reason)
+			}
+		}
+		os.Exit(1)
+	}
+
+	app.printf("All done (%d/%d libraries installed successfully).\n", len(app.results), len(app.results))
 }
 
 type prefixWriter struct {
