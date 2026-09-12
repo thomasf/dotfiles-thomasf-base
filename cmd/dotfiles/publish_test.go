@@ -60,7 +60,7 @@ func TestPublishRemoteExists(t *testing.T) {
 	remoteDir := t.TempDir()
 
 	gitRun(t, remoteDir, "init", "--bare")
-	gitRun(t, repoDir, "init")
+	gitRun(t, repoDir, "init", "-b", "master")
 	gitRun(t, repoDir, "config", "user.email", "test@example.com")
 	gitRun(t, repoDir, "config", "user.name", "Test User")
 	gitRun(t, repoDir, "remote", "add", "publish", remoteDir)
@@ -88,6 +88,45 @@ func TestPublishRemoteExists(t *testing.T) {
 
 	out := stdout.String()
 	expectedPush := "[" + filepath.Base(repoDir) + "] git push -q publish master"
+	if !strings.Contains(out, expectedPush) {
+		t.Errorf("Expected push message '%s', got stdout: '%s'", expectedPush, out)
+	}
+}
+
+func TestPublishWithMainBranch(t *testing.T) {
+	t.Parallel()
+	repoDir := t.TempDir()
+	remoteDir := t.TempDir()
+
+	gitRun(t, remoteDir, "init", "--bare")
+	gitRun(t, repoDir, "init", "-b", "main")
+	gitRun(t, repoDir, "config", "user.email", "test@example.com")
+	gitRun(t, repoDir, "config", "user.name", "Test User")
+	gitRun(t, repoDir, "remote", "add", "publish", remoteDir)
+
+	mfs := fstest.MapFS{
+		"testfile":      &fstest.MapFile{Data: []byte("test"), Mode: 0o644},
+		"dotfiles.toml": &fstest.MapFile{Data: []byte("public = true"), Mode: 0o644},
+	}
+	if err := os.CopyFS(repoDir, mfs); err != nil {
+		t.Fatal(err)
+	}
+
+	gitRun(t, repoDir, "add", ".")
+	gitRun(t, repoDir, "commit", "-m", "initial commit")
+
+	stdout := &bytes.Buffer{}
+	stderr := &bytes.Buffer{}
+	d := &Dotfiles{
+		Stdout: stdout,
+		Stderr: stderr,
+		repos:  []string{repoDir},
+	}
+
+	d.Publish()
+
+	out := stdout.String()
+	expectedPush := "[" + filepath.Base(repoDir) + "] git push -q publish main"
 	if !strings.Contains(out, expectedPush) {
 		t.Errorf("Expected push message '%s', got stdout: '%s'", expectedPush, out)
 	}
@@ -132,11 +171,12 @@ func TestPublishNotPublic(t *testing.T) {
 }
 
 func TestPublishWithBackupBranches(t *testing.T) {
+	t.Parallel()
 	repoDir := t.TempDir()
 	remoteDir := t.TempDir()
 
 	gitRun(t, remoteDir, "init", "--bare")
-	gitRun(t, repoDir, "init")
+	gitRun(t, repoDir, "init", "-b", "master")
 	gitRun(t, repoDir, "config", "user.email", "test@example.com")
 	gitRun(t, repoDir, "config", "user.name", "Test User")
 	gitRun(t, repoDir, "remote", "add", "publish", remoteDir)
