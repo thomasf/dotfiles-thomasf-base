@@ -166,4 +166,3 @@ func TestLoadEntriesDeduplication(t *testing.T) {
 		t.Errorf("unexpected entry 1: %+v", entries[1])
 	}
 }
-

@@ -17,7 +17,8 @@ import (
 	"time"
 )
 
-const CleanupInterval = 100 // remove dead entries every nth call to add.
+const CleanupInterval = 100      // remove dead entries every nth call to add.
+const EnableBasenameBoost = true // boost score if query matches directory basename
 
 // Flags holds the CLI configuration
 type Flags struct {
@@ -295,7 +296,17 @@ func runSearch(s *Store, queryParts []string, listMode bool) {
 
 	for _, entry := range entries {
 		if matchParts(entry.Path, lowerParts) {
-			entry.Score = frecent(entry.Rank, entry.Time)
+			score := frecent(entry.Rank, entry.Time)
+
+			if EnableBasenameBoost && len(lowerParts) > 0 {
+				base := strings.ToLower(filepath.Base(entry.Path))
+				lastPart := lowerParts[len(lowerParts)-1]
+				if strings.Contains(base, lastPart) {
+					score *= 2.0 // Boost factor
+				}
+			}
+
+			entry.Score = score
 			matches = append(matches, entry)
 		}
 	}
