@@ -11,7 +11,6 @@ import (
 	"os"
 	"os/exec"
 	"path/filepath"
-	"regexp"
 	"slices"
 	"strconv"
 	"strings"
@@ -283,8 +282,10 @@ func checkAndTriggerCleanup(s *Store) {
 
 func runSearch(s *Store, queryParts []string, listMode bool) {
 	var matches []Entry
-	pattern := strings.Join(queryParts, ".*")
-	reg := regexp.MustCompile("(?i)" + pattern)
+	var lowerParts []string
+	for _, p := range queryParts {
+		lowerParts = append(lowerParts, strings.ToLower(p))
+	}
 
 	entries, err := s.LoadEntries()
 	if err != nil {
@@ -293,7 +294,7 @@ func runSearch(s *Store, queryParts []string, listMode bool) {
 	}
 
 	for _, entry := range entries {
-		if reg.MatchString(entry.Path) {
+		if matchParts(entry.Path, lowerParts) {
 			entry.Score = frecent(entry.Rank, entry.Time)
 			matches = append(matches, entry)
 		}
@@ -310,4 +311,16 @@ func runSearch(s *Store, queryParts []string, listMode bool) {
 	} else if len(matches) > 0 {
 		fmt.Print(matches[len(matches)-1].Path)
 	}
+}
+
+func matchParts(s string, lowerParts []string) bool {
+	s = strings.ToLower(s)
+	for _, part := range lowerParts {
+		idx := strings.Index(s, part)
+		if idx == -1 {
+			return false
+		}
+		s = s[idx+len(part):]
+	}
+	return true
 }
