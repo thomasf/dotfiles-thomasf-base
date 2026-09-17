@@ -167,7 +167,7 @@ func cleanupEntries(s *Store) {
 		return
 	}
 
-	var nextEntries []Entry
+	nextEntries := make([]Entry, 0, len(prevEntries))
 	for _, entry := range prevEntries {
 		info, err := os.Stat(entry.Path)
 		if err == nil && info.IsDir() {
@@ -196,7 +196,7 @@ func addEntry(s *Store, newPath string) {
 
 	var found bool
 	var totalRank float64
-	var nextEntries []Entry
+	nextEntries := make([]Entry, 0, len(prevEntries))
 
 	for _, entry := range prevEntries {
 		if entry.Path == newPath {
