@@ -209,11 +209,15 @@ func addEntry(s *Store, newPath string) {
 		nextEntries = append(nextEntries, entry)
 	}
 
-	// TODO: this probalby should change
 	if totalRank > 9000 {
-		for i := range nextEntries {
-			nextEntries[i].Rank *= 0.99
+		var pruned []Entry
+		for _, e := range nextEntries {
+			e.Rank *= 0.9
+			if e.Rank >= 0.1 {
+				pruned = append(pruned, e)
+			}
 		}
+		nextEntries = pruned
 	}
 
 	if !found {
