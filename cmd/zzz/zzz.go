@@ -119,8 +119,18 @@ func (s *Store) SaveEntries(entries []Entry) error {
 }
 
 func frecent(rank float64, lastTime int64) float64 {
-	dx := time.Now().Unix() - lastTime
-	return 10000 * rank * (3.75 / (0.0001*float64(dx) + 1.25))
+	dx := time.Since(time.Unix(lastTime, 0))
+
+	multiplier := 0.25
+	if dx < time.Hour {
+		multiplier = 4.0
+	} else if dx < 24*time.Hour {
+		multiplier = 2.0
+	} else if dx < 7*24*time.Hour {
+		multiplier = 0.5
+	}
+
+	return 10000 * rank * multiplier
 }
 
 func main() {
