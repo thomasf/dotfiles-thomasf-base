@@ -166,3 +166,86 @@ func TestLoadEntriesDeduplication(t *testing.T) {
 		t.Errorf("unexpected entry 1: %+v", entries[1])
 	}
 }
+
+func TestMatchParts(t *testing.T) {
+	tests := []struct {
+		s          string
+		lowerParts []string
+		expected   bool
+	}{
+		{"dummy-project-go", []string{"dummy"}, true},
+		{"dummy-project-go", []string{"project", "go"}, true},
+		{"dummy-project-go", []string{"dpg"}, true},
+		{"dummy-project-go", []string{"d", "p", "g"}, true},
+		{"src/dummy-project-go", []string{"dpg"}, true},
+		{"src/dummy-project-go", []string{"src", "dpg"}, true},
+		{"some-dir/my_project.go", []string{"mpg"}, true},
+		{"some-dir/my_project.go", []string{"mpgo"}, false},
+		{"some-dir/my_project.go", []string{"dir", "mp"}, true},
+		{"short", []string{"s"}, true},
+		{"short", []string{"x"}, false},
+	}
+
+	for _, tt := range tests {
+		result := matchParts(tt.s, tt.lowerParts)
+		if result != tt.expected {
+			t.Errorf("matchParts(%q, %v) = %v, expected %v", tt.s, tt.lowerParts, result, tt.expected)
+		}
+	}
+}
+
+func TestMatchAcronym(t *testing.T) {
+	tests := []struct {
+		s        string
+		part     string
+		expected int
+	}{
+		{"dummy-project-go", "dpg", 15},
+		{"dummy-project-go", "dp", 7},
+		{"dummy-project-go", "x", -1},
+		{"a/b/c", "abc", 5},
+		{"a_b_c", "abc", 5},
+		{"a.b.c", "abc", 5},
+		{"ab.bc.cd", "abc", 7},
+		{"my-dir", "md", 4},
+	}
+
+	for _, tt := range tests {
+		result := matchAcronym(tt.s, tt.part)
+		if result != tt.expected {
+			t.Errorf("matchAcronym(%q, %q) = %d, expected %d", tt.s, tt.part, result, tt.expected)
+		}
+	}
+}
+
+func TestRunSearchAcronymRanking(t *testing.T) {
+	tmpDir := t.TempDir()
+	dataFile := filepath.Join(tmpDir, "zzz.db")
+	store := &Store{Path: dataFile, Stderr: os.Stderr}
+
+	now := time.Now().Unix()
+	entries := []Entry{
+		{Path: "/src/dummy-project-go", Rank: 30, Time: now}, // huge rank
+		{Path: "/src/dummy-project", Rank: 10, Time: now},    // smaller rank
+	}
+	if err := store.SaveEntries(entries); err != nil {
+		t.Fatal(err)
+	}
+
+	oldStdout := os.Stdout
+	r, w, _ := os.Pipe()
+	os.Stdout = w
+
+	runSearch(store, []string{"dp"}, false)
+
+	w.Close()
+	os.Stdout = oldStdout
+
+	var buf bytes.Buffer
+	io.Copy(&buf, r)
+	output := buf.String()
+
+	if output != "/src/dummy-project" {
+		t.Errorf("expected /src/dummy-project, got %q", output)
+	}
+}

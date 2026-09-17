@@ -315,8 +315,11 @@ func runSearch(s *Store, queryParts []string, listMode bool) {
 			if EnableBasenameBoost && len(lowerParts) > 0 {
 				base := strings.ToLower(filepath.Base(entry.Path))
 				lastPart := lowerParts[len(lowerParts)-1]
-				if strings.Contains(base, lastPart) {
-					score *= 2.0 // Boost factor
+				acronym := getAcronym(base)
+				if len(acronym) >= 2 && acronym == lastPart {
+					score *= 10.0
+				} else if strings.Contains(base, lastPart) || matchAcronym(base, lastPart) != -1 {
+					score *= 2.0
 				}
 			}
 
@@ -345,10 +348,44 @@ func matchParts(s string, lowerParts []string) bool {
 	s = strings.ToLower(s)
 	for _, part := range lowerParts {
 		idx := strings.Index(s, part)
-		if idx == -1 {
-			return false
+		if idx != -1 {
+			s = s[idx+len(part):]
+			continue
 		}
-		s = s[idx+len(part):]
+		idx = matchAcronym(s, part)
+		if idx != -1 {
+			s = s[idx:]
+			continue
+		}
+		return false
 	}
 	return true
+}
+
+func matchAcronym(s string, part string) int {
+	if len(part) < 2 {
+		return -1
+	}
+	partIdx := 0
+	for i := 0; i < len(s); i++ {
+		isBoundary := i == 0 || s[i-1] == '/' || s[i-1] == '-' || s[i-1] == '_' || s[i-1] == '.'
+		if isBoundary && s[i] == part[partIdx] {
+			partIdx++
+			if partIdx == len(part) {
+				return i + 1
+			}
+		}
+	}
+	return -1
+}
+
+func getAcronym(s string) string {
+	var sb strings.Builder
+	for i := 0; i < len(s); i++ {
+		isBoundary := i == 0 || s[i-1] == '/' || s[i-1] == '-' || s[i-1] == '_' || s[i-1] == '.'
+		if isBoundary {
+			sb.WriteByte(s[i])
+		}
+	}
+	return sb.String()
 }
