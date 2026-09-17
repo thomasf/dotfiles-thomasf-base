@@ -75,6 +75,7 @@ func (s *Store) LoadEntries() ([]Entry, error) {
 	}
 
 	var results []Entry
+	seen := make(map[string]int, 1000)
 	scanner := bufio.NewScanner(bytes.NewReader(data))
 	for scanner.Scan() {
 		line := scanner.Text()
@@ -85,12 +86,24 @@ func (s *Store) LoadEntries() ([]Entry, error) {
 		if len(parts) < 3 {
 			continue
 		}
+		p := filepath.Clean(parts[0])
 		rank, _ := strconv.ParseFloat(parts[1], 64)
 		t, _ := strconv.ParseInt(parts[2], 10, 64)
-		results = append(results, Entry{Path: parts[0], Rank: rank, Time: t})
+
+		if idx, exists := seen[p]; exists {
+			if rank > results[idx].Rank {
+				results[idx].Rank = rank
+			}
+			if t > results[idx].Time {
+				results[idx].Time = t
+			}
+			continue
+		}
+
+		seen[p] = len(results)
+		results = append(results, Entry{Path: p, Rank: rank, Time: t})
 	}
 	return results, nil
-
 }
 
 func (s *Store) SaveEntries(entries []Entry) error {
@@ -98,7 +111,11 @@ func (s *Store) SaveEntries(entries []Entry) error {
 	for _, e := range entries {
 		sb.WriteString(fmt.Sprintf("%s|%v|%d\n", e.Path, e.Rank, e.Time))
 	}
-	return os.WriteFile(s.Path, []byte(sb.String()), 0644)
+	tmpFile := fmt.Sprintf("%s.tmp.%d", s.Path, os.Getpid())
+	if err := os.WriteFile(tmpFile, []byte(sb.String()), 0644); err != nil {
+		return os.WriteFile(s.Path, []byte(sb.String()), 0644)
+	}
+	return os.Rename(tmpFile, s.Path)
 }
 
 func frecent(rank float64, lastTime int64) float64 {
@@ -168,6 +185,7 @@ func cleanupEntries(s *Store) {
 }
 
 func addEntry(s *Store, newPath string) {
+	newPath = filepath.Clean(newPath)
 	if newPath == os.Getenv("HOME") || newPath == "/" {
 		return
 	}
@@ -212,6 +230,7 @@ func addEntry(s *Store, newPath string) {
 }
 
 func removeEntry(s *Store, removePath string) {
+	removePath = filepath.Clean(removePath)
 	if removePath == os.Getenv("HOME") || removePath == "/" {
 		return
 	}

@@ -135,3 +135,35 @@ func TestRunSearch(t *testing.T) {
 		t.Errorf("expected /foo/bar/baz, got %q", output)
 	}
 }
+
+func TestLoadEntriesDeduplication(t *testing.T) {
+	tmpDir := t.TempDir()
+	dataFile := filepath.Join(tmpDir, "zzz.db")
+	store := &Store{Path: dataFile, Stderr: os.Stderr}
+
+	content := `/path/one|10|1000
+/path/two|5|2000
+/path/one|15|3000
+/path/one/|8|4000
+`
+	if err := os.WriteFile(dataFile, []byte(content), 0644); err != nil {
+		t.Fatal(err)
+	}
+
+	entries, err := store.LoadEntries()
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	if len(entries) != 2 {
+		t.Fatalf("expected 2 deduplicated entries, got %d", len(entries))
+	}
+
+	if entries[0].Path != "/path/one" || entries[0].Rank != 15 || entries[0].Time != 4000 {
+		t.Errorf("unexpected entry 0: %+v", entries[0])
+	}
+	if entries[1].Path != "/path/two" || entries[1].Rank != 5 || entries[1].Time != 2000 {
+		t.Errorf("unexpected entry 1: %+v", entries[1])
+	}
+}
+
