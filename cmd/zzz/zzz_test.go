@@ -6,6 +6,7 @@ import (
 	"os"
 	"path/filepath"
 	"testing"
+	"strings"
 	"time"
 )
 
@@ -122,7 +123,7 @@ func TestRunSearch(t *testing.T) {
 	r, w, _ := os.Pipe()
 	os.Stdout = w
 
-	runSearch(store, []string{"foo", "baz"}, false)
+	runSearch(store, []string{"foo", "baz"}, false, false)
 
 	w.Close()
 	os.Stdout = oldStdout
@@ -236,7 +237,7 @@ func TestRunSearchAcronymRanking(t *testing.T) {
 	r, w, _ := os.Pipe()
 	os.Stdout = w
 
-	runSearch(store, []string{"dp"}, false)
+	runSearch(store, []string{"dp"}, false, false)
 
 	w.Close()
 	os.Stdout = oldStdout
@@ -247,5 +248,40 @@ func TestRunSearchAcronymRanking(t *testing.T) {
 
 	if output != "/src/dummy-project" {
 		t.Errorf("expected /src/dummy-project, got %q", output)
+	}
+}
+
+func TestRunSearchListPaths(t *testing.T) {
+	tmpDir := t.TempDir()
+	dataFile := filepath.Join(tmpDir, "zzz.db")
+	store := &Store{Path: dataFile, Stderr: os.Stderr}
+
+	now := time.Now().Unix()
+	entries := []Entry{
+		{Path: "/foo/bar", Rank: 10, Time: now},
+		{Path: "/apple/orange", Rank: 5, Time: now},
+	}
+	if err := store.SaveEntries(entries); err != nil {
+		t.Fatal(err)
+	}
+
+	oldStdout := os.Stdout
+	r, w, _ := os.Pipe()
+	os.Stdout = w
+
+	runSearch(store, []string{}, false, true)
+
+	w.Close()
+	os.Stdout = oldStdout
+
+	var buf bytes.Buffer
+	io.Copy(&buf, r)
+	output := buf.String()
+
+	if !strings.Contains(output, "/foo/bar") || !strings.Contains(output, "/apple/orange") {
+		t.Errorf("expected paths in output, got %q", output)
+	}
+	if strings.Contains(output, "10.00") || strings.Contains(output, "5.00") {
+		t.Errorf("expected no scores in output, got %q", output)
 	}
 }

@@ -550,7 +550,7 @@ alias ur="cdr"
 
 z() {
   if [[ -z "$*" ]]; then
-    cd "$(zzz -l 2>&1 | sed -n 's/^[ 0-9.,]*//p' | fzf)"
+    cd "$(zzz -lp | fzf --tac)"
   else
     case $1 in
       s)

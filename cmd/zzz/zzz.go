@@ -24,15 +24,17 @@ const EnableBasenameBoost = true // boost score if query matches directory basen
 type Flags struct {
 	Add     string
 	Remove  string
-	List    bool
-	Cleanup bool
-	Debug   bool
+	List      bool
+	ListPaths bool
+	Cleanup   bool
+	Debug     bool
 }
 
 func (f *Flags) Register(fs *flag.FlagSet) {
 	fs.StringVar(&f.Add, "add", "", "Add a new path to the database")
 	fs.StringVar(&f.Remove, "remove", "", "remove a path from the database")
 	fs.BoolVar(&f.List, "l", false, "List matches with their scores")
+	fs.BoolVar(&f.ListPaths, "lp", false, "List matching paths only (without scores)")
 	fs.BoolVar(&f.Cleanup, "cleanup", false, "Remove entries that are no longer valid directories")
 	fs.BoolVar(&f.Debug, "debug", false, "print debug info")
 }
@@ -165,8 +167,8 @@ func main() {
 	}
 
 	queryArgs := flag.Args()
-	if len(queryArgs) > 0 || f.List {
-		runSearch(store, queryArgs, f.List)
+	if len(queryArgs) > 0 || f.List || f.ListPaths {
+		runSearch(store, queryArgs, f.List, f.ListPaths)
 	}
 }
 
@@ -295,7 +297,7 @@ func checkAndTriggerCleanup(s *Store) {
 	}
 }
 
-func runSearch(s *Store, queryParts []string, listMode bool) {
+func runSearch(s *Store, queryParts []string, listMode bool, listPathsMode bool) {
 	var matches []Entry
 	var lowerParts []string
 	for _, p := range queryParts {
@@ -335,7 +337,11 @@ func runSearch(s *Store, queryParts []string, listMode bool) {
 		return cmp.Compare(a.Score, b.Score)
 	})
 
-	if listMode {
+	if listPathsMode {
+		for _, m := range matches {
+			fmt.Printf("%s\n", m.Path)
+		}
+	} else if listMode {
 		for _, m := range matches {
 			fmt.Printf("%-10.2f %s\n", m.Score, m.Path)
 		}
