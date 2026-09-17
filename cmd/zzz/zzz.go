@@ -320,6 +320,9 @@ func runSearch(s *Store, queryParts []string, listMode bool) {
 				}
 			}
 
+			// Slight preference for shorter matches (acts as a tie-breaker)
+			score -= float64(len(entry.Path)) * 1e-5
+
 			entry.Score = score
 			matches = append(matches, entry)
 		}
