@@ -334,7 +334,7 @@ func runSearch(s *Store, queryParts []string, listMode bool) {
 
 	if listMode {
 		for _, m := range matches {
-			fmt.Printf("%-10.0f %s\n", m.Score, m.Path)
+			fmt.Printf("%-10.2f %s\n", m.Score, m.Path)
 		}
 	} else if len(matches) > 0 {
 		fmt.Print(matches[len(matches)-1].Path)
