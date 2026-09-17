@@ -130,7 +130,7 @@ func frecent(rank float64, lastTime int64) float64 {
 		multiplier = 0.5
 	}
 
-	return 10000 * rank * multiplier
+	return rank * multiplier
 }
 
 func main() {
