@@ -336,17 +336,15 @@ fi
 log "activate prompt"
 
 if [ ! -z "${BASH}" ]; then
-  [ -f "${__BASH}/prompt" ] \
-    && log "prompt" \
-    && . "${__BASH}/prompt"
-
-
   case $TERM in
     dumb)
-    # do nothing
-    ;;
+      # do nothing
+      ;;
     *)
-      __prompt_activate
+      if hash shell-prompt 2>/dev/null; then
+        log "prompt"
+        eval "$(shell-prompt init bash)"
+      fi
       ;;
   esac
 fi
