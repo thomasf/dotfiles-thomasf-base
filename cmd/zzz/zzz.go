@@ -22,8 +22,8 @@ const EnableBasenameBoost = true // boost score if query matches directory basen
 
 // Flags holds the CLI configuration
 type Flags struct {
-	Add     string
-	Remove  string
+	Add       string
+	Remove    string
 	List      bool
 	ListPaths bool
 	Cleanup   bool
@@ -319,7 +319,7 @@ func runSearch(s *Store, queryParts []string, listMode bool, listPathsMode bool)
 				lastPart := lowerParts[len(lowerParts)-1]
 				acronym := getAcronym(base)
 				if len(acronym) >= 2 && acronym == lastPart {
-					score *= 10.0
+					score *= (10 + float64(len(acronym)))
 				} else if strings.Contains(base, lastPart) || matchAcronym(base, lastPart) != -1 {
 					score *= 2.0
 				}
