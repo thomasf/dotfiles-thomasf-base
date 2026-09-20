@@ -247,10 +247,7 @@ func BuildPrompt(cfg Config, vcs VCSProvider) string {
 	// pwdw = w - PADDING - ${#LAST} - ${#VCS} - ${#VENV} - ${#RVM}
 	padding := 5
 	vcsLen := VisualLen(vcsStr)
-	pwdw := w - padding - utf8.RuneCountInString(last) - vcsLen - utf8.RuneCountInString(venv) - utf8.RuneCountInString(cfg.RVM)
-	if pwdw < 10 {
-		pwdw = 10
-	}
+	pwdw := max(w-padding-utf8.RuneCountInString(last)-vcsLen-utf8.RuneCountInString(venv)-utf8.RuneCountInString(cfg.RVM), 10)
 	pwd := DirChomp(cfg.Dir, pwdw, cfg.HomeDir)
 
 	// Host color based on HOST_TAGS

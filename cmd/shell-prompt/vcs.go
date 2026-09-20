@@ -80,8 +80,8 @@ func getGitStatus(dir string, timeout time.Duration) string {
 	}
 	head := strings.TrimSpace(string(headBytes))
 	branch := ""
-	if strings.HasPrefix(head, "ref: refs/heads/") {
-		branch = strings.TrimPrefix(head, "ref: refs/heads/")
+	if after, ok := strings.CutPrefix(head, "ref: refs/heads/"); ok {
+		branch = after
 	} else if len(head) >= 7 {
 		branch = head[:7]
 	}
@@ -105,10 +105,10 @@ func formatGitStatus(output string) string {
 	header = strings.TrimPrefix(header, "## ")
 
 	var branch string
-	if strings.HasPrefix(header, "No commits yet on ") {
-		branch = strings.TrimPrefix(header, "No commits yet on ")
-	} else if strings.HasPrefix(header, "Initial commit on ") {
-		branch = strings.TrimPrefix(header, "Initial commit on ")
+	if after, ok := strings.CutPrefix(header, "No commits yet on "); ok {
+		branch = after
+	} else if after, ok := strings.CutPrefix(header, "Initial commit on "); ok {
+		branch = after
 	} else if strings.HasPrefix(header, "HEAD (no branch)") {
 		branch = "HEAD"
 	} else {
@@ -179,8 +179,8 @@ func findGitDir(startDir string) string {
 			content, err := os.ReadFile(gitPath)
 			if err == nil {
 				text := strings.TrimSpace(string(content))
-				if strings.HasPrefix(text, "gitdir: ") {
-					target := strings.TrimPrefix(text, "gitdir: ")
+				if after, ok := strings.CutPrefix(text, "gitdir: "); ok {
+					target := after
 					if !filepath.IsAbs(target) {
 						target = filepath.Join(dir, target)
 					}

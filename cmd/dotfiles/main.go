@@ -245,8 +245,8 @@ func (d *Dotfiles) getMainBranch(path string) string {
 	cmd := exec.Command("git", "branch", "--list", "main", "master")
 	cmd.Dir = path
 	output, _ := cmd.Output()
-	lines := strings.Split(strings.TrimSpace(string(output)), "\n")
-	for _, line := range lines {
+	lines := strings.SplitSeq(strings.TrimSpace(string(output)), "\n")
+	for line := range lines {
 		line = strings.TrimSpace(line)
 		line = strings.TrimPrefix(line, "* ")
 		if line == "main" || line == "master" {
@@ -288,7 +288,7 @@ func (d *Dotfiles) Publish() {
 			}
 
 			hasPublish := false
-			for _, remote := range strings.Split(string(output), "\n") {
+			for remote := range strings.SplitSeq(string(output), "\n") {
 				if strings.TrimSpace(remote) == "publish" {
 					hasPublish = true
 					break

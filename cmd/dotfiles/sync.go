@@ -31,7 +31,7 @@ func (r *Repository) Sync() ([]Action, error) {
 					continue
 				}
 
-				root := strings.Split(rel, string(os.PathSeparator))[0]
+				root, _, _ := strings.Cut(rel, string(os.PathSeparator))
 				actualDst := filepath.Join(mount.Dst, filepath.Base(match))
 				if rel == root || actualDst == r.dotName(root) || strings.HasPrefix(actualDst, r.dotName(root)+string(os.PathSeparator)) {
 					processed[root] = true
@@ -65,7 +65,7 @@ func (r *Repository) Sync() ([]Action, error) {
 			}
 		} else {
 			srcRel := filepath.Clean(mount.Src)
-			root := strings.Split(srcRel, string(os.PathSeparator))[0]
+			root, _, _ := strings.Cut(srcRel, string(os.PathSeparator))
 
 			if srcRel == root || mount.Dst == r.dotName(root) || strings.HasPrefix(mount.Dst, r.dotName(root)+string(os.PathSeparator)) {
 				processed[root] = true

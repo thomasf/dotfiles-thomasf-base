@@ -327,7 +327,7 @@ func (a *App) processLanguage(info LangInfo, wg *sync.WaitGroup, sem chan struct
 	if tagCount == 0 {
 		la.vprintf("    No tags found, trying all revisions\n")
 		revsOut, _ := la.runCmdWithOutput("git", "-C", repoPath, "log", "--format=%H")
-		for _, rev := range strings.Fields(string(revsOut)) {
+		for rev := range strings.FieldsSeq(string(revsOut)) {
 			addCandidate(rev)
 		}
 	}
