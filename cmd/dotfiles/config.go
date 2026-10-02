@@ -177,6 +177,7 @@ var alwaysIgnoredFiles = map[string]bool{
 	".DS_Store":      true,
 	"README.md":      true,
 	".claude":        true,
+	".agents":        true,
 }
 
 func (r *Repository) IsIgnored(path string) bool {
