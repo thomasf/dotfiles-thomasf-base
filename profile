@@ -45,7 +45,6 @@ ppath ~/.pyenv/bin
 ppath ~/sdk/flutter/bin
 
 # User home path prepends
-ppath ~/.opt/depot_tools
 ppath ~/.cabal/bin
 ppath  ~/.ghcup/bin
 
@@ -68,19 +67,17 @@ ppath ~/.dotnet/tools
 # osx User home path prepends
 ppath ~/Library/Haskell/bin
 
-# ~/.opt User home path prepends
-ppath ~/.opt/go/bin
 ppath ~/sdk/go/bin
 ppath ~/sdk/zig
 ppath ~/sdk/odin
 
-ppath ~/.opt/ec2-api-tools/bin \
-    && EC2_HOME=~/.opt/ec2-api-tools \
+ppath ~/sdk/ec2-api-tools/bin \
+    && EC2_HOME=~/.sdk/ec2-api-tools \
     && export EC2_HOME
-ppath ~/.opt/groovy/bin
-ppath ~/.opt/gradle/bin
-ppath ~/.opt/apache-maven/bin
-ppath ~/.opt/arm-cs-tools/bin
+ppath ~/sdk/groovy/bin
+ppath ~/sdk/gradle/bin
+ppath ~/sdk/apache-maven/bin
+ppath ~/sdk/arm-cs-tools/bin
 ppath ~/src/github.com/pfalcon/esp-open-sdk/xtensa-lx106-elf/bin/
 
 # ppath ~/Android/Sdk/platform-tools
@@ -95,8 +92,6 @@ ppath ~/src/github.com/pfalcon/esp-open-sdk/xtensa-lx106-elf/bin/
   export ESP_ROOT=${HOME}/src/github.com/pfalcon/esp-open-sdk
 
 # Default go env
-[ -d ~/.opt/go/bin ] &&
-  export GOROOT=~/.opt/go
 [ -d ~/sdk/go/bin ] &&
   export GOROOT=~/sdk/go
 
@@ -237,15 +232,6 @@ MPD_HOST=localhost && export MPD_HOST
     && DYNAMIC_COLORS_ROOT="${HOME}/.config-base/dynamic-colors" \
     && export DYNAMIC_COLORS_ROOT
 
-
-# # Set android sdk home
-# [ -d "${HOME}/.opt/android-sdks" ] \
-#   && export ANDROID_SDK="${HOME}/.opt/android-sdks" \
-#   && export ANDROID_HOME="${ANDROID_SDK}"
-
-# # Set android ndk home
-# [ -d "${HOME}/.opt/android-ndk" ] \
-#   && export ANDROID_NDK="${HOME}/.opt/android-ndk"
 
 # ------------------------------------------------------------------------------
 # PRIVATE AND LOCAL
