@@ -62,14 +62,24 @@ condition = "os == 'plan9'"
 [repositories.remote.publish]
 kind = "publish"
 url = '%[2]s/publish/{name}.git'
+pushurl = '%[2]s/publish-push/{name}.git'
 `, strings.Join(quoted, ", "), root)
 }
 
+// assertRemotes checks the remotes of the repository at dir. Each remote is
+// written as its URL, followed by " push=" and its push URL if it has one.
 func assertRemotes(t *testing.T, dir string, want map[string]string) {
 	t.Helper()
-	got, err := gitRemotes(dir)
+	remotes, err := gitRemotes(dir)
 	if err != nil {
 		t.Fatal(err)
+	}
+	got := make(map[string]string)
+	for name, r := range remotes {
+		got[name] = r.url
+		if r.pushURL != "" {
+			got[name] += " push=" + r.pushURL
+		}
 	}
 	if !maps.Equal(got, want) {
 		t.Errorf("remotes of %s:\ngot  %v\nwant %v", filepath.Base(dir), got, want)
@@ -137,7 +147,18 @@ func TestMergeRepositories(t *testing.T) {
 		},
 		"template": {
 			repos: []*Repository{repo("/a", false, Repositories{Remote: map[string]Remote{"x": {Kind: RemoteKindBackup, URL: "/srv/repo.git"}}})},
-			want:  "does not contain {name}",
+			want:  `url "/srv/repo.git" does not contain {name}`,
+		},
+		"push template": {
+			repos: []*Repository{repo("/a", false, Repositories{Remote: map[string]Remote{"x": {Kind: RemoteKindPublish, URL: "/{name}", PushURL: "/srv/repo.git"}}})},
+			want:  `pushurl "/srv/repo.git" does not contain {name}`,
+		},
+		"pushurl conflict": {
+			repos: []*Repository{
+				repo("/a", false, Repositories{Remote: map[string]Remote{"publish": {Kind: RemoteKindPublish, URL: "/{name}", PushURL: "/p/{name}"}}}),
+				repo("/b", false, Repositories{Remote: map[string]Remote{"publish": {Kind: RemoteKindPublish, URL: "/{name}"}}}),
+			},
+			want: `remote "publish" is defined differently`,
 		},
 		"name": {
 			repos: []*Repository{repo("/a", false, Repositories{Names: []string{"../x"}})},
@@ -166,6 +187,7 @@ func setupFixRepos(t *testing.T, withPublish bool) (root string, d *Dotfiles, st
 	})
 	newGitRepo(t, beta, nil)
 	gitRun(t, beta, "remote", "add", "origin", "/wrong/beta.git")
+	gitRun(t, beta, "remote", "set-url", "--push", "origin", "/stray/beta.git")
 	gitRun(t, beta, "remote", "add", "other", "/other/beta.git")
 	if withPublish {
 		gitRun(t, beta, "remote", "add", "publish", "/leak/beta.git")
@@ -196,7 +218,7 @@ func TestReposFix(t *testing.T) {
 	assertRemotes(t, filepath.Join(root, "repos", "alpha"), map[string]string{
 		"origin":      root + "/origin/alpha.git",
 		"backup.disk": root + "/backup/alpha.git",
-		"publish":     root + "/publish/alpha.git",
+		"publish":     root + "/publish/alpha.git push=" + root + "/publish-push/alpha.git",
 	})
 	// beta is not public: no publish remote, and the extra remote is kept.
 	assertRemotes(t, filepath.Join(root, "repos", "beta"), map[string]string{
@@ -230,7 +252,9 @@ func TestReposFixDryRun(t *testing.T) {
 	for _, want := range []string{
 		"plan: [alpha] git init -q --bare " + root + "/backup/alpha.git",
 		"plan: [alpha] git remote add origin " + root + "/origin/alpha.git",
+		"plan: [alpha] git remote set-url --push publish " + root + "/publish-push/alpha.git",
 		"plan: [beta] git remote set-url origin " + root + "/origin/beta.git",
+		"plan: [beta] git config --unset-all remote.origin.pushurl",
 	} {
 		if !strings.Contains(stdout.String(), want) {
 			t.Errorf("stdout missing %q:\n%s", want, stdout)
@@ -308,7 +332,7 @@ func TestReposClone(t *testing.T) {
 		ReposPath: reposPath,
 		repos:     []string{filepath.Join(reposPath, "alpha")},
 	}
-	d.ReposClone()
+	d.ReposClone(nil)
 	if len(d.runErrors) > 0 {
 		t.Fatalf("errors: %v\nstderr: %s", d.runErrors, d.Stderr)
 	}
@@ -320,12 +344,102 @@ func TestReposClone(t *testing.T) {
 	assertRemotes(t, beta, map[string]string{
 		"origin":      root + "/origin/beta.git",
 		"backup.disk": root + "/backup/beta.git",
-		"publish":     root + "/publish/beta.git",
+		"publish":     root + "/publish/beta.git push=" + root + "/publish-push/beta.git",
 	})
-	// alpha was already cloned and is left alone.
+	// alpha was already cloned; its remotes are fixed too.
 	assertRemotes(t, filepath.Join(reposPath, "alpha"), map[string]string{
-		"origin": root + "/origin/alpha.git",
+		"origin":      root + "/origin/alpha.git",
+		"backup.disk": root + "/backup/alpha.git",
 	})
+}
+
+func TestReposCloneNamed(t *testing.T) {
+	t.Parallel()
+	root := t.TempDir()
+	reposPath := filepath.Join(root, "repos")
+
+	for name, files := range map[string]fstest.MapFS{
+		"alpha": {"dotfiles.toml": tomlFile(reposConfig(root, "alpha", "beta", "gamma"))},
+		"beta":  nil,
+		"gamma": nil,
+	} {
+		src := filepath.Join(root, "src", name)
+		newGitRepo(t, src, files)
+		gitRun(t, root, "clone", "-q", "--bare", src, filepath.Join(root, "origin", name+".git"))
+	}
+	gitRun(t, root, "clone", "-q", filepath.Join(root, "origin", "alpha.git"), filepath.Join(reposPath, "alpha"))
+
+	d := &Dotfiles{
+		Stdout:    &bytes.Buffer{},
+		Stderr:    &bytes.Buffer{},
+		ReposPath: reposPath,
+		repos:     []string{filepath.Join(reposPath, "alpha")},
+	}
+	d.ReposClone([]string{"gamma"})
+	if len(d.runErrors) > 0 {
+		t.Fatalf("errors: %v\nstderr: %s", d.runErrors, d.Stderr)
+	}
+	if !isDir(filepath.Join(reposPath, "gamma")) {
+		t.Error("gamma not cloned")
+	}
+	if isDir(filepath.Join(reposPath, "beta")) {
+		t.Error("beta cloned although not named")
+	}
+
+	d.ReposClone([]string{"delta"})
+	if len(d.runErrors) != 1 || !strings.Contains(d.runErrors[0].Error(), `unknown repository "delta"`) {
+		t.Errorf("errors = %v", d.runErrors)
+	}
+}
+
+// TestReposClonePublic clones from the publish remote when only the public
+// configuration is available.
+func TestReposClonePublic(t *testing.T) {
+	t.Parallel()
+	root := t.TempDir()
+	reposPath := filepath.Join(root, "repos")
+	config := fmt.Sprintf(`
+public = true
+
+[repositories]
+names = ["alpha", "beta"]
+
+[repositories.remote.publish]
+kind = "publish"
+url = '%[1]s/public/{name}.git'
+pushurl = '%[1]s/push/{name}.git'
+`, root)
+
+	for name, files := range map[string]fstest.MapFS{
+		"alpha": {"dotfiles.toml": tomlFile(config)},
+		"beta":  {"dotfiles.toml": tomlFile("public = true")},
+	} {
+		src := filepath.Join(root, "src", name)
+		newGitRepo(t, src, files)
+		gitRun(t, root, "clone", "-q", "--bare", src, filepath.Join(root, "public", name+".git"))
+	}
+	gitRun(t, root, "clone", "-q", "-o", "publish", filepath.Join(root, "public", "alpha.git"), filepath.Join(reposPath, "alpha"))
+
+	d := &Dotfiles{
+		Stdout:    &bytes.Buffer{},
+		Stderr:    &bytes.Buffer{},
+		ReposPath: reposPath,
+		repos:     []string{filepath.Join(reposPath, "alpha")},
+	}
+	d.ReposClone(nil)
+	if len(d.runErrors) > 0 {
+		t.Fatalf("errors: %v\nstderr: %s", d.runErrors, d.Stderr)
+	}
+	for _, name := range []string{"alpha", "beta"} {
+		assertRemotes(t, filepath.Join(reposPath, name), map[string]string{
+			"publish": root + "/public/" + name + ".git push=" + root + "/push/" + name + ".git",
+		})
+	}
+
+	remote, err := d.pullRemote()
+	if err != nil || remote != "publish" {
+		t.Errorf("pullRemote() = %q, %v; want publish", remote, err)
+	}
 }
 
 func TestPushConfiguredRemotes(t *testing.T) {

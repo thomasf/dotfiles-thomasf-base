@@ -100,12 +100,14 @@ url       = "/mnt/something/git/dotfiles/{name}.git"
 condition = "hostname == 'myhost'"
 
 [repositories.remote.publish]
-kind = "publish"
-url  = "git@github.com:me/dotfiles-{name}"
+kind    = "publish"
+url     = "https://github.com/me/dotfiles-{name}"
+pushurl = "git@github.com:me/dotfiles-{name}"
 ```
 
-`{name}` in `url` is replaced by the repository name. `kind` decides how the
-remote is used:
+`{name}` in `url` and `pushurl` is replaced by the repository name. The
+optional `pushurl` becomes git's `remote.<name>.pushurl`: git pushes to it and
+fetches from `url`. `kind` decides how the remote is used:
 
 - **private**: `pull` pulls from it and `push` pushes to it. At most one
   private remote can be active.
@@ -120,14 +122,21 @@ A remote whose `condition` is false is ignored on that host. Without any
 configured remotes, `push`, `pull` and `publish` use the remotes named
 `origin`, `backup.*` and `publish`.
 
+The upstream remote, which `pull` and `repos clone` use, is the active private
+remote or, if none is active, the active publish remote. Putting the public
+repository names and the publish remote in a public repository's config
+therefore lets anyone clone the public repositories with only that repository
+checked out.
+
 The `repos` commands use this configuration:
 
 - `dotfiles repos`: show each known repository and the state of its remotes.
 - `dotfiles repos fix`: add missing remotes, correct remote URLs, and create
   missing local backup repositories (`git init --bare`) when their parent
   directory exists. Remotes are never removed.
-- `dotfiles repos clone`: clone repositories in `names` that are missing from
-  the repositories path from the private remote, then fix their remotes.
+- `dotfiles repos clone [name...]`: clone the repositories in `names` that are
+  missing from the repositories path, or only the named ones, from the upstream
+  remote, then run `repos fix`.
 
 Pass `-dry-run` before the command (`dotfiles -dry-run repos fix`) to print the
 actions without running them.

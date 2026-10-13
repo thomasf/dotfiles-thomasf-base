@@ -1,6 +1,7 @@
 package main
 
 import (
+	"cmp"
 	"errors"
 	"fmt"
 	"maps"
@@ -24,6 +25,11 @@ func (r remoteSpec) urlFor(repo string) string {
 	return strings.ReplaceAll(r.URL, "{name}", repo)
 }
 
+// pushURLFor returns the push URL for repo, or "" if the remote has none.
+func (r remoteSpec) pushURLFor(repo string) string {
+	return strings.ReplaceAll(r.PushURL, "{name}", repo)
+}
+
 func (r Remote) validate() error {
 	switch r.Kind {
 	case RemoteKindPrivate, RemoteKindBackup, RemoteKindPublish:
@@ -32,6 +38,9 @@ func (r Remote) validate() error {
 	}
 	if !strings.Contains(r.URL, "{name}") {
 		return fmt.Errorf("url %q does not contain {name}", r.URL)
+	}
+	if r.PushURL != "" && !strings.Contains(r.PushURL, "{name}") {
+		return fmt.Errorf("pushurl %q does not contain {name}", r.PushURL)
 	}
 	return nil
 }
@@ -127,26 +136,31 @@ func (s *repoSet) active(kinds ...string) []remoteSpec {
 	return out
 }
 
-// private returns the single active private remote.
-func (s *repoSet) private() (remoteSpec, error) {
-	rs := s.active(RemoteKindPrivate)
-	switch len(rs) {
-	case 0:
-		return remoteSpec{}, errors.New("no active private remote configured")
-	case 1:
-		return rs[0], nil
+// upstream returns the remote to clone and pull from: the active private
+// remote or, if there is none, the active publish remote. The latter lets
+// repositories be cloned from their public copies without the private config.
+func (s *repoSet) upstream() (remoteSpec, error) {
+	for _, kind := range []string{RemoteKindPrivate, RemoteKindPublish} {
+		rs := s.active(kind)
+		switch len(rs) {
+		case 0:
+			continue
+		case 1:
+			return rs[0], nil
+		}
+		var names []string
+		for _, r := range rs {
+			names = append(names, r.Name)
+		}
+		return remoteSpec{}, fmt.Errorf("more than one active %s remote: %s", kind, strings.Join(names, ", "))
 	}
-	var names []string
-	for _, r := range rs {
-		names = append(names, r.Name)
-	}
-	return remoteSpec{}, fmt.Errorf("more than one active private remote: %s", strings.Join(names, ", "))
+	return remoteSpec{}, errors.New("no active private or publish remote configured")
 }
 
 // publishViolations returns the publish remotes present in remotes when the
 // repository at path is not public. Conditions are ignored: a publish remote
 // on a private repository is an error on every host.
-func (s *repoSet) publishViolations(path string, remotes map[string]string) []string {
+func (s *repoSet) publishViolations(path string, remotes map[string]gitRemote) []string {
 	if s.public(path) {
 		return nil
 	}
@@ -168,13 +182,22 @@ func (s *repoSet) publishViolations(path string, remotes map[string]string) []st
 	return found
 }
 
-// gitRemotes returns the URL of every remote of the repository at path, keyed
-// by remote name.
-func gitRemotes(path string) (map[string]string, error) {
-	cmd := exec.Command("git", "config", "--get-regexp", `^remote\..*\.url$`)
+// gitRemote holds the URLs configured for a git remote.
+type gitRemote struct {
+	url     string
+	pushURL string // remote.<name>.pushurl, if set
+}
+
+// pushTo returns the URL that git pushes to.
+func (g gitRemote) pushTo() string { return cmp.Or(g.pushURL, g.url) }
+
+// gitRemotes returns the remotes of the repository at path, keyed by remote
+// name.
+func gitRemotes(path string) (map[string]gitRemote, error) {
+	cmd := exec.Command("git", "config", "--get-regexp", `^remote\..*\.(url|pushurl)$`)
 	cmd.Dir = path
 	out, err := cmd.Output()
-	remotes := make(map[string]string)
+	remotes := make(map[string]gitRemote)
 	if err != nil {
 		// Exit status 1 means that no remote has a URL.
 		if exitErr, ok := errors.AsType[*exec.ExitError](err); ok && exitErr.ExitCode() == 1 {
@@ -183,9 +206,17 @@ func gitRemotes(path string) (map[string]string, error) {
 		return nil, err
 	}
 	for line := range strings.Lines(string(out)) {
-		key, url, _ := strings.Cut(strings.TrimSpace(line), " ")
-		name := strings.TrimSuffix(strings.TrimPrefix(key, "remote."), ".url")
-		remotes[name] = url
+		key, value, _ := strings.Cut(strings.TrimSpace(line), " ")
+		key = strings.TrimPrefix(key, "remote.")
+		if name, ok := strings.CutSuffix(key, ".pushurl"); ok {
+			r := remotes[name]
+			r.pushURL = value
+			remotes[name] = r
+		} else if name, ok := strings.CutSuffix(key, ".url"); ok {
+			r := remotes[name]
+			r.url = value
+			remotes[name] = r
+		}
 	}
 	return remotes, nil
 }
@@ -270,12 +301,17 @@ func (d *Dotfiles) Repos(args []string) error {
 		sub = args[0]
 	}
 	switch sub {
-	case "status", "s":
-		d.ReposStatus()
-	case "fix":
-		d.ReposFix()
+	case "status", "s", "fix":
+		if len(args) > 1 {
+			return fmt.Errorf("repos %s takes no arguments", sub)
+		}
+		if sub == "fix" {
+			d.ReposFix()
+		} else {
+			d.ReposStatus()
+		}
 	case "clone":
-		d.ReposClone()
+		d.ReposClone(args[1:])
 	default:
 		return fmt.Errorf("unknown repos command: %s", sub)
 	}
@@ -345,7 +381,7 @@ func (d *Dotfiles) ReposStatus() {
 	tw.Flush()
 }
 
-func remoteStatus(r remoteSpec, repo string, remotes map[string]string, public bool) string {
+func remoteStatus(r remoteSpec, repo string, remotes map[string]gitRemote, public bool) string {
 	have, exists := remotes[r.Name]
 	switch {
 	case r.Kind == RemoteKindPublish && !public:
@@ -360,11 +396,11 @@ func remoteStatus(r remoteSpec, repo string, remotes map[string]string, public b
 		return "inactive"
 	case !exists:
 		return "missing"
-	case have != r.urlFor(repo):
+	case have.url != r.urlFor(repo) || have.pushURL != r.pushURLFor(repo):
 		return "differs"
 	}
 	if r.Kind == RemoteKindBackup {
-		switch localBackupState(have) {
+		switch localBackupState(have.pushTo()) {
 		case backupNotCreated:
 			return "not created"
 		case backupUnavailable:
@@ -387,6 +423,10 @@ func (d *Dotfiles) ReposFix() {
 		d.fail(errors.New("no remotes configured in [repositories.remote]"))
 		return
 	}
+	d.fixAll(set)
+}
+
+func (d *Dotfiles) fixAll(set *repoSet) {
 	for _, e := range d.repoEntries(set) {
 		if e.cloned && e.listed {
 			d.runActions(d.fixActions(set, e))
@@ -404,6 +444,9 @@ func (d *Dotfiles) fixActions(set *repoSet, e repoEntry) []Action {
 		d.fail(fmt.Errorf("%s: publish remote %s on a repository that is not public", e.name, strings.Join(v, ", ")))
 	}
 
+	git := func(args ...string) Action {
+		return &ExecCommandAction{SrcRoot: e.path, Command: "git", Args: args}
+	}
 	public := set.public(e.path)
 	var actions []Action
 	for _, r := range set.remotes {
@@ -411,62 +454,72 @@ func (d *Dotfiles) fixActions(set *repoSet, e repoEntry) []Action {
 			continue
 		}
 		want := r.urlFor(e.name)
-		if r.Kind == RemoteKindBackup && localBackupState(want) == backupNotCreated {
-			p, _ := localPath(want)
-			actions = append(actions, &ExecCommandAction{SrcRoot: e.path, Command: "git", Args: []string{"init", "-q", "--bare", p}})
+		wantPush := r.pushURLFor(e.name)
+		if r.Kind == RemoteKindBackup {
+			if p, ok := localPath(cmp.Or(wantPush, want)); ok && localBackupState(p) == backupNotCreated {
+				actions = append(actions, git("init", "-q", "--bare", p))
+			}
 		}
 		have, ok := remotes[r.Name]
 		switch {
 		case !ok:
-			actions = append(actions, &ExecCommandAction{SrcRoot: e.path, Command: "git", Args: []string{"remote", "add", r.Name, want}})
-		case have != want:
-			actions = append(actions, &ExecCommandAction{SrcRoot: e.path, Command: "git", Args: []string{"remote", "set-url", r.Name, want}})
+			actions = append(actions, git("remote", "add", r.Name, want))
+		case have.url != want:
+			actions = append(actions, git("remote", "set-url", r.Name, want))
+		}
+		switch {
+		case wantPush != "" && have.pushURL != wantPush:
+			actions = append(actions, git("remote", "set-url", "--push", r.Name, wantPush))
+		case wantPush == "" && have.pushURL != "":
+			actions = append(actions, git("config", "--unset-all", "remote."+r.Name+".pushurl"))
 		}
 	}
 	return actions
 }
 
-// ReposClone clones every repository in repositories.names that is missing
-// from the repositories path from the private remote, then fixes its remotes.
-func (d *Dotfiles) ReposClone() {
+// ReposClone clones the repositories in repositories.names that are missing
+// from the repositories path, or only those in names if any are given, from
+// the upstream remote. It then fixes the remotes of every listed repository.
+func (d *Dotfiles) ReposClone(names []string) {
 	set, err := d.loadRepoSet()
 	if err != nil {
 		d.fail(err)
 		return
 	}
-	origin, err := set.private()
+	upstream, err := set.upstream()
 	if err != nil {
 		d.fail(err)
 		return
+	}
+	for _, name := range names {
+		if !slices.Contains(set.names, name) {
+			d.fail(fmt.Errorf("unknown repository %q: not in repositories.names", name))
+			return
+		}
 	}
 
 	var cloned []string
 	for _, e := range d.repoEntries(set) {
-		if e.cloned || !e.listed {
+		if e.cloned || !e.listed || (len(names) > 0 && !slices.Contains(names, e.name)) {
 			continue
 		}
-		d.runActions([]Action{&GitCloneAction{Remote: origin.Name, URL: origin.urlFor(e.name), Dst: e.path}})
+		d.runActions([]Action{&GitCloneAction{Remote: upstream.Name, URL: upstream.urlFor(e.name), Dst: e.path}})
 		if isDir(e.path) {
 			cloned = append(cloned, e.path)
 		}
 	}
-	if len(cloned) == 0 {
-		return
-	}
 
-	// Reload so that the configs of the new repositories, which may declare
-	// them public, are included.
-	d.repos = append(d.repos, cloned...)
-	set, err = d.loadRepoSet()
-	if err != nil {
-		d.fail(err)
-		return
-	}
-	for _, e := range d.repoEntries(set) {
-		if slices.Contains(cloned, e.path) {
-			d.runActions(d.fixActions(set, e))
+	if len(cloned) > 0 {
+		// Reload so that the configs of the new repositories, which may
+		// declare them public, are included.
+		d.repos = append(d.repos, cloned...)
+		set, err = d.loadRepoSet()
+		if err != nil {
+			d.fail(err)
+			return
 		}
 	}
+	d.fixAll(set)
 }
 
 // runActions runs actions in order, or only prints them in dry-run mode.

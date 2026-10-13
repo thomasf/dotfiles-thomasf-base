@@ -98,11 +98,13 @@ const (
 	RemoteKindPublish = "publish" // pushed to by publish, only from public repositories
 )
 
-// Remote is a git remote template. Every occurrence of {name} in URL is
-// replaced by the repository name.
+// Remote is a git remote template. Every occurrence of {name} in URL and
+// PushURL is replaced by the repository name. PushURL, when set, is used for
+// pushing and URL only for fetching, as with git's remote.<name>.pushurl.
 type Remote struct {
 	Kind      string `toml:"kind"`
 	URL       string `toml:"url"`
+	PushURL   string `toml:"pushurl,omitempty"`
 	Condition string `toml:"condition,omitempty"`
 }
 

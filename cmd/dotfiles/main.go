@@ -88,7 +88,7 @@ func (d *Dotfiles) Run(stdout, stderr io.Writer, args []string) error {
 		fmt.Fprintf(stderr, "  magit     Open magit-status in emacs for all repos with changes\n")
 		fmt.Fprintf(stderr, "  repos [status]  Show known repos and the state of their remotes\n")
 		fmt.Fprintf(stderr, "  repos fix       Add missing remotes, correct remote URLs and create missing local backup repos\n")
-		fmt.Fprintf(stderr, "  repos clone     Clone missing known repos from the private remote\n")
+		fmt.Fprintf(stderr, "  repos clone [name...]  Clone missing known repos (all, or the named ones) from the upstream remote, then run repos fix\n")
 		fmt.Fprintf(stderr, "\nOptions:\n")
 		fs.PrintDefaults()
 	}
@@ -226,12 +226,12 @@ func (d *Dotfiles) Push() {
 			branch := d.getMainBranch(repoPath)
 			for _, target := range targets {
 				if target.backup {
-					url, ok := remotes[target.name]
+					remote, ok := remotes[target.name]
 					if !ok {
 						skip(fmt.Sprintf("remote %s is not configured (run 'dotfiles repos fix')", target.name), name)
 						continue
 					}
-					switch localBackupState(url) {
+					switch localBackupState(remote.pushTo()) {
 					case backupNotCreated:
 						skip(fmt.Sprintf("remote %s repository does not exist (run 'dotfiles repos fix')", target.name), name)
 						continue
@@ -420,7 +420,7 @@ func (d *Dotfiles) Pull() {
 	wg.Wait()
 }
 
-// pullRemote returns the active private remote, or origin when no remotes are
+// pullRemote returns the upstream remote, or origin when no remotes are
 // configured.
 func (d *Dotfiles) pullRemote() (string, error) {
 	set, err := d.loadRepoSet()
@@ -430,7 +430,7 @@ func (d *Dotfiles) pullRemote() (string, error) {
 	if !set.configured() {
 		return "origin", nil
 	}
-	r, err := set.private()
+	r, err := set.upstream()
 	return r.Name, err
 }
 

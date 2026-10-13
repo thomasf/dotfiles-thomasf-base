@@ -90,3 +90,11 @@ dst = '.pulse/default.pa'
 'alias.ps' = ''
 'alias.pu' = ''
 'alias.ribbon' = ''
+
+[repositories]
+names = ["base", "emacs", "xmonad"]
+
+[repositories.remote.publish]
+kind    = "publish"
+url     = "https://github.com/thomasf/dotfiles-thomasf-{name}"
+pushurl = "git@github.com:thomasf/dotfiles-thomasf-{name}"
