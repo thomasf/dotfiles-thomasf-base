@@ -79,9 +79,62 @@ phase = "post"
 src = "echo Sync complete."
 ```
 
+### Repositories
+
+Gnown dotfiles repositories and the git remotes each of them should
+have. The section can appear in any number of repositories' config files:
+`names` from all files are merged and deduplicated, and a remote may be defined
+in several files as long as every definition is identical.
+
+```toml
+[repositories]
+names = ["base", "emacs", "private"]
+
+[repositories.remote.origin]
+kind = "private"
+url  = "ssh://git@example.com/dotfiles-{name}.git"
+
+[repositories.remote."backup.disk"]
+kind      = "backup"
+url       = "/mnt/something/git/dotfiles/{name}.git"
+condition = "hostname == 'myhost'"
+
+[repositories.remote.publish]
+kind = "publish"
+url  = "git@github.com:me/dotfiles-{name}"
+```
+
+`{name}` in `url` is replaced by the repository name. `kind` decides how the
+remote is used:
+
+- **private**: `pull` pulls from it and `push` pushes to it. At most one
+  private remote can be active.
+- **backup**: `push` pushes to it. If the backup is not reachable (a local path
+  that does not exist, or a failed push), `push` prints a warning instead of
+  failing.
+- **publish**: `publish` pushes to it, but only from repositories whose own
+  config sets `public = true`. A publish remote on any other repository is an
+  error.
+
+A remote whose `condition` is false is ignored on that host. Without any
+configured remotes, `push`, `pull` and `publish` use the remotes named
+`origin`, `backup.*` and `publish`.
+
+The `repos` commands use this configuration:
+
+- `dotfiles repos`: show each known repository and the state of its remotes.
+- `dotfiles repos fix`: add missing remotes, correct remote URLs, and create
+  missing local backup repositories (`git init --bare`) when their parent
+  directory exists. Remotes are never removed.
+- `dotfiles repos clone`: clone repositories in `names` that are missing from
+  the repositories path from the private remote, then fix their remotes.
+
+Pass `-dry-run` before the command (`dotfiles -dry-run repos fix`) to print the
+actions without running them.
+
 ### Conditions
 
-The `condition` field in `[[mount]]` and `[[script]]` uses
+The `condition` field in `[[mount]]`, `[[script]]` and repository remotes uses
 [expr](github.com/expr-lang/expr) to determine if the action should be
 performed. The current operating system is available as the `os` variable and
 the system hostname as `hostname`.

@@ -91,13 +91,36 @@ func (i Ignore) ShouldRun(r *Repository) bool {
 	return evalCondition(r.configPath, fmt.Sprintf("Ignore(match=%v)", i.Match), i.Condition)
 }
 
+// Remote kinds.
+const (
+	RemoteKindPrivate = "private" // pulled from and pushed to
+	RemoteKindBackup  = "backup"  // pushed to; skipped with a warning when unavailable
+	RemoteKindPublish = "publish" // pushed to by publish, only from public repositories
+)
+
+// Remote is a git remote template. Every occurrence of {name} in URL is
+// replaced by the repository name.
+type Remote struct {
+	Kind      string `toml:"kind"`
+	URL       string `toml:"url"`
+	Condition string `toml:"condition,omitempty"`
+}
+
+// Repositories lists the known dotfiles repositories and the remotes they
+// should have. The sections from all repositories are merged.
+type Repositories struct {
+	Names  []string          `toml:"names"`
+	Remote map[string]Remote `toml:"remote"`
+}
+
 type Config struct {
-	Public bool              `toml:"public,omitempty,omitzero"`
-	Ignore []Ignore          `toml:"ignore"`
-	Mount  []Mount           `toml:"mount"`
-	Git    map[string]string `toml:"git"`
-	Script []Script          `toml:"script"`
-	Go     []Go              `toml:"go"`
+	Public       bool              `toml:"public,omitempty,omitzero"`
+	Ignore       []Ignore          `toml:"ignore"`
+	Mount        []Mount           `toml:"mount"`
+	Git          map[string]string `toml:"git"`
+	Script       []Script          `toml:"script"`
+	Go           []Go              `toml:"go"`
+	Repositories Repositories      `toml:"repositories"`
 }
 
 type Repository struct {

@@ -315,6 +315,25 @@ func (s *ExecCommandAction) Run() error {
 	return cmd.Run()
 }
 
+// GitCloneAction clones URL into Dst, naming the remote Remote.
+type GitCloneAction struct {
+	Remote string
+	URL    string
+	Dst    string
+}
+
+func (g *GitCloneAction) String() string {
+	return fmt.Sprintf("[%s] git clone -q -o %s %s %s", filepath.Base(g.Dst), g.Remote, g.URL, g.Dst)
+}
+
+func (g *GitCloneAction) Run() error {
+	prefix := g.String() + ": "
+	cmd := exec.Command("git", "clone", "-q", "-o", g.Remote, g.URL, g.Dst)
+	cmd.Stdout = newPrefixWriter(os.Stdout, prefix)
+	cmd.Stderr = newPrefixWriter(os.Stderr, prefix)
+	return cmd.Run()
+}
+
 func ellipsis(input string, maxLen int) string {
 	var lines []string
 	for l := range strings.Lines(input) {
