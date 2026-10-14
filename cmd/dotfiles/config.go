@@ -196,6 +196,7 @@ var alwaysIgnoredFiles = map[string]bool{
 	".gitignore":     true,
 	"go.mod":         true,
 	"go.sum":         true,
+	"go.work":        true,
 	"cmd":            true,
 	"pkg":            true,
 	"vendor":         true,
