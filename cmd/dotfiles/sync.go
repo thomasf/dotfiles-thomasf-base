@@ -133,6 +133,24 @@ func (r *Repository) Sync() ([]Action, error) {
 		})
 	}
 
+	for _, t := range r.config.Template {
+		if !t.ShouldRun(r) {
+			continue
+		}
+		mode, _ := parseFileMode(t.Mode) // checked by LoadConfig
+		for _, dst := range t.Dst {
+			actions = append(actions, &TemplateAction{
+				SrcRoot:  r.srcRoot,
+				Src:      t.Src,
+				DstRoot:  r.dstRoot,
+				Dst:      dst,
+				Mode:     mode,
+				Existing: t.Existing,
+				Force:    r.force,
+			})
+		}
+	}
+
 	for _, s := range r.config.Script {
 		if (s.Phase == "" || s.Phase == "default") && s.ShouldRun(r) {
 			actions = append(actions, &ScriptAction{

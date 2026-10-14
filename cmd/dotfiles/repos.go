@@ -17,8 +17,9 @@ import (
 type remoteSpec struct {
 	Name string
 	Remote
-	source string // config file the remote was first read from
-	active bool   // condition is true on this host
+	source  string // config file the remote was first read from
+	dstRoot string // destination root of that repository
+	active  bool   // condition is true on this host
 }
 
 func (r remoteSpec) urlFor(repo string) string {
@@ -80,7 +81,7 @@ func mergeRepositories(repos []*Repository) (*repoSet, error) {
 				errs = append(errs, fmt.Errorf("%s: remote %q: %w", r.configPath, name, err))
 				continue
 			}
-			byName[name] = remoteSpec{Name: name, Remote: remote, source: r.configPath}
+			byName[name] = remoteSpec{Name: name, Remote: remote, source: r.configPath, dstRoot: r.dstRoot}
 		}
 	}
 	if err := errors.Join(errs...); err != nil {
@@ -91,7 +92,7 @@ func mergeRepositories(repos []*Repository) (*repoSet, error) {
 	s.names = slices.Compact(s.names)
 	for _, name := range slices.Sorted(maps.Keys(byName)) {
 		spec := byName[name]
-		spec.active = evalCondition(spec.source, fmt.Sprintf("Remote(%s)", name), spec.Condition)
+		spec.active = evalCondition(spec.dstRoot, spec.source, fmt.Sprintf("Remote(%s)", name), spec.Condition)
 		s.remotes = append(s.remotes, spec)
 	}
 	return s, nil
