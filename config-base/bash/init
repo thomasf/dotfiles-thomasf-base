@@ -349,6 +349,12 @@ if [ ! -z "${BASH}" ]; then
   esac
 fi
 
+# Activate mise after the prompt since shell-prompt overwrites PROMPT_COMMAND
+log "mise"
+if [ ! -z "${BASH}" ] && hash mise 2>/dev/null; then
+  eval "$(mise activate bash)"
+fi
+
 
 log "set manpath"
 hash manpath 2>/dev/null &&
