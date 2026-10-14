@@ -162,7 +162,8 @@ dst = [".config/Code/User/settings.json", ".config/VSCodium/User/settings.json"]
 `dst` is a single path or a list of paths, relative to the destination path.
 
 Templates have the same variables and functions as
-[conditions](#conditions): variables as fields (`{{.os}}`, `{{.hostname}}`)
+[conditions](#conditions): variables as fields (`{{.os}}`, `{{.hostname}}`,
+`{{.vars.email}}`)
 and functions as template functions (`{{env "HOME"}}`,
 `{{lookPath "pinentry-mac" "pinentry-gnome3"}}`,
 `{{if isDir "/Applications/Emacs.app"}}...{{end}}`). In addition,
@@ -217,6 +218,7 @@ Variables:
 - `os`: the operating system (Go's `GOOS`, e.g. `linux` or `darwin`).
 - `arch`: the CPU architecture (Go's `GOARCH`, e.g. `amd64` or `arm64`).
 - `hostname`: the system hostname.
+- `vars`: the [variables](#variables), e.g. `vars.email`.
 
 Functions:
 
@@ -226,6 +228,8 @@ Functions:
   checked as a path instead of being looked up in `PATH`.
 - `exists(path)`, `isFile(path)`, `isDir(path)`: whether a path exists, is a
   regular file or is a directory, following symlinks.
+- `parseBool(s)`: `s` as a bool; `true`, `false`, `1`, `0`, `t` and `f` are
+  accepted, anything else is an error.
 
 Relative paths are relative to the destination path (the home directory
 unless `-dst` is given), never to the directory `dotfiles` runs in. `~` is not
@@ -250,6 +254,96 @@ renders to an empty string is skipped, e.g.
 `dst = '{{if eq .os "linux"}}.config/foo{{end}}'`; for `[[template]]`, only
 that `dst` is skipped. `[[script]]` `src` is shell code and is not a template.
 
+### Variables
+
+`[vars]` defines variables for templates, templated paths and conditions:
+
+```toml
+[vars]
+email     = 'me@example.com'
+font_size = '{{if eq .hostname "laptop"}}13{{else}}11{{end}}'
+editor    = '{{lookPath "nvim" "vim" "vi"}}'
+big_font  = '{{expr `int(vars.font_size) + 2`}}'
+```
+
+They are used as `{{.vars.email}}` in templates and `vars.email` in
+expressions.
+
+Every value is a string, rendered as a [template](#templates) when the config
+is loaded, so `font_size = 11` is an error; write `font_size = '11'`. A value
+can refer to other variables as `.vars.x`, `$.vars.x`, `index .vars "x"`, or
+`vars.x` inside `expr`; a reference cycle is an error.
+
+Because every variable is a string, convert it where another type is needed:
+`int(vars.font_size) > 10` or `parseBool(vars.gui)` in a condition,
+`{{if parseBool .vars.gui}}` in a template. Note that `{{if .vars.gui}}` is
+true even for `'false'`, because the string is not empty.
+
+Using a variable that is not defined is an error, in templates and in
+expressions. To make one optional, give a default: `vars.font_size ?? '11'` in
+an expression, `{{or (index .vars "font_size") "11"}}` in a template.
+
+`[default_vars]` defines fallback values that only the repository itself sees,
+used only if no repository sets the variable in `[vars]`:
+
+```toml
+[default_vars]
+font_size = '11'
+```
+
+A variable can not be in both `[vars]` and `[default_vars]` of the same
+repository.
+
+#### Precedence
+
+Variables in `[vars]` are shared between repositories; `[default_vars]` are
+not. For each variable, a repository uses the first of:
+
+1. its own `[vars]`;
+2. the `[vars]` of the other repositories, the first in repository order;
+3. its own `[default_vars]`;
+4. nothing: using the variable is an error, unless it has a default where it
+   is used (`vars.x ?? 'd'`, see above).
+
+Repository order is the order of `[repositories]` `names` (merged from all
+repositories, first occurrence first), then the repositories not named there,
+by path. It is not the order in which repositories are planned.
+
+For example, with `names = ["base", "work", "games"]`:
+
+```toml
+# base/dotfiles.toml
+[vars]
+font_size = '11'
+editor    = 'vim'
+```
+
+```toml
+# work/dotfiles.toml
+[vars]
+font_size = '13'
+```
+
+```toml
+# games/dotfiles.toml
+[default_vars]
+font_size = '9'
+theme     = 'dark'
+```
+
+| Variable    | base             | work             | games                              |
+|-------------|------------------|------------------|------------------------------------|
+| `font_size` | `11` (1)         | `13` (1)         | `11` (2: `base` comes before `work`) |
+| `editor`    | `vim` (1)        | `vim` (2)        | `vim` (2)                          |
+| `theme`     | undefined (4)    | undefined (4)    | `dark` (3)                         |
+
+`games` gets `11` rather than its own default `9`, because a `[vars]`
+definition in any repository comes before `[default_vars]`. Because `base` and
+`work` define `font_size` differently and `games` does not define it in
+`[vars]`, `dotfiles` prints a warning naming the definition `games` uses.
+No warning is printed when every repository defines the variable in its own
+`[vars]`, or for `[default_vars]`, which are never shared.
+
 ### Default Root Item Handling
 
 Files and directories at the root of the repository that are not ignored or
@@ -265,17 +359,28 @@ prints the same list, in the same order, without running anything.
 ### Planning
 
 Repositories are taken in alphabetical order of their directory names in the
-repositories path, or in the order given with `-repository`. For each
-repository, the config is loaded, `src` and `dst` paths are rendered, and
-`condition`s are evaluated.
+repositories path, or in the order given with `-repository`. Planning has two
+steps:
 
-All of this happens before anything runs. Conditions and templated paths
-therefore see the state from before the run: `isDir(".config/foo")` is false
-even if a mount earlier in the same run creates `.config/foo`. The content of
-a `[[template]]` file is rendered later, when its action runs.
+1. The config of every repository is read.
+2. For each repository, its view of the [variables](#variables) is merged
+   from all configs and resolved, then `src` and `dst` paths are rendered and
+   `condition`s are evaluated.
 
-A repository whose config fails to load or to plan is skipped completely,
-including its scripts.
+The variables of all repositories are known before any of them is resolved,
+so the order of repositories does not matter for that; which definition a
+repository gets is decided by `[repositories]` `names`, not by this order.
+
+All of this happens before anything runs. Variables, conditions and templated
+paths therefore see the state from before the run: `isDir(".config/foo")` is
+false even if a mount earlier in the same run creates `.config/foo`. The
+content of a `[[template]]` file is rendered later, when its action runs, with
+the variables resolved during planning.
+
+A repository whose config fails to load, whose variables fail to resolve, or
+that fails to plan is skipped completely, including its scripts. Its
+variables are still available to the other repositories if its config could
+be read.
 
 ### Running
 

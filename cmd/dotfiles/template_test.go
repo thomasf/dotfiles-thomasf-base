@@ -96,7 +96,7 @@ func TestRenderTemplate(t *testing.T) {
 		{text: `{{if}}`, wantErr: true},
 	}
 	for _, tt := range tests {
-		got, err := renderTemplate("test", tt.text, dstRoot)
+		got, err := renderTemplate("test", tt.text, dstRoot, nil)
 		if tt.wantErr {
 			if err == nil {
 				t.Errorf("%s: expected error, got %q", tt.text, got)

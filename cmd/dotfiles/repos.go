@@ -17,9 +17,9 @@ import (
 type remoteSpec struct {
 	Name string
 	Remote
-	source  string // config file the remote was first read from
-	dstRoot string // destination root of that repository
-	active  bool   // condition is true on this host
+	source string      // config file the remote was first read from
+	repo   *Repository // repository of that config
+	active bool        // condition is true on this host
 }
 
 func (r remoteSpec) urlFor(repo string) string {
@@ -81,7 +81,7 @@ func mergeRepositories(repos []*Repository) (*repoSet, error) {
 				errs = append(errs, fmt.Errorf("%s: remote %q: %w", r.configPath, name, err))
 				continue
 			}
-			byName[name] = remoteSpec{Name: name, Remote: remote, source: r.configPath, dstRoot: r.dstRoot}
+			byName[name] = remoteSpec{Name: name, Remote: remote, source: r.configPath, repo: r}
 		}
 	}
 	if err := errors.Join(errs...); err != nil {
@@ -92,7 +92,7 @@ func mergeRepositories(repos []*Repository) (*repoSet, error) {
 	s.names = slices.Compact(s.names)
 	for _, name := range slices.Sorted(maps.Keys(byName)) {
 		spec := byName[name]
-		spec.active = evalCondition(spec.dstRoot, spec.source, fmt.Sprintf("Remote(%s)", name), spec.Condition)
+		spec.active = evalCondition(spec.repo.exprEnv(), spec.source, fmt.Sprintf("Remote(%s)", name), spec.Condition)
 		s.remotes = append(s.remotes, spec)
 	}
 	return s, nil
@@ -102,19 +102,42 @@ func mergeRepositories(repos []*Repository) (*repoSet, error) {
 // [repositories] sections. Repositories whose config fails to load are
 // reported and left out.
 func (d *Dotfiles) loadRepoSet() (*repoSet, error) {
-	var loaded []*Repository
+	return mergeRepositories(d.loadRepos())
+}
+
+// loadRepos loads the config of every repository in d.repos, with the [vars]
+// of all of them merged (see mergeVars). Repositories without a config are
+// skipped; those whose config fails to load are reported and left out.
+func (d *Dotfiles) loadRepos(opts ...Option) []*Repository {
+	fail := func(r *Repository, err error) {
+		fmt.Fprintf(d.Stderr, "error loading config for %s: %v\n", r.srcRoot, err)
+		d.collectErr(fmt.Errorf("config %s: %w", filepath.Base(r.srcRoot), err))
+	}
+	var read []*Repository
 	for _, path := range d.repos {
-		r := NewRepository(path, d.DstPath)
-		if err := r.LoadConfig(); err != nil {
+		r := NewRepository(path, d.DstPath, opts...)
+		if err := r.readConfig(); err != nil {
 			if !errors.Is(err, ErrConfigMissing) {
-				fmt.Fprintf(d.Stderr, "error loading config for %s: %v\n", path, err)
-				d.collectErr(fmt.Errorf("config %s: %w", filepath.Base(path), err))
+				fail(r, err)
 			}
+			continue
+		}
+		read = append(read, r)
+	}
+
+	views, warnings := mergeVars(read)
+	for _, w := range warnings {
+		fmt.Fprintf(d.Stderr, "warning: %s\n", w)
+	}
+	var loaded []*Repository
+	for _, r := range read {
+		if err := r.resolve(views[r]); err != nil {
+			fail(r, err)
 			continue
 		}
 		loaded = append(loaded, r)
 	}
-	return mergeRepositories(loaded)
+	return loaded
 }
 
 // configured reports whether any remotes are configured. Without them, push,

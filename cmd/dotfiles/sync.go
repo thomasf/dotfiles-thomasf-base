@@ -147,6 +147,7 @@ func (r *Repository) Sync() ([]Action, error) {
 				Mode:     mode,
 				Existing: t.Existing,
 				Force:    r.force,
+				Vars:     r.vars,
 			})
 		}
 	}

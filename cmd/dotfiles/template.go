@@ -6,7 +6,6 @@ import (
 	"errors"
 	"fmt"
 	"io/fs"
-	"maps"
 	"os"
 	"path/filepath"
 	"strings"
@@ -15,23 +14,31 @@ import (
 	"github.com/pelletier/go-toml/v2"
 )
 
-// renderTemplate executes text as a Go text/template. The data is the
-// variables from exprVars, and the funcs are those from exprFuncs plus expr,
-// which evaluates an expr expression like a condition.
-func renderTemplate(name, text, dstRoot string) ([]byte, error) {
-	data := exprVars()
-	funcs := exprFuncs(dstRoot)
-	env := maps.Clone(data)
-	maps.Copy(env, funcs)
-	funcs["expr"] = func(src string) (any, error) {
-		return evalExpr(env, src)
-	}
-	t, err := template.New(name).Option("missingkey=error").Funcs(funcs).Parse(text)
+// renderTemplate executes text as a Go text/template (see parseTemplate). The
+// data is the variables from exprVars.
+func renderTemplate(name, text, dstRoot string, vars map[string]string) ([]byte, error) {
+	t, err := parseTemplate(name, text, dstRoot, vars)
 	if err != nil {
 		return nil, err
 	}
+	return executeTemplate(t, vars)
+}
+
+// parseTemplate parses text as a Go text/template. The funcs are those from
+// exprFuncs plus expr, which evaluates an expr expression like a condition,
+// with the content vars has when it is called.
+func parseTemplate(name, text, dstRoot string, vars map[string]string) (*template.Template, error) {
+	funcs := exprFuncs(dstRoot)
+	funcs["expr"] = func(src string) (any, error) {
+		return evalExpr(exprEnv(dstRoot, vars), src)
+	}
+	return template.New(name).Option("missingkey=error").Funcs(funcs).Parse(text)
+}
+
+// executeTemplate executes t, parsed by parseTemplate with the same vars.
+func executeTemplate(t *template.Template, vars map[string]string) ([]byte, error) {
 	var buf bytes.Buffer
-	if err := t.Execute(&buf, data); err != nil {
+	if err := t.Execute(&buf, exprVars(vars)); err != nil {
 		return nil, err
 	}
 	return buf.Bytes(), nil
@@ -39,18 +46,18 @@ func renderTemplate(name, text, dstRoot string) ([]byte, error) {
 
 // renderValue renders a config value, such as a src or dst path, with
 // renderTemplate. A value without "{{" is returned as is.
-func renderValue(name, value, dstRoot string) (string, error) {
+func renderValue(name, value, dstRoot string, vars map[string]string) (string, error) {
 	if !strings.Contains(value, "{{") {
 		return value, nil
 	}
-	out, err := renderTemplate(name, value, dstRoot)
+	out, err := renderTemplate(name, value, dstRoot, vars)
 	return string(out), err
 }
 
-// TemplateAction renders the template Src and writes the result to Dst. Dst
-// gets the permission bits Mode, or those of Src if Mode is 0. Existing says
-// what happens when Dst exists with different content; Force turns
-// ExistingError into ExistingOverwrite.
+// TemplateAction renders the template Src, with the resolved [vars] Vars, and
+// writes the result to Dst. Dst gets the permission bits Mode, or those of Src
+// if Mode is 0. Existing says what happens when Dst exists with different
+// content; Force turns ExistingError into ExistingOverwrite.
 type TemplateAction struct {
 	SrcRoot  string
 	Src      string
@@ -59,6 +66,7 @@ type TemplateAction struct {
 	Mode     fs.FileMode
 	Existing ExistingAction
 	Force    bool
+	Vars     map[string]string
 }
 
 func (t *TemplateAction) DstAbsolutePath() string {
@@ -92,7 +100,7 @@ func (t *TemplateAction) Run() error {
 		}
 		perm = info.Mode().Perm()
 	}
-	out, err := renderTemplate(t.Src, string(text), t.DstRoot)
+	out, err := renderTemplate(t.Src, string(text), t.DstRoot, t.Vars)
 	if err != nil {
 		return err
 	}

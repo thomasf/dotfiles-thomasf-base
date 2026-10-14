@@ -516,21 +516,11 @@ func (d *Dotfiles) sync(isPlan bool) {
 		allPostScripts []Action
 	)
 
-	for _, repoPath := range d.repos {
-		name := filepath.Base(repoPath)
-		r := NewRepository(repoPath, d.DstPath, WithForce(d.Force), WithCopy(d.Copy))
-		if err := r.LoadConfig(); err != nil {
-			if errors.Is(err, ErrConfigMissing) {
-				continue
-			}
-			fmt.Fprintf(d.Stderr, "error loading config for %s: %v\n", repoPath, err)
-			d.collectErr(fmt.Errorf("config %s: %w", name, err))
-			continue
-		}
-
+	for _, r := range d.loadRepos(WithForce(d.Force), WithCopy(d.Copy)) {
+		name := filepath.Base(r.srcRoot)
 		actions, err := r.Sync()
 		if err != nil {
-			fmt.Fprintf(d.Stderr, "error planning %s: %v\n", repoPath, err)
+			fmt.Fprintf(d.Stderr, "error planning %s: %v\n", r.srcRoot, err)
 			d.collectErr(fmt.Errorf("plan %s: %w", name, err))
 			continue
 		}

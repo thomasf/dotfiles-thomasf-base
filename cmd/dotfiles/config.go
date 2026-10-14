@@ -5,9 +5,13 @@ import (
 	"errors"
 	"fmt"
 	"io/fs"
+	"maps"
 	"os"
 	"path/filepath"
+	"regexp"
+	"slices"
 	"strconv"
+	"strings"
 
 	"github.com/pelletier/go-toml/v2"
 )
@@ -23,7 +27,7 @@ type Mount struct {
 }
 
 func (m Mount) ShouldRun(r *Repository) bool {
-	return evalCondition(r.dstRoot, r.configPath, fmt.Sprintf("Mount(src=%s, dst=%s)", m.Src, m.Dst), m.Condition)
+	return evalCondition(r.exprEnv(), r.configPath, fmt.Sprintf("Mount(src=%s, dst=%s)", m.Src, m.Dst), m.Condition)
 }
 
 type Script struct {
@@ -33,7 +37,7 @@ type Script struct {
 }
 
 func (s Script) ShouldRun(r *Repository) bool {
-	return evalCondition(r.dstRoot, r.configPath, fmt.Sprintf("Script(src=%s, phase=%s)", s.Src, s.Phase), s.Condition)
+	return evalCondition(r.exprEnv(), r.configPath, fmt.Sprintf("Script(src=%s, phase=%s)", s.Src, s.Phase), s.Condition)
 }
 
 type Go struct {
@@ -42,7 +46,7 @@ type Go struct {
 }
 
 func (g Go) ShouldRun(r *Repository) bool {
-	return evalCondition(r.dstRoot, r.configPath, fmt.Sprintf("Go(src=%s)", g.Src), g.Condition)
+	return evalCondition(r.exprEnv(), r.configPath, fmt.Sprintf("Go(src=%s)", g.Src), g.Condition)
 }
 
 // Template renders the Go text/template Src and writes the result to each
@@ -68,7 +72,7 @@ const (
 )
 
 func (t Template) ShouldRun(r *Repository) bool {
-	return evalCondition(r.dstRoot, r.configPath, fmt.Sprintf("Template(src=%s)", t.Src), t.Condition)
+	return evalCondition(r.exprEnv(), r.configPath, fmt.Sprintf("Template(src=%s)", t.Src), t.Condition)
 }
 
 // StringList is a list of strings that can be written in TOML as a single
@@ -88,7 +92,7 @@ type Ignore struct {
 }
 
 func (i Ignore) ShouldRun(r *Repository) bool {
-	return evalCondition(r.dstRoot, r.configPath, fmt.Sprintf("Ignore(match=%v)", i.Match), i.Condition)
+	return evalCondition(r.exprEnv(), r.configPath, fmt.Sprintf("Ignore(match=%v)", i.Match), i.Condition)
 }
 
 // Remote kinds.
@@ -124,6 +128,8 @@ type Config struct {
 	Go           []Go              `toml:"go"`
 	Template     []Template        `toml:"template"`
 	Repositories Repositories      `toml:"repositories"`
+	Vars         map[string]string `toml:"vars"`
+	DefaultVars  map[string]string `toml:"default_vars"` // only for this repository
 }
 
 type Repository struct {
@@ -133,6 +139,7 @@ type Repository struct {
 	dstRoot    string
 	configPath string
 	config     Config
+	vars       map[string]string // resolved [vars] (see resolveVars)
 }
 
 type Option func(*Repository)
@@ -160,7 +167,20 @@ func NewRepository(srcRoot, dstRoot string, opts ...Option) *Repository {
 	return r
 }
 
+// LoadConfig loads the config of the repository on its own: only its own
+// [vars] and [default_vars] are available. Use loadRepos to load several
+// repositories that share their vars.
 func (r *Repository) LoadConfig() error {
+	if err := r.readConfig(); err != nil {
+		return err
+	}
+	views, _ := mergeVars([]*Repository{r})
+	return r.resolve(views[r])
+}
+
+// readConfig reads, decodes and validates the config file. The config is not
+// usable until resolve is called.
+func (r *Repository) readConfig() error {
 	var data []byte
 	var err error
 	var configPath string
@@ -182,12 +202,14 @@ func (r *Repository) LoadConfig() error {
 	dec := toml.NewDecoder(bytes.NewReader(data))
 	dec.DisallowUnknownFields()
 	if err := dec.Decode(&config); err != nil {
+		var derr *toml.DecodeError
+		if errors.As(err, &derr) {
+			row, col := derr.Position()
+			return fmt.Errorf("%s:%d:%d: %s: %w", configPath, row, col, strings.Join(derr.Key(), "."), err)
+		}
 		return err
 	}
 	if err := config.validate(); err != nil {
-		return fmt.Errorf("%s: %w", configPath, err)
-	}
-	if err := config.render(r.dstRoot); err != nil {
 		return fmt.Errorf("%s: %w", configPath, err)
 	}
 
@@ -196,8 +218,40 @@ func (r *Repository) LoadConfig() error {
 	return nil
 }
 
+// resolve resolves raw, the [vars] the repository sees, and renders the
+// templated paths of its config with them.
+func (r *Repository) resolve(raw map[string]string) error {
+	vars, err := resolveVars(raw, r.dstRoot)
+	if err != nil {
+		return fmt.Errorf("%s: %w", r.configPath, err)
+	}
+	r.vars = vars
+	if err := r.config.render(r.dstRoot, vars); err != nil {
+		return fmt.Errorf("%s: %w", r.configPath, err)
+	}
+	return nil
+}
+
+// exprEnv returns the environment of the repository's conditions.
+func (r *Repository) exprEnv() map[string]any {
+	return exprEnv(r.dstRoot, r.vars)
+}
+
 func (c *Config) validate() error {
 	var errs []error
+	for _, name := range slices.Sorted(maps.Keys(c.Vars)) {
+		if !varNameRe.MatchString(name) {
+			errs = append(errs, fmt.Errorf("vars.%s: invalid name: want letters, digits and _, not starting with a digit", name))
+		}
+	}
+	for _, name := range slices.Sorted(maps.Keys(c.DefaultVars)) {
+		if !varNameRe.MatchString(name) {
+			errs = append(errs, fmt.Errorf("default_vars.%s: invalid name: want letters, digits and _, not starting with a digit", name))
+		}
+		if _, ok := c.Vars[name]; ok {
+			errs = append(errs, fmt.Errorf("default_vars.%s: also defined in [vars]", name))
+		}
+	}
 	for i, t := range c.Template {
 		if t.Src == "" {
 			errs = append(errs, fmt.Errorf("template %d: src is required", i))
@@ -217,6 +271,10 @@ func (c *Config) validate() error {
 	return errors.Join(errs...)
 }
 
+// varNameRe matches the names of vars, which must work as vars.x in
+// expressions and .vars.x in templates.
+var varNameRe = regexp.MustCompile(`^[A-Za-z_][A-Za-z0-9_]*$`)
+
 // parseFileMode parses permission bits written in octal, as for chmod: "0644"
 // or "644". The empty string is 0.
 func parseFileMode(s string) (fs.FileMode, error) {
@@ -231,12 +289,13 @@ func parseFileMode(s string) (fs.FileMode, error) {
 }
 
 // render renders every src and dst of mounts, go packages and templates as a
-// template (see renderTemplate). An entry with a src or dst that renders to an
-// empty string is dropped; for templates, only that dst is dropped.
-func (c *Config) render(dstRoot string) error {
+// template (see renderTemplate) with the resolved [vars] vars. An entry with a
+// src or dst that renders to an empty string is dropped; for templates, only
+// that dst is dropped.
+func (c *Config) render(dstRoot string, vars map[string]string) error {
 	var errs []error
 	render := func(name, value string) string {
-		out, err := renderValue(name, value, dstRoot)
+		out, err := renderValue(name, value, dstRoot, vars)
 		errs = append(errs, err)
 		return out
 	}

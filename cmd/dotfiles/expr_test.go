@@ -54,7 +54,7 @@ func TestEvalExpr(t *testing.T) {
 		{src: `os ===`, wantErr: true},
 	}
 	for _, tt := range tests {
-		got, err := evalExpr(exprEnv(dstRoot), tt.src, expr.AsBool())
+		got, err := evalExpr(exprEnv(dstRoot, nil), tt.src, expr.AsBool())
 		if tt.wantErr {
 			if err == nil {
 				t.Errorf("%s: expected error, got %v", tt.src, got)

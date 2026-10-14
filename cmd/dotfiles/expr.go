@@ -8,19 +8,29 @@ import (
 	"os/exec"
 	"path/filepath"
 	"runtime"
+	"strconv"
 	"strings"
 
 	"github.com/expr-lang/expr"
+	"github.com/expr-lang/expr/ast"
+	"github.com/expr-lang/expr/parser"
 )
 
 // exprVars returns the variables available in condition expressions and
-// templates.
-func exprVars() map[string]any {
+// templates. vars, the resolved [vars] of a repository, is available as vars.
+// Its values are copied into a map[string]any, so that a missing var is nil
+// rather than "", which ?? needs.
+func exprVars(vars map[string]string) map[string]any {
 	hostname, _ := os.Hostname()
+	m := make(map[string]any, len(vars))
+	for name, v := range vars {
+		m[name] = v
+	}
 	return map[string]any{
 		"os":       runtime.GOOS,
 		"arch":     runtime.GOARCH,
 		"hostname": hostname,
+		"vars":     m,
 	}
 }
 
@@ -33,6 +43,7 @@ func exprVars() map[string]any {
 //     resolved like a path.
 //   - exists, isFile, isDir: whether a path exists, is a regular file or is a
 //     directory, following symlinks.
+//   - parseBool: strconv.ParseBool, to use a var as a bool.
 //
 // Paths are resolved by resolvePath, never against the working directory. Not
 // finding something is a value, not an error, so that conditions and
@@ -43,7 +54,8 @@ func exprFuncs(dstRoot string) map[string]any {
 		return info, err == nil
 	}
 	return map[string]any{
-		"env": os.Getenv,
+		"env":       os.Getenv,
+		"parseBool": strconv.ParseBool,
 		"lookPath": func(names ...string) string {
 			for _, name := range names {
 				if strings.Contains(name, "/") {
@@ -81,26 +93,92 @@ func resolvePath(dstRoot, path string) string {
 
 // exprEnv returns the expr environment: the variables from exprVars and the
 // functions from exprFuncs.
-func exprEnv(dstRoot string) map[string]any {
-	env := exprVars()
+func exprEnv(dstRoot string, vars map[string]string) map[string]any {
+	env := exprVars(vars)
 	maps.Copy(env, exprFuncs(dstRoot))
 	return env
 }
 
-// evalExpr compiles and runs the expr expression src in env.
+// evalExpr compiles and runs the expr expression src in env. A reference
+// vars.x to a var that is not defined is an error, unless it is the left
+// operand of ??, as in vars.x ?? "default".
 func evalExpr(env map[string]any, src string, opts ...expr.Option) (any, error) {
 	program, err := expr.Compile(src, append([]expr.Option{expr.Env(env)}, opts...)...)
 	if err != nil {
 		return nil, err
 	}
+	if vars, ok := env["vars"].(map[string]any); ok {
+		refs, err := exprVarRefs(src)
+		if err != nil {
+			return nil, err
+		}
+		for _, ref := range refs {
+			if _, ok := vars[ref.name]; !ok && !ref.optional {
+				return nil, fmt.Errorf("undefined var vars.%s (use vars.%[1]s ?? default if it is optional)", ref.name)
+			}
+		}
+	}
 	return expr.Run(program, env)
 }
 
-func evalCondition(dstRoot, configPath, element, condition string) bool {
+// varRef is a reference vars.name in an expression. It is optional if it is
+// the left operand of ??.
+type varRef struct {
+	name     string
+	optional bool
+}
+
+// exprVarRefs returns the references vars.x and vars["x"] in the expression
+// src.
+func exprVarRefs(src string) ([]varRef, error) {
+	tree, err := parser.Parse(src)
+	if err != nil {
+		return nil, err
+	}
+	v := &varRefVisitor{optional: map[ast.Node]bool{}}
+	ast.Walk(&tree.Node, v)
+	refs := make([]varRef, len(v.members))
+	for i, m := range v.members {
+		refs[i] = varRef{
+			name:     m.Property.(*ast.StringNode).Value,
+			optional: v.optional[m],
+		}
+	}
+	return refs, nil
+}
+
+type varRefVisitor struct {
+	members  []*ast.MemberNode
+	optional map[ast.Node]bool // left operands of ??
+}
+
+func (v *varRefVisitor) Visit(node *ast.Node) {
+	switch n := (*node).(type) {
+	case *ast.MemberNode:
+		id, ok := n.Node.(*ast.IdentifierNode)
+		if !ok || id.Value != "vars" {
+			return
+		}
+		if _, ok := n.Property.(*ast.StringNode); ok {
+			v.members = append(v.members, n)
+		}
+	case *ast.BinaryNode:
+		if n.Operator != "??" {
+			return
+		}
+		left := n.Left
+		if c, ok := left.(*ast.ChainNode); ok { // vars?.x
+			left = c.Node
+		}
+		v.optional[left] = true
+	}
+}
+
+func evalCondition(env map[string]any, configPath, element, condition string) bool {
 	if condition == "" {
 		return true
 	}
-	out, err := evalExpr(exprEnv(dstRoot), condition, expr.AsBool())
+	out, err := evalExpr(env, condition, expr.AsBool())
 	if err != nil {
 		fmt.Fprintf(os.Stderr, "Error evaluating expression in file: %s, element: %s\n", configPath, element)
 		fmt.Fprintf(os.Stderr, "Condition: %s\n", condition)
