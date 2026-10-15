@@ -331,18 +331,18 @@ font_size = '9'
 theme     = 'dark'
 ```
 
-| Variable    | base             | work             | games                              |
-|-------------|------------------|------------------|------------------------------------|
-| `font_size` | `11` (1)         | `13` (1)         | `11` (2: `base` comes before `work`) |
-| `editor`    | `vim` (1)        | `vim` (2)        | `vim` (2)                          |
-| `theme`     | undefined (4)    | undefined (4)    | `dark` (3)                         |
+| Variable    | base          | work          | games                                |
+|-------------|---------------|---------------|--------------------------------------|
+| `font_size` | `11` (1)      | `13` (1)      | `11` (2: `base` comes before `work`) |
+| `editor`    | `vim` (1)     | `vim` (2)     | `vim` (2)                            |
+| `theme`     | undefined (4) | undefined (4) | `dark` (3)                           |
 
 `games` gets `11` rather than its own default `9`, because a `[vars]`
 definition in any repository comes before `[default_vars]`. Because `base` and
 `work` define `font_size` differently and `games` does not define it in
 `[vars]`, `dotfiles` prints a warning naming the definition `games` uses.
-No warning is printed when every repository defines the variable in its own
-`[vars]`, or for `[default_vars]`, which are never shared.
+Nothing is printed for differences that only involve each repository's own
+`[vars]` or `[default_vars]`.
 
 ### Default Root Item Handling
 
