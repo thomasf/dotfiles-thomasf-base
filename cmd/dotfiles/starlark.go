@@ -9,9 +9,11 @@ import (
 	"os"
 	"path/filepath"
 	"slices"
+	"strconv"
 	"strings"
 	"sync"
 
+	"go.starlark.net/resolve"
 	"go.starlark.net/starlark"
 	"go.starlark.net/syntax"
 )
@@ -31,13 +33,73 @@ func compileStarlark(name, src string) (*starlark.Program, error) {
 	names := starlarkNames()
 	_, prog, err := starlark.SourceProgramOptions(starlarkFileOptions, name, src, func(name string) bool { return names[name] })
 	if err != nil {
-		return nil, err
+		return nil, starlarkCompileError(src, err)
 	}
 	if prog.NumLoads() > 0 {
 		_, pos := prog.Load(0)
-		return nil, fmt.Errorf("%s: load is not supported", pos)
+		return nil, errors.New(starlarkMessage(src, pos, "load is not supported"))
 	}
 	return prog, nil
+}
+
+// starlarkCompileError returns err, an error from compiling src, with the
+// lines of src that it is about. A resolve.ErrorList has all its errors, not
+// only the first.
+func starlarkCompileError(src string, err error) error {
+	var msgs []string
+	if list, ok := errors.AsType[resolve.ErrorList](err); ok {
+		for _, e := range list {
+			msgs = append(msgs, starlarkMessage(src, e.Pos, e.Msg))
+		}
+	} else if e, ok := errors.AsType[syntax.Error](err); ok {
+		msgs = append(msgs, starlarkMessage(src, e.Pos, e.Msg))
+	} else {
+		return err
+	}
+	return errors.New(strings.Join(msgs, "\n"))
+}
+
+// starlarkContextLines is the number of lines of src shown before the line
+// of an error.
+const starlarkContextLines = 3
+
+// starlarkMessage returns msg at pos in src, followed by up to
+// starlarkContextLines lines of src before it, and that line with a caret
+// under the column:
+//
+//	starlark[0].src:3:16: got ',', want primary expression
+//	  1 | size = 10
+//	  2 | merge(doc, {
+//	  3 |     "a": size +,
+//	    |                ^
+func starlarkMessage(src string, pos syntax.Position, msg string) string {
+	s := fmt.Sprintf("%s: %s", pos, msg)
+	lines := strings.Split(src, "\n")
+	if pos.Line < 1 || int(pos.Line) > len(lines) {
+		return s
+	}
+	line := lines[pos.Line-1]
+	num := strconv.Itoa(int(pos.Line))
+	for n := max(1, int(pos.Line)-starlarkContextLines); n < int(pos.Line); n++ {
+		s += strings.TrimRight(fmt.Sprintf("\n  %*d | %s", len(num), n, lines[n-1]), " ")
+	}
+	s += fmt.Sprintf("\n  %s | %s", num, line)
+	if pos.Col < 1 {
+		return s
+	}
+	// Keep the tabs before the column, so that the caret lines up.
+	var indent strings.Builder
+	for i, r := range []rune(line) {
+		if i >= int(pos.Col)-1 {
+			break
+		}
+		if r == '\t' {
+			indent.WriteRune('\t')
+		} else {
+			indent.WriteRune(' ')
+		}
+	}
+	return s + fmt.Sprintf("\n  %s | %s^", strings.Repeat(" ", len(num)), indent.String())
 }
 
 // starlarkNames returns the names predeclared in [[starlark]] code.
@@ -214,19 +276,28 @@ func readBuiltin(srcRoot string) *starlark.Builtin {
 	})
 }
 
-// starlarkError returns err with the position of the innermost Starlark
-// code that caused it, rather than a whole backtrace.
-func starlarkError(err error) error {
+// starlarkError returns err, an error from running src, with the line of src
+// that caused it and the lines it was called from, innermost first, rather
+// than a backtrace that includes built-ins.
+func starlarkError(src string, err error) error {
 	ee, ok := errors.AsType[*starlark.EvalError](err)
 	if !ok {
 		return err
 	}
+	var msgs []string
 	for _, frame := range slices.Backward(ee.CallStack) {
 		if pos := frame.Pos; pos.IsValid() && pos.Filename() != "<builtin>" {
-			return fmt.Errorf("%s: %s", pos, ee.Msg)
+			msg := "called from here"
+			if len(msgs) == 0 {
+				msg = ee.Msg
+			}
+			msgs = append(msgs, starlarkMessage(src, pos, msg))
 		}
 	}
-	return err
+	if len(msgs) == 0 {
+		return err
+	}
+	return errors.New(strings.Join(msgs, "\n"))
 }
 
 // StarlarkAction runs the compiled Starlark code Program on Dst, a path
@@ -234,12 +305,14 @@ func starlarkError(err error) error {
 // doc, the code changes it, and the result is written back if it differs.
 // Missing says what to do when Dst does not exist; a created file gets the
 // permission bits Mode, or 0o644. Format, when set, overrides the format
-// implied by the extension of Dst.
+// implied by the extension of Dst. Src, the code Program was compiled from,
+// is shown in error messages.
 type StarlarkAction struct {
 	SrcRoot string
 	DstRoot string
 	Dst     string
 	Program *starlark.Program
+	Src     string
 	Missing MissingAction
 	Format  string
 	Indent  int
@@ -368,7 +441,7 @@ func (t *StarlarkAction) apply(dst, format string, data []byte) ([]byte, error) 
 	thread.SetMaxExecutionSteps(maxStarlarkSteps)
 	globals, err := t.Program.Init(thread, starlarkPredeclared(t.SrcRoot, t.DstRoot, dst, t.Vars, doc))
 	if err != nil {
-		return nil, starlarkError(err)
+		return nil, starlarkError(t.Src, err)
 	}
 	if v, ok := globals["doc"]; ok {
 		if doc, ok = v.(*starlark.Dict); !ok {

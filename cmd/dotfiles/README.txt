@@ -640,8 +640,22 @@ To generate a whole file from data in the repository, clear doc first:
   '''
 
 Scripts are checked when the config is loaded, so a syntax error or a
-misspelled name is reported before anything runs, as
-starlark[0].src:<line>:<column>. Lines count from the first line of src.
+misspelled name is reported before anything runs. Errors show the position as
+starlark[0].src:<line>:<column>, followed by up to three lines of src
+before it and that line with a caret under the column; an error while running
+also shows the lines it was called from. Lines count from the first line of
+src:
+
+  starlark[0].src:2:20: int: invalid literal with base 10: x
+    1 | def scaled(px):
+    2 |     return px * int(vars.get("dpi", "x")) // 96
+      |                    ^
+  starlark[0].src:4:39: called from here
+    1 | def scaled(px):
+    2 |     return px * int(vars.get("dpi", "x")) // 96
+    3 |
+    4 | merge(doc, {"panel": {"height": scaled(28)}})
+      |                                       ^
 
 ### [[script]]
 

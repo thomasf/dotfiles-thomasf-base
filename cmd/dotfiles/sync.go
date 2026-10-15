@@ -163,6 +163,7 @@ func (r *Repository) Sync() ([]Action, error) {
 				DstRoot: r.dstRoot,
 				Dst:     dst,
 				Program: t.program,
+				Src:     t.Src,
 				Missing: t.Missing,
 				Format:  t.Format,
 				Indent:  t.Indent,

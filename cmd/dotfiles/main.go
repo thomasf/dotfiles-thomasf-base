@@ -160,7 +160,7 @@ func (d *Dotfiles) Run(stdout, stderr io.Writer, args []string) error {
 	if len(d.runErrors) > 0 {
 		fmt.Fprintf(stderr, "\n--- Summary of errors (%d) ---\n", len(d.runErrors))
 		for _, err := range d.runErrors {
-			fmt.Fprintf(stderr, "  - %v\n", err)
+			fmt.Fprintf(stderr, "  - %s\n", strings.ReplaceAll(err.Error(), "\n", "\n    "))
 		}
 		return errors.New("some commands failed")
 	}

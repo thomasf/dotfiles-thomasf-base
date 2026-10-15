@@ -552,3 +552,55 @@ d.clear()
 		t.Errorf("load: got error %v", err)
 	}
 }
+
+func TestStarlarkErrorMessages(t *testing.T) {
+	t.Parallel()
+	// All resolve errors are shown, and a caret after a tab lines up.
+	_, err := compileStarlark("s", "merge(dok, {})\nif True:\n\tdoc[\"a\"] = sizes\n")
+	want := `s:1:7: undefined: dok
+  1 | merge(dok, {})
+    |       ^
+s:3:13: undefined: sizes
+  1 | merge(dok, {})
+  2 | if True:
+  3 | 	doc["a"] = sizes
+    | 	           ^`
+	if err == nil || err.Error() != want {
+		t.Errorf("compile: got\n%v\nwant\n%s", err, want)
+	}
+
+	// A runtime error shows the line that failed and the lines it was called
+	// from, but not built-ins.
+	src := "def f(x):\n    return int(x)\n\ny = f(\"a\")\n"
+	prog, err := compileStarlark("s", src)
+	if err != nil {
+		t.Fatal(err)
+	}
+	_, err = prog.Init(&starlark.Thread{}, starlarkPredeclared("", "", "", nil, starlark.NewDict(0)))
+	want = `s:2:15: int: invalid literal with base 10: a
+  1 | def f(x):
+  2 |     return int(x)
+    |               ^
+s:4:6: called from here
+  1 | def f(x):
+  2 |     return int(x)
+  3 |
+  4 | y = f("a")
+    |      ^`
+	if err = starlarkError(src, err); err == nil || err.Error() != want {
+		t.Errorf("runtime: got\n%v\nwant\n%s", err, want)
+	}
+
+	// At most three lines are shown before the error, and line numbers are
+	// right-aligned.
+	_, err = compileStarlark("s", strings.Repeat("x = 1\n", 9)+"y = z\n")
+	want = `s:10:5: undefined: z
+   7 | x = 1
+   8 | x = 1
+   9 | x = 1
+  10 | y = z
+     |     ^`
+	if err == nil || err.Error() != want {
+		t.Errorf("line 10: got\n%v\nwant\n%s", err, want)
+	}
+}
