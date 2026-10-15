@@ -1,25 +1,13 @@
 #!/bin/bash
+#
+# Print the current xmonad workspace name; -p prints its prefix and -s
+# its suffix. Kept for old callers: see ws name.
+#
 
-hash wmctrl 2> /dev/null || exit 1
-name=$(wmctrl -d 2> /dev/null | grep  "[0-9]* \*" | tr -s ' '  | cut -d ' ' -f 10- | tr / _)
+# TODO: this is here for backwards compatible, remove later. Callers
+# left: the w.* launchers and nautilus in xmonad/bin-xmonad, emacs
+# init.el, wsenv-* and cdd in config-base/bash/functions, and scripts
+# in the private and divio repositories.
 
-[[ -z $name ]] \
-  && name=$(wmctrl -d 2> /dev/null | grep  "[0-9]* \*" | tr -s ' '  | cut -d ' ' -f 9- | tr / _)
-
-[[ -z $name ]] && exit 1
-
-case $1 in
-  -p)
-    echo -n $(echo -n $name | cut -d '.' -f -1)
-    ;;
-  -s)
-    if [[ "$name" == *\.* ]]; then
-      echo -n $(echo -n $name | cut -d '.' -f 2-)
-    else
-      exit 1
-    fi
-    ;;
-  *)
-    echo -n $name
-    ;;
-esac
+hash ws 2>/dev/null || exit 1
+exec ws name "$@" 2>/dev/null

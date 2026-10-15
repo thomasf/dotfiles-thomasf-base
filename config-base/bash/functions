@@ -129,41 +129,34 @@ rmpyc() {
   fi
 }
 
+# Workspace directories: the directory stored with wsdir-set, or the
+# ghq repository or worktree named like the workspace. See ws dir.
+# TODO: wsdir-set and wsdir-unset only wrap ws dir -set and -unset,
+# remove later.
 wsdir-set() {
-  hash wsname 2>/dev/null || return 0
-  if [[ $(wsname -p) ]]; then
-    mkdir -p ~/.config/wsdirs/
-    echo -ne $PWD > ~/.config/wsdirs/$(wsname -p)
-  fi
+  hash ws 2>/dev/null || return 0
+  ws dir -set
 }
 
 wsdir-unset() {
-  hash wsname 2>/dev/null || return 0
-  if [[ $(wsname -p) ]]; then
-    rm -f ~/.config/wsdirs/$(wsname -p)
-  fi
+  hash ws 2>/dev/null || return 0
+  ws dir -unset
 }
 
 wsdir-cd() {
-  hash wsname 2>/dev/null || return 0
-  local wsnamep=$(wsname -p)
-  if [ -f ~/.config/wsdirs/$wsnamep ]; then
-    cd $(cat ~/.config/wsdirs/$wsnamep)
-  else
-    return 1
-  fi
+  hash ws 2>/dev/null || return 1
+  local dir
+  dir=$(ws dir 2>/dev/null) || return 1
+  cd "$dir"
 }
 
 wsdir-get() {
-  hash wsname 2>/dev/null || return 0
-  local wsnamep=$(wsname -p)
-  if [ -f ~/.config/wsdirs/$wsnamep ]; then
-    echo -ne $(cat ~/.config/wsdirs/$wsnamep)
-  else
-    return 1
-  fi
+  hash ws 2>/dev/null || return 1
+  ws dir 2>/dev/null
 }
 
+# TODO: wsenv-edit and wsenv-source still use wsname, move them to
+# ws name -p so that wsname can be removed.
 wsenv-edit() {
   hash wsname 2>/dev/null || return 0
   local wsnamep=""
@@ -412,6 +405,9 @@ mkcd() {
 [[ -d ~/src/dotfiles ]] && alias cdhs='builtin cd ~/src/dotfiles'
 
 # z workspace prefix name
+# TODO: init tries wsdir-cd first, and ws dir now finds the ghq
+# repository named like the workspace, so this is mostly unused. Remove
+# later, storing the emacs and www/share directories with wsdir-set.
 cdd() {
   if [ -n "$DISPLAY" ] && hash wsname 2>/dev/null; then
     local name
