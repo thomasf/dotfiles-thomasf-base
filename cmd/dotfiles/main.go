@@ -89,6 +89,7 @@ func (d *Dotfiles) Run(stdout, stderr io.Writer, args []string) error {
 		fmt.Fprintf(stderr, "  repos [status]  Show known repos and the state of their remotes\n")
 		fmt.Fprintf(stderr, "  repos fix       Add missing remotes, correct remote URLs and create missing local backup repos\n")
 		fmt.Fprintf(stderr, "  repos clone [name...]  Clone missing known repos (all, or the named ones) from the upstream remote, then run repos fix\n")
+		fmt.Fprintf(stderr, "  doc [topic]     Print the manual, or only the sections whose heading or number matches topic; doc toc lists them\n")
 		fmt.Fprintf(stderr, "\nOptions:\n")
 		fs.PrintDefaults()
 	}
@@ -117,6 +118,9 @@ func (d *Dotfiles) Run(stdout, stderr io.Writer, args []string) error {
 	}
 
 	command := remainingArgs[0]
+	if command == "doc" {
+		return d.Doc(remainingArgs[1:])
+	}
 
 	if err := d.discoverRepos(); err != nil {
 		return err

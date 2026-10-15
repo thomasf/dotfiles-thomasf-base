@@ -4,115 +4,27 @@ A tool to manage and synchronize dotfiles from multiple repositories. It
 automates the process of creating symlinks, configuring git, and running setup
 scripts.
 
-## Repository Discovery
+`dotfiles doc` prints this file. `dotfiles doc toc` prints its numbered table
+of contents, and `dotfiles doc <topic>` prints only the sections whose number
+or heading matches the topic, e.g. `dotfiles doc 2.7`, `dotfiles doc starlark`
+or `dotfiles doc order of execution`; an exact heading wins over headings that
+only contain the topic. Pipe it to a pager, e.g. `dotfiles doc | less`.
+
+## Dotfiles Repositories
+
+`dotfiles` works on a set of dotfiles repositories: it finds them on disk
+and, with `[repositories]`, knows which ones should exist and where their
+remotes are.
+
+### Discovery
 
 By default, the tool looks for repositories in `~/src/dotfiles`. Each directory
 in this path is treated as a separate dotfiles repository. This path can be
 changed using the `-repos` flag or the `DOTFILES_REPOS` environment variable.
 
-## dotfiles.toml Configuration
+### `[repositories]`
 
-Each repository can contain a `dotfiles.toml` or `.dotfiles.toml` file to
-configure its behavior.
-
-### Ignore
-
-Specify patterns for files and directories that should not be synchronized.
-
-```toml
-ignore = ["*.log", "temp/", "local-config"]
-```
-
-### Mount
-
-Explicitly map source files or directories in the repository to specific
-destinations in the target path. Supports wildcards and conditional execution.
-
-```toml
-[[mount]]
-src = "config/awesome"
-dst = ".config/awesome"
-
-[[mount]]
-condition = "os == 'linux'"
-src = "bin/*"
-dst = "bin"
-```
-
-When using wildcards in `src`, the files are placed inside the directory
-specified by `dst`.
-
-### Git Configuration
-
-Set global git configuration values when the repository is synchronized.
-
-```toml
-[git]
-"user.name" = "Your Name"
-"user.email" = "user@example.com"
-```
-
-To unset a git configuration value, set it to an empty string.
-
-Values are [templates](#templates), rendered when the config is loaded, so
-they can come from variables or differ between machines. A value that renders
-to an empty string unsets the key:
-
-```toml
-[git]
-"user.email" = "{{.vars.email}}"
-"core.editor" = '{{lookPath "nvim" "vim" "vi"}}'
-"gpg.program" = '{{if eq .os "darwin"}}/opt/homebrew/bin/gpg{{end}}'
-```
-
-### Scripts
-
-Run shell scripts at different stages of the synchronization process. Scripts
-are executed using an embedded shell interpreter.
-
-- **phase = "pre"**: Runs before the files and git configuration of any
-  repository are set up, after `go install`.
-- **phase = "default"** (or empty): Runs after the repository's own files, git
-  configuration and templates, before the next repository's.
-- **phase = "post"**: Runs after every repository has been set up.
-
-See [Order of Execution](#order-of-execution) for the full order.
-
-```toml
-[[script]]
-phase = "pre"
-src = "echo Starting sync..."
-
-[[script]]
-condition = "os == 'darwin'"
-src = "echo Syncing on macOS..."
-
-[[script]]
-phase = "post"
-src = "echo Sync complete."
-```
-
-`src` is a [template](#templates), rendered when the config is loaded, with
-the same variables and functions as `[[template]]` files:
-
-```toml
-[[script]]
-src = '''
-foo-config set font.size "{{.vars.font_size}}"
-{{if lookPath "fc-cache"}}fc-cache -f{{end}}
-'''
-```
-
-The rendered text is inserted into the shell code as it is. Quote values with
-`shellQuote`, which makes any string a single shell word, quotes, `$` and
-newlines included: `foo-config set font.family {{shellQuote .vars.font}}`. A
-script that renders to an empty string is skipped. Because
-`src` is rendered during [planning](#planning), functions such as `isDir` see
-the files as they were before the run.
-
-### Repositories
-
-Gnown dotfiles repositories and the git remotes each of them should
+Known dotfiles repositories and the git remotes each of them should
 have. The section can appear in any number of repositories' config files:
 `names` from all files are merged and deduplicated, and a remote may be defined
 in several files as long as every definition is identical.
@@ -172,7 +84,364 @@ The `repos` commands use this configuration:
 Pass `-dry-run` before the command (`dotfiles -dry-run repos fix`) to print the
 actions without running them.
 
-### Templates
+## Order of Execution
+
+`install` first plans every action of every repository, then runs them. `plan`
+prints the same list, in the same order, without running anything.
+
+### Planning
+
+Repositories are taken in alphabetical order of their directory names in the
+repositories path, or in the order given with `-repository`. Planning has
+four steps, each done for all repositories before the next:
+
+1. **Read**: the config of every repository is read and checked, and the code
+   of `[[starlark]]` entries is compiled.
+2. **Merge variables**: the variables of all configs are merged, giving each
+   repository its own view of them (see Precedence).
+3. **Resolve**: each repository's variables are resolved, rendering them as
+   templates, and then its templated `src` and `dst` paths, `[[script]]`
+   sources and `[git]` values are rendered with them.
+4. **Plan**: each repository's `condition`s are evaluated and its actions are
+   planned.
+
+The variables of all repositories are known before any of them is resolved,
+so the order of repositories does not matter for that; which definition a
+repository gets is decided by `[repositories]` `names`.
+
+All of this happens before anything runs. Variables, conditions and templated
+paths therefore see the state from before the run: `isDir(".config/foo")` is
+false even if a mount earlier in the same run creates `.config/foo`. The
+content of a `[[template]]` file is rendered later, when its action runs, and
+`[[starlark]]` scripts run then too, both with the variables resolved during
+planning; their `exists`, `isFile`, `isDir` and `lookPath` see the files as
+they are at that point in the run.
+
+A repository whose config fails to load, whose variables fail to resolve, or
+that fails to plan is skipped completely, including its scripts. Its
+variables are still available to the other repositories if its config could
+be read.
+
+### Running
+
+The actions run in four stages, with the variables resolved during planning.
+Each stage goes through all repositories in order before the next stage
+starts:
+
+1. **go install**: `[[go]]` entries in config order, then the directories in
+   `cmd/` that no `[[go]]` entry names, alphabetically.
+2. **pre scripts**: `[[script]]` entries with `phase = "pre"`, in config order.
+3. **Files**, for one repository at a time:
+   1. `[[mount]]` entries in config order; the matches of a wildcard `src` in
+      alphabetical order.
+   2. Root items that are not ignored or mounted, alphabetically.
+   3. `[git]` settings, in alphabetical order of their keys.
+   4. `[[template]]` entries in config order, each `dst` in order. The
+      template file is rendered now, with the variables.
+   5. `[[starlark]]` entries in config order, each `dst` in order; the
+      matches of a wildcard `dst` in alphabetical order. The script gets the
+      variables as `vars`.
+   6. Default-phase `[[script]]` entries in config order.
+4. **post scripts**: `[[script]]` entries with `phase = "post"`, in config
+   order.
+
+For example, with the repositories `base` and `private`, a mount in `private`
+runs after all of `base`'s files, git settings, templates, `[[starlark]]`
+entries and default scripts, and a post script in `base` runs after everything
+in `private` except `private`'s own post scripts.
+
+A failing action does not stop the run. All errors are listed at the end, and
+`dotfiles` exits with a non-zero status.
+
+## dotfiles.toml Configuration
+
+Each repository can contain a `dotfiles.toml` or `.dotfiles.toml` file to
+configure its behavior.
+
+### General
+
+This part covers what works the same way in every section: expressions and
+conditions, templates, templated paths, and the files that are linked without
+any section.
+
+After it, each section of the file is described in the order in which `install`
+uses it (see Order of Execution): `[vars]` first, because variables are
+resolved before anything else, then the entries from `[[go]]` to `[[script]]`.
+`[repositories]`, which only the `repos` commands use, is described under
+`[repositories]`.
+
+#### Expressions and Conditions
+
+Expressions are written in [expr](https://github.com/expr-lang/expr) and
+can be used almost anywhere: in `condition` fields, in templates with
+`{{expr "..."}}`, and so in `[vars]` values, paths, `[git]` values and
+`[[script]]` code.
+
+The `condition` field in `[[mount]]`, `[[script]]`, `[[template]]`,
+`[[starlark]]` and repository remotes is an expression that decides whether
+the action is performed, e.g. `os == 'linux' && hostname in ['yak', 'flam']`.
+
+The same variables and functions are available in conditions, templates and
+Starlark scripts, written as each expects:
+
+| Variable   | Value                                                  | Condition    | Template          | Starlark        |
+|------------|--------------------------------------------------------|--------------|-------------------|-----------------|
+| `os`       | The operating system (Go's `GOOS`: `linux`, `darwin`)  | `os`         | `{{.os}}`         | `os`            |
+| `arch`     | The CPU architecture (Go's `GOARCH`: `amd64`, `arm64`) | `arch`       | `{{.arch}}`       | `arch`          |
+| `hostname` | The system hostname                                    | `hostname`   | `{{.hostname}}`   | `hostname`      |
+| `vars`     | The variables, all strings                             | `vars.email` | `{{.vars.email}}` | `vars["email"]` |
+
+| Function              | Returns                                                                                                                          | Condition                 | Template                    |
+|-----------------------|----------------------------------------------------------------------------------------------------------------------------------|---------------------------|-----------------------------|
+| `env(name)`           | The value of an environment variable, or `""`.                                                                                   | `env('EDITOR')`           | `{{env "EDITOR"}}`          |
+| `lookPath(name, ...)` | The full path of the first of the named programs found in `PATH`, or `""`. A name containing a `/` is checked as a path instead. | `lookPath('nvim', 'vim')` | `{{lookPath "nvim" "vim"}}` |
+| `exists(path)`        | Whether `path` exists, following symlinks.                                                                                       | `exists('.ssh')`          | `{{exists ".ssh"}}`         |
+| `isFile(path)`        | Whether `path` is a regular file, following symlinks.                                                                            | `isFile('.zshrc')`        | `{{isFile ".zshrc"}}`       |
+| `isDir(path)`         | Whether `path` is a directory, following symlinks.                                                                               | `isDir('.config/foo')`    | `{{isDir ".config/foo"}}`   |
+| `parseBool(s)`        | `s` as a bool; `true`, `false`, `1`, `0`, `t` and `f` are accepted, anything else is an error.                                   | `parseBool(vars.gui)`     | `{{parseBool .vars.gui}}`   |
+
+Starlark scripts call the functions as conditions do, with single or double
+quotes: `lookPath("nvim", "vim")`.
+
+Relative paths are relative to the destination path (the home directory
+unless `-dst` is given), never to the directory `dotfiles` runs in. `~` is not
+expanded.
+
+Not finding a program or path is not an error, so it can be tested for, e.g.
+`condition = "lookPath('alacritty') != ''"`.
+
+#### Useful expr Features
+
+[expr](https://expr-lang.org/docs/language-definition) has many operators
+and built-in functions; these come up most in conditions and in
+`{{expr "..."}}`:
+
+| Expression                                                | Use                                                       |
+|-----------------------------------------------------------|-----------------------------------------------------------|
+| `hostname in ['yak', 'flam']`, `os not in [...]`          | Test membership in a list.                                |
+| `&&`, `\|\|`, `!` or `and`, `or`, `not`                   | Combine tests.                                            |
+| `hostname startsWith 'work-'`, `endsWith`, `contains`     | Test parts of a string.                                   |
+| `hostname matches '^(yak\|flam)$'`                        | Test a string against a regular expression.               |
+| `vars.theme ?? 'dark'`                                    | A default for a variable that may not be defined.         |
+| `os == 'darwin' ? '13' : '11'`                            | Choose between two values.                                |
+| `{'yak': '165', 'flam': '170'}[hostname] ?? '96'`         | Look a value up per host, with a default.                 |
+| `let size = int(vars.font_size); size > 10`               | Name a value to use it more than once.                    |
+| `int(s)`, `float(s)`, `string(x)`                         | Convert values, e.g. vars, which are strings.             |
+| `lower(s)`, `upper(s)`, `trim(s)`, `replace(s, old, new)` | Change strings.                                           |
+| `split(s, ',')`, `join(xs, ',')`, `len(x)`                | Split and join strings; sizes of strings, lists and maps. |
+| `any(xs, {lookPath(#) != ''})`, `all(...)`                | Test every element of a list; `#` is the element.         |
+| `filter(xs, {...})`, `map(xs, {...})`                     | Select or change the elements of a list.                  |
+| `1..3`                                                    | A list of integers, `[1, 2, 3]`.                          |
+
+In a TOML value written in double quotes, write string literals with single
+quotes, as above.
+
+#### Templates
+
+Many values in `dotfiles.toml` are Go
+[text/template](https://pkg.go.dev/text/template) templates: `[vars]` values,
+paths, `[git]` values, `[[script]]` code, and the files of `[[template]]`
+entries. A value without `{{` is used as it is.
+
+Templates have the same variables and functions as expressions: variables as
+fields (`{{.os}}`, `{{.hostname}}`, `{{.vars.email}}`) and functions as
+template functions (`{{env "HOME"}}`,
+`{{lookPath "pinentry-mac" "pinentry-gnome3"}}`,
+`{{if isDir "/Applications/Emacs.app"}}...{{end}}`). In addition:
+
+- `{{expr "..."}}` returns the value of an expression evaluated like a
+  condition, e.g. ``{{if expr `hostname in ["yak", "flam"]`}}...{{end}}``.
+- `{{shellQuote s}}` quotes `s` as a single word for a POSIX shell (`sh`,
+  `bash`, `zsh`): `two words` becomes `'two words'`, and a word that needs no
+  quoting is left as it is. Use it for values in `[[script]]` code and in
+  templates of shell files.
+
+Using a field that does not exist, such as `{{.hostnme}}`, is an error.
+
+#### Templated Paths
+
+`src` and `dst` in `[[mount]]`, `[[go]]` and `[[template]]`, and `dst` in
+`[[starlark]]`, are templates, with the same variables and functions as
+templates:
+
+```toml
+[[mount]]
+src = 'config/foo-{{.os}}.conf'
+dst = '.config/foo/foo.conf'
+```
+
+They are rendered when the config is loaded. An entry whose `src` or `dst`
+renders to an empty string is skipped, e.g.
+`dst = '{{if eq .os "linux"}}.config/foo{{end}}'`; for `[[template]]`, only
+that `dst` is skipped. `[[script]]` `src` is shell code but a template too (see
+`[[script]]`); `[[starlark]]` `src` is not a template, because the script gets
+the variables directly.
+
+#### Default Root Item Handling
+
+Files and directories at the root of the repository that are not ignored or
+explicitly mounted are automatically symlinked to the destination path. If a
+file name does not start with a dot, one is prepended (e.g., `bashrc` becomes
+`~/.bashrc`).
+
+### `[vars]` and `[default_vars]`
+
+`[vars]` defines variables for templates, templated paths, scripts, `[git]`
+values, conditions and `[[starlark]]` entries:
+
+```toml
+[vars]
+email     = 'me@example.com'
+font_size = '{{if eq .hostname "laptop"}}13{{else}}11{{end}}'
+editor    = '{{lookPath "nvim" "vim" "vi"}}'
+big_font  = '{{expr `int(vars.font_size) + 2`}}'
+```
+
+They are used as `{{.vars.email}}` in templates and `vars.email` in
+expressions.
+
+Every value is a string, rendered as a template when the config is loaded, so
+`font_size = 11` is an error; write `font_size = '11'`. A value can refer to
+other variables as `.vars.x`, `$.vars.x`, `index .vars "x"`, or `vars.x` inside
+`expr`; a reference cycle is an error.
+
+Because every variable is a string, convert it where another type is needed:
+`int(vars.font_size) > 10` or `parseBool(vars.gui)` in a condition,
+`{{if parseBool .vars.gui}}` in a template. Note that `{{if .vars.gui}}` is
+true even for `'false'`, because the string is not empty.
+
+Using a variable that is not defined is an error, in templates and in
+expressions. To make one optional, give a default: `vars.font_size ?? '11'` in
+an expression, `{{or (index .vars "font_size") "11"}}` in a template.
+
+`[default_vars]` defines fallback values that only the repository itself sees,
+used only if no repository sets the variable in `[vars]`:
+
+```toml
+[default_vars]
+font_size = '11'
+```
+
+A variable can not be in both `[vars]` and `[default_vars]` of the same
+repository.
+
+#### Precedence
+
+Variables in `[vars]` are shared between repositories; `[default_vars]` are
+not. For each variable, a repository uses the first of:
+
+1. its own `[vars]`;
+2. the `[vars]` of the other repositories, the first in repository order;
+3. its own `[default_vars]`;
+4. nothing: using the variable is an error, unless it has a default where it
+   is used (`vars.x ?? 'd'`, see above).
+
+Repository order is the order of `[repositories]` `names` (merged from all
+repositories, first occurrence first), then the repositories not named there,
+by path. It is not the order in which repositories are planned.
+
+For example, with `names = ["base", "work", "games"]`:
+
+```toml
+# base/dotfiles.toml
+[vars]
+font_size = '11'
+editor    = 'vim'
+```
+
+```toml
+# work/dotfiles.toml
+[vars]
+font_size = '13'
+```
+
+```toml
+# games/dotfiles.toml
+[default_vars]
+font_size = '9'
+theme     = 'dark'
+```
+
+| Variable    | base          | work          | games                                |
+|-------------|---------------|---------------|--------------------------------------|
+| `font_size` | `11` (1)      | `13` (1)      | `11` (2: `base` comes before `work`) |
+| `editor`    | `vim` (1)     | `vim` (2)     | `vim` (2)                            |
+| `theme`     | undefined (4) | undefined (4) | `dark` (3)                           |
+
+`games` gets `11` rather than its own default `9`, because a `[vars]`
+definition in any repository comes before `[default_vars]`. Because `base` and
+`work` define `font_size` differently and `games` does not define it in
+`[vars]`, `dotfiles` prints a warning naming the definition `games` uses.
+Nothing is printed for differences that only involve each repository's own
+`[vars]` or `[default_vars]`.
+
+### `[[go]]`
+
+Install Go programs from the repository with `go install`, run in the
+package's directory:
+
+```toml
+[[go]]
+src = "cmd/batt"
+condition = "hostname in ['yak']"
+```
+
+`src` is a directory in the repository. Every directory in `cmd/` that no
+`[[go]]` entry names is installed too, so a `[[go]]` entry is only needed for
+a program elsewhere or for a `condition`. Programs are installed before
+anything else runs, so scripts can use them.
+
+### `[[ignore]]`
+
+Specify patterns for files and directories that should not be synchronized.
+
+```toml
+ignore = ["*.log", "temp/", "local-config"]
+```
+
+### `[[mount]]`
+
+Explicitly map source files or directories in the repository to specific
+destinations in the target path. Supports wildcards and conditional execution.
+
+```toml
+[[mount]]
+src = "config/awesome"
+dst = ".config/awesome"
+
+[[mount]]
+condition = "os == 'linux'"
+src = "bin/*"
+dst = "bin"
+```
+
+When using wildcards in `src`, the files are placed inside the directory
+specified by `dst`.
+
+### `[git]`
+
+Set global git configuration values when the repository is synchronized.
+
+```toml
+[git]
+"user.name" = "Your Name"
+"user.email" = "user@example.com"
+```
+
+To unset a git configuration value, set it to an empty string.
+
+Values are templates, rendered when the config is loaded, so they can come from
+variables or differ between machines. A value that renders to an empty string
+unsets the key:
+
+```toml
+[git]
+"user.email" = "{{.vars.email}}"
+"core.editor" = '{{lookPath "nvim" "vim" "vi"}}'
+"gpg.program" = '{{if eq .os "darwin"}}/opt/homebrew/bin/gpg{{end}}'
+```
+
+### `[[template]]`
 
 Render a Go [text/template](https://pkg.go.dev/text/template) file and write
 the result to one or more destinations.
@@ -189,22 +458,7 @@ dst = [".config/Code/User/settings.json", ".config/VSCodium/User/settings.json"]
 ```
 
 `dst` is a single path or a list of paths, relative to the destination path.
-
-Templates have the same variables and functions as
-[conditions](#conditions): variables as fields (`{{.os}}`, `{{.hostname}}`,
-`{{.vars.email}}`)
-and functions as template functions (`{{env "HOME"}}`,
-`{{lookPath "pinentry-mac" "pinentry-gnome3"}}`,
-`{{if isDir "/Applications/Emacs.app"}}...{{end}}`). In addition:
-
-- `{{expr "..."}}` returns the value of an expression evaluated like a
-  condition, e.g. ``{{if expr `hostname in ["yak", "flam"]`}}...{{end}}``.
-- `{{shellQuote s}}` quotes `s` as a single word for a POSIX shell (`sh`,
-  `bash`, `zsh`): `two words` becomes `'two words'`, and a word that needs no
-  quoting is left as it is. Use it for values in `[[script]]` code and in
-  templates of shell files.
-
-Using a field that does not exist, such as `{{.hostnme}}`, is an error.
+The file is a template, rendered when the action runs.
 
 If a `dst` ends in `.json` or `.toml`, the rendered output must parse as that
 format, or the file is not written.
@@ -241,7 +495,7 @@ file linked from a repository.
 The template source is an ordinary file in the repository; it is linked like
 any other file unless it is ignored or mounted elsewhere.
 
-### Starlark
+### `[[starlark]]`
 
 Edit structured config files, including ones that an application also
 writes to, with a [Starlark](https://github.com/bazelbuild/starlark/blob/master/spec.md)
@@ -277,7 +531,7 @@ back in the same format.
 |-------------|--------------------|-----------------------------------------------------------------------------------------------------------------------|
 | `src`       | required           | The Starlark script.                                                                                                  |
 | `dst`       | required           | A path or a list of paths, relative to the destination path. Wildcards (`*/settings.json`) only match existing files. |
-| `condition` |                    | A [condition](#conditions).                                                                                           |
+| `condition` |                    | A condition.                                                                                                          |
 | `missing`   | `skip`             | What to do when a `dst` does not exist; see below.                                                                    |
 | `format`    | from the extension | `json` or `toml`, for a `dst` whose extension is neither `.json` nor `.toml`.                                         |
 | `indent`    | `2`                | Spaces per level of JSON output.                                                                                      |
@@ -296,8 +550,7 @@ a `dst` that is a symlink is refused.
 
 #### Names in Scripts
 
-Scripts have the [variables and functions of conditions](#conditions), and
-these:
+Scripts have the variables and functions of expressions, and these:
 
 | Name                      | Meaning                                                                                                                                                                                                                                    |
 |---------------------------|--------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|
@@ -378,254 +631,48 @@ Scripts are checked when the config is loaded, so a syntax error or a
 misspelled name is reported before anything runs, as
 `starlark[0].src:<line>:<column>`. Lines count from the first line of `src`.
 
-### Conditions
+### `[[script]]`
 
-The `condition` field in `[[mount]]`, `[[script]]`, `[[template]]`,
-`[[starlark]]` and
-repository remotes is an [expr](https://github.com/expr-lang/expr) expression
-that decides whether the action is performed, e.g.
-`os == 'linux' && hostname in ['yak', 'flam']`.
+Run shell scripts at different stages of the synchronization process. Scripts
+are executed using an embedded shell interpreter.
 
-The same variables and functions are available in conditions,
-[templates](#templates) and [Starlark scripts](#starlark), written as each
-expects:
+- **phase = "pre"**: Runs before the files and git configuration of any
+  repository are set up, after `go install`.
+- **phase = "default"** (or empty): Runs after the repository's own files, git
+  configuration, templates and `[[starlark]]` entries, before the next
+  repository's.
+- **phase = "post"**: Runs after every repository has been set up.
 
-| Variable   | Value                                                  | Condition    | Template          | Starlark        |
-|------------|--------------------------------------------------------|--------------|-------------------|-----------------|
-| `os`       | The operating system (Go's `GOOS`: `linux`, `darwin`)  | `os`         | `{{.os}}`         | `os`            |
-| `arch`     | The CPU architecture (Go's `GOARCH`: `amd64`, `arm64`) | `arch`       | `{{.arch}}`       | `arch`          |
-| `hostname` | The system hostname                                    | `hostname`   | `{{.hostname}}`   | `hostname`      |
-| `vars`     | The [variables](#variables), all strings               | `vars.email` | `{{.vars.email}}` | `vars["email"]` |
-
-| Function              | Returns                                                                                                                          | Condition                 | Template                    |
-|-----------------------|----------------------------------------------------------------------------------------------------------------------------------|---------------------------|-----------------------------|
-| `env(name)`           | The value of an environment variable, or `""`.                                                                                   | `env('EDITOR')`           | `{{env "EDITOR"}}`          |
-| `lookPath(name, ...)` | The full path of the first of the named programs found in `PATH`, or `""`. A name containing a `/` is checked as a path instead. | `lookPath('nvim', 'vim')` | `{{lookPath "nvim" "vim"}}` |
-| `exists(path)`        | Whether `path` exists, following symlinks.                                                                                       | `exists('.ssh')`          | `{{exists ".ssh"}}`         |
-| `isFile(path)`        | Whether `path` is a regular file, following symlinks.                                                                            | `isFile('.zshrc')`        | `{{isFile ".zshrc"}}`       |
-| `isDir(path)`         | Whether `path` is a directory, following symlinks.                                                                               | `isDir('.config/foo')`    | `{{isDir ".config/foo"}}`   |
-| `parseBool(s)`        | `s` as a bool; `true`, `false`, `1`, `0`, `t` and `f` are accepted, anything else is an error.                                   | `parseBool(vars.gui)`     | `{{parseBool .vars.gui}}`   |
-
-Starlark scripts call the functions as conditions do, with single or double
-quotes: `lookPath("nvim", "vim")`.
-
-Relative paths are relative to the destination path (the home directory
-unless `-dst` is given), never to the directory `dotfiles` runs in. `~` is not
-expanded.
-
-Not finding a program or path is not an error, so it can be tested for, e.g.
-`condition = "lookPath('alacritty') != ''"`.
-
-#### Useful expr Features
-
-[expr](https://expr-lang.org/docs/language-definition) has many operators
-and built-in functions; these come up most in conditions and in
-`{{expr "..."}}`:
-
-| Expression                                                | Use                                                       |
-|-----------------------------------------------------------|-----------------------------------------------------------|
-| `hostname in ['yak', 'flam']`, `os not in [...]`          | Test membership in a list.                                |
-| `&&`, `\|\|`, `!` or `and`, `or`, `not`                   | Combine tests.                                            |
-| `hostname startsWith 'work-'`, `endsWith`, `contains`     | Test parts of a string.                                   |
-| `hostname matches '^(yak\|flam)$'`                        | Test a string against a regular expression.               |
-| `vars.theme ?? 'dark'`                                    | A default for a variable that may not be defined.         |
-| `os == 'darwin' ? '13' : '11'`                            | Choose between two values.                                |
-| `{'yak': '165', 'flam': '170'}[hostname] ?? '96'`         | Look a value up per host, with a default.                 |
-| `let size = int(vars.font_size); size > 10`               | Name a value to use it more than once.                    |
-| `int(s)`, `float(s)`, `string(x)`                         | Convert values, e.g. vars, which are strings.             |
-| `lower(s)`, `upper(s)`, `trim(s)`, `replace(s, old, new)` | Change strings.                                           |
-| `split(s, ',')`, `join(xs, ',')`, `len(x)`                | Split and join strings; sizes of strings, lists and maps. |
-| `any(xs, {lookPath(#) != ''})`, `all(...)`                | Test every element of a list; `#` is the element.         |
-| `filter(xs, {...})`, `map(xs, {...})`                     | Select or change the elements of a list.                  |
-| `1..3`                                                    | A list of integers, `[1, 2, 3]`.                          |
-
-In a TOML value written in double quotes, write string literals with single
-quotes, as above.
-
-### Templated Paths
-
-`src` and `dst` in `[[mount]]`, `[[go]]` and `[[template]]`, and `dst` in
-`[[starlark]]`, are templates,
-with the same variables and functions as [templates](#templates):
+See Order of Execution for the full order.
 
 ```toml
-[[mount]]
-src = 'config/foo-{{.os}}.conf'
-dst = '.config/foo/foo.conf'
+[[script]]
+phase = "pre"
+src = "echo Starting sync..."
+
+[[script]]
+condition = "os == 'darwin'"
+src = "echo Syncing on macOS..."
+
+[[script]]
+phase = "post"
+src = "echo Sync complete."
 ```
 
-They are rendered when the config is loaded. An entry whose `src` or `dst`
-renders to an empty string is skipped, e.g.
-`dst = '{{if eq .os "linux"}}.config/foo{{end}}'`; for `[[template]]`, only
-that `dst` is skipped. `[[script]]` `src` is shell code but a template too
-(see [Scripts](#scripts)); `[[starlark]]` `src` is not a template, because the
-script gets the variables directly.
-
-### Variables
-
-`[vars]` defines variables for templates, templated paths, scripts, `[git]`
-values, conditions and [`[[starlark]]` entries](#starlark):
+`src` is a template, rendered when the config is loaded, with the same
+variables and functions as `[[template]]` files:
 
 ```toml
-[vars]
-email     = 'me@example.com'
-font_size = '{{if eq .hostname "laptop"}}13{{else}}11{{end}}'
-editor    = '{{lookPath "nvim" "vim" "vi"}}'
-big_font  = '{{expr `int(vars.font_size) + 2`}}'
+[[script]]
+src = '''
+foo-config set font.size "{{.vars.font_size}}"
+{{if lookPath "fc-cache"}}fc-cache -f{{end}}
+'''
 ```
 
-They are used as `{{.vars.email}}` in templates and `vars.email` in
-expressions.
-
-Every value is a string, rendered as a [template](#templates) when the config
-is loaded, so `font_size = 11` is an error; write `font_size = '11'`. A value
-can refer to other variables as `.vars.x`, `$.vars.x`, `index .vars "x"`, or
-`vars.x` inside `expr`; a reference cycle is an error.
-
-Because every variable is a string, convert it where another type is needed:
-`int(vars.font_size) > 10` or `parseBool(vars.gui)` in a condition,
-`{{if parseBool .vars.gui}}` in a template. Note that `{{if .vars.gui}}` is
-true even for `'false'`, because the string is not empty.
-
-Using a variable that is not defined is an error, in templates and in
-expressions. To make one optional, give a default: `vars.font_size ?? '11'` in
-an expression, `{{or (index .vars "font_size") "11"}}` in a template.
-
-`[default_vars]` defines fallback values that only the repository itself sees,
-used only if no repository sets the variable in `[vars]`:
-
-```toml
-[default_vars]
-font_size = '11'
-```
-
-A variable can not be in both `[vars]` and `[default_vars]` of the same
-repository.
-
-#### Precedence
-
-Variables in `[vars]` are shared between repositories; `[default_vars]` are
-not. For each variable, a repository uses the first of:
-
-1. its own `[vars]`;
-2. the `[vars]` of the other repositories, the first in repository order;
-3. its own `[default_vars]`;
-4. nothing: using the variable is an error, unless it has a default where it
-   is used (`vars.x ?? 'd'`, see above).
-
-Repository order is the order of `[repositories]` `names` (merged from all
-repositories, first occurrence first), then the repositories not named there,
-by path. It is not the order in which repositories are planned.
-
-For example, with `names = ["base", "work", "games"]`:
-
-```toml
-# base/dotfiles.toml
-[vars]
-font_size = '11'
-editor    = 'vim'
-```
-
-```toml
-# work/dotfiles.toml
-[vars]
-font_size = '13'
-```
-
-```toml
-# games/dotfiles.toml
-[default_vars]
-font_size = '9'
-theme     = 'dark'
-```
-
-| Variable    | base          | work          | games                                |
-|-------------|---------------|---------------|--------------------------------------|
-| `font_size` | `11` (1)      | `13` (1)      | `11` (2: `base` comes before `work`) |
-| `editor`    | `vim` (1)     | `vim` (2)     | `vim` (2)                            |
-| `theme`     | undefined (4) | undefined (4) | `dark` (3)                           |
-
-`games` gets `11` rather than its own default `9`, because a `[vars]`
-definition in any repository comes before `[default_vars]`. Because `base` and
-`work` define `font_size` differently and `games` does not define it in
-`[vars]`, `dotfiles` prints a warning naming the definition `games` uses.
-Nothing is printed for differences that only involve each repository's own
-`[vars]` or `[default_vars]`.
-
-### Default Root Item Handling
-
-Files and directories at the root of the repository that are not ignored or
-explicitly mounted are automatically symlinked to the destination path. If a
-file name does not start with a dot, one is prepended (e.g., `bashrc` becomes
-`~/.bashrc`).
-
-## Order of Execution
-
-`install` first plans every action of every repository, then runs them. `plan`
-prints the same list, in the same order, without running anything.
-
-### Planning
-
-Repositories are taken in alphabetical order of their directory names in the
-repositories path, or in the order given with `-repository`. Planning has
-four steps, each done for all repositories before the next:
-
-1. **Read**: the config of every repository is read and checked, and the code
-   of `[[starlark]]` entries is compiled.
-2. **Merge variables**: the [variables](#variables) of all configs are merged,
-   giving each repository its own view of them (see
-   [Precedence](#precedence)).
-3. **Resolve**: each repository's variables are resolved, rendering them as
-   templates, and then its templated `src` and `dst` paths, `[[script]]`
-   sources and `[git]` values are rendered with them.
-4. **Plan**: each repository's `condition`s are evaluated and its actions are
-   planned.
-
-The variables of all repositories are known before any of them is resolved,
-so the order of repositories does not matter for that; which definition a
-repository gets is decided by `[repositories]` `names`.
-
-All of this happens before anything runs. Variables, conditions and templated
-paths therefore see the state from before the run: `isDir(".config/foo")` is
-false even if a mount earlier in the same run creates `.config/foo`. The
-content of a `[[template]]` file is rendered later, when its action runs, and
-`[[starlark]]` scripts run then too, both with the variables resolved during
-planning; their `exists`, `isFile`, `isDir` and `lookPath` see the files as
-they are at that point in the run.
-
-A repository whose config fails to load, whose variables fail to resolve, or
-that fails to plan is skipped completely, including its scripts. Its
-variables are still available to the other repositories if its config could
-be read.
-
-### Running
-
-The actions run in four stages, with the variables resolved during planning.
-Each stage goes through all repositories in order before the next stage
-starts:
-
-1. **go install**: `[[go]]` entries in config order, then the directories in
-   `cmd/` that no `[[go]]` entry names, alphabetically.
-2. **pre scripts**: `[[script]]` entries with `phase = "pre"`, in config order.
-3. **Files**, for one repository at a time:
-   1. `[[mount]]` entries in config order; the matches of a wildcard `src` in
-      alphabetical order.
-   2. Root items that are not ignored or mounted, alphabetically.
-   3. `[git]` settings, in alphabetical order of their keys.
-   4. `[[template]]` entries in config order, each `dst` in order. The
-      template file is rendered now, with the variables.
-   5. `[[starlark]]` entries in config order, each `dst` in order; the
-      matches of a wildcard `dst` in alphabetical order. The script gets the
-      variables as `vars`.
-   6. Default-phase `[[script]]` entries in config order.
-4. **post scripts**: `[[script]]` entries with `phase = "post"`, in config
-   order.
-
-For example, with the repositories `base` and `private`, a mount in `private`
-runs after all of `base`'s files, git settings, templates, `[[starlark]]`
-entries and default scripts, and a post script in `base` runs after everything
-in `private` except `private`'s own post scripts.
-
-A failing action does not stop the run. All errors are listed at the end, and
-`dotfiles` exits with a non-zero status.
-
+The rendered text is inserted into the shell code as it is. Quote values with
+`shellQuote`, which makes any string a single shell word, quotes, `$` and
+newlines included: `foo-config set font.family {{shellQuote .vars.font}}`. A
+script that renders to an empty string is skipped. Because `src` is rendered
+during planning, functions such as `isDir` see the files as they were before
+the run.
