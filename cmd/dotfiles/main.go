@@ -86,6 +86,7 @@ func (d *Dotfiles) Run(stdout, stderr io.Writer, args []string) error {
 		fmt.Fprintf(stderr, "  status, s Run git status on all repos (only if changes exist)\n")
 		fmt.Fprintf(stderr, "  diff, d   Run git diff on all repos\n")
 		fmt.Fprintf(stderr, "  magit     Open magit-status in emacs for all repos with changes\n")
+		fmt.Fprintf(stderr, "  log [options]   Show the commits of all repos as one log, newest first (see log -h)\n")
 		fmt.Fprintf(stderr, "  repos [status]  Show known repos and the state of their remotes\n")
 		fmt.Fprintf(stderr, "  repos fix       Add missing remotes, correct remote URLs and create missing local backup repos\n")
 		fmt.Fprintf(stderr, "  repos clone [name...]  Clone missing known repos (all, or the named ones) from the upstream remote, then run repos fix\n")
@@ -141,6 +142,13 @@ func (d *Dotfiles) Run(stdout, stderr io.Writer, args []string) error {
 		d.Diff()
 	case "magit":
 		d.Magit()
+	case "log":
+		if err := d.Log(remainingArgs[1:]); err != nil {
+			if errors.Is(err, flag.ErrHelp) {
+				return nil
+			}
+			return err
+		}
 	case "repos":
 		if err := d.Repos(remainingArgs[1:]); err != nil {
 			fmt.Fprintln(stderr, err)
