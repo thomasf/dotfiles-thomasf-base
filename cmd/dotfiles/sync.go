@@ -152,6 +152,26 @@ func (r *Repository) Sync() ([]Action, error) {
 		}
 	}
 
+	for _, t := range r.config.Starlark {
+		if !t.ShouldRun(r) {
+			continue
+		}
+		mode, _ := parseFileMode(t.Mode) // checked by LoadConfig
+		for _, dst := range t.Dst {
+			actions = append(actions, &StarlarkAction{
+				SrcRoot: r.srcRoot,
+				DstRoot: r.dstRoot,
+				Dst:     dst,
+				Program: t.program,
+				Missing: t.Missing,
+				Format:  t.Format,
+				Indent:  t.Indent,
+				Mode:    mode,
+				Vars:    r.vars,
+			})
+		}
+	}
+
 	for _, s := range r.config.Script {
 		if (s.Phase == "" || s.Phase == "default") && s.ShouldRun(r) {
 			actions = append(actions, &ScriptAction{

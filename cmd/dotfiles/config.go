@@ -14,6 +14,7 @@ import (
 	"strings"
 
 	"github.com/pelletier/go-toml/v2"
+	"go.starlark.net/starlark"
 )
 
 var RepositoryConfigFileNames = []string{"dotfiles.toml", ".dotfiles.toml"}
@@ -75,6 +76,38 @@ func (t Template) ShouldRun(r *Repository) bool {
 	return evalCondition(r.exprEnv(), r.configPath, fmt.Sprintf("Template(src=%s)", t.Src), t.Condition)
 }
 
+// Starlark runs the Starlark code Src on each file in Dst: the file is
+// decoded into the dict doc, Src changes it, and the result is written back
+// if it differs. Missing says what happens when a file does not exist. Format
+// overrides the format implied by the extensions of Dst, Indent sets the
+// indent of JSON output, and Mode, an octal string, the permissions
+// of a created file.
+type Starlark struct {
+	Src       string        `toml:"src"`
+	Dst       StringList    `toml:"dst"`
+	Condition string        `toml:"condition,omitempty"`
+	Missing   MissingAction `toml:"missing,omitempty"`
+	Format    string        `toml:"format,omitempty"`
+	Indent    int           `toml:"indent,omitempty"`
+	Mode      string        `toml:"mode,omitempty"`
+
+	program *starlark.Program // Src, compiled by Config.validate
+}
+
+// MissingAction says what a [[starlark]] entry does when its destination
+// does not exist. The empty value means MissingSkip.
+type MissingAction string
+
+const (
+	MissingSkip   MissingAction = "skip"   // do nothing for that destination
+	MissingCreate MissingAction = "create" // start from an empty dict and write it
+	MissingError  MissingAction = "error"  // fail
+)
+
+func (t Starlark) ShouldRun(r *Repository) bool {
+	return evalCondition(r.exprEnv(), r.configPath, fmt.Sprintf("Starlark(dst=%v)", t.Dst), t.Condition)
+}
+
 // StringList is a list of strings that can be written in TOML as a single
 // string or as an array of strings.
 type StringList []string
@@ -127,6 +160,7 @@ type Config struct {
 	Script       []Script          `toml:"script"`
 	Go           []Go              `toml:"go"`
 	Template     []Template        `toml:"template"`
+	Starlark     []Starlark        `toml:"starlark"`
 	Repositories Repositories      `toml:"repositories"`
 	Vars         map[string]string `toml:"vars"`
 	DefaultVars  map[string]string `toml:"default_vars"` // only for this repository
@@ -268,6 +302,35 @@ func (c *Config) validate() error {
 			errs = append(errs, fmt.Errorf("template %d: invalid existing %q: want overwrite, skip or error", i, t.Existing))
 		}
 	}
+	for i := range c.Starlark {
+		t := &c.Starlark[i]
+		if t.Src == "" {
+			errs = append(errs, fmt.Errorf("starlark %d: src is required", i))
+		} else if prog, err := compileStarlark(fmt.Sprintf("starlark[%d].src", i), t.Src); err != nil {
+			errs = append(errs, err)
+		} else {
+			t.program = prog
+		}
+		if len(t.Dst) == 0 {
+			errs = append(errs, fmt.Errorf("starlark %d: dst is required", i))
+		}
+		switch t.Missing {
+		case "", MissingSkip, MissingCreate, MissingError:
+		default:
+			errs = append(errs, fmt.Errorf("starlark %d: invalid missing %q: want skip, create or error", i, t.Missing))
+		}
+		switch t.Format {
+		case "", formatJSON, formatTOML:
+		default:
+			errs = append(errs, fmt.Errorf("starlark %d: invalid format %q: want json or toml", i, t.Format))
+		}
+		if t.Indent < 0 || t.Indent > 9 {
+			errs = append(errs, fmt.Errorf("starlark %d: invalid indent %d: want 1 to 9", i, t.Indent))
+		}
+		if _, err := parseFileMode(t.Mode); err != nil {
+			errs = append(errs, fmt.Errorf("starlark %d: %w", i, err))
+		}
+	}
 	return errors.Join(errs...)
 }
 
@@ -288,10 +351,11 @@ func parseFileMode(s string) (fs.FileMode, error) {
 	return fs.FileMode(v), nil
 }
 
-// render renders every src and dst of mounts, go packages and templates as a
-// template (see renderTemplate) with the resolved [vars] vars. An entry with a
-// src or dst that renders to an empty string is dropped; for templates, only
-// that dst is dropped.
+// render renders every src and dst of mounts, go packages and templates, and
+// every dst of [[starlark]] entries, as a template (see renderTemplate) with
+// the resolved [vars] vars. An entry with a src or dst that renders to an
+// empty string is dropped; for templates and [[starlark]] entries, only that
+// dst is dropped.
 func (c *Config) render(dstRoot string, vars map[string]string) error {
 	var errs []error
 	render := func(name, value string) string {
@@ -334,6 +398,26 @@ func (c *Config) render(dstRoot string, vars map[string]string) error {
 		}
 	}
 	c.Template = templates
+
+	var entries []Starlark
+	for i, t := range c.Starlark {
+		var dsts StringList
+		for j, d := range t.Dst {
+			name := fmt.Sprintf("starlark[%d].dst[%d]", i, j)
+			if d = render(name, d); d == "" {
+				continue
+			}
+			if t.Missing == MissingCreate && strings.ContainsAny(d, "*?[") {
+				errs = append(errs, fmt.Errorf("%s: %s: a glob cannot be used with missing = \"create\"", name, d))
+			}
+			dsts = append(dsts, d)
+		}
+		t.Dst = dsts
+		if len(t.Dst) > 0 {
+			entries = append(entries, t)
+		}
+	}
+	c.Starlark = entries
 
 	return errors.Join(errs...)
 }

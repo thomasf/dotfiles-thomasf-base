@@ -83,3 +83,43 @@ func TestResolvePath(t *testing.T) {
 		}
 	}
 }
+
+// TestExprFeatures checks that the expr features the README lists work in
+// the environment of conditions.
+func TestExprFeatures(t *testing.T) {
+	t.Parallel()
+	env := exprEnv(t.TempDir(), map[string]string{"font_size": "11"})
+	tests := []struct {
+		src  string
+		want any
+	}{
+		{`'yak' in ['yak', 'flam']`, true},
+		{`'x' not in ['yak']`, true},
+		{`true && !false || false`, true},
+		{`true and not false or false`, true},
+		{`'work-1' startsWith 'work-' && 'yak' endsWith 'k' && 'yak' contains 'a'`, true},
+		{`'flam' matches '^(yak|flam)$'`, true},
+		{`vars.theme ?? 'dark'`, "dark"},
+		{`1 == 2 ? '13' : '11'`, "11"},
+		{`{'yak': '165', 'flam': '170'}['flam'] ?? '96'`, "170"},
+		{`{'yak': '165'}['other'] ?? '96'`, "96"},
+		{`let size = int(vars.font_size); size > 10`, true},
+		{`int('4') + 1 == 5 && float('1.5') == 1.5 && string(42) == '42'`, true},
+		{`lower('AB') + upper('c') + trim(' d ') + replace('e-f', '-', '_')`, "abCde_f"},
+		{`join(split('a,b', ','), ';') + string(len('abc'))`, "a;b3"},
+		{`any(['nope-x', 'nope-y'], {lookPath(#) != ''})`, false},
+		{`all(['a', 'b'], {# != ''})`, true},
+		{`join(map(filter(['a', '', 'b'], {# != ''}), {upper(#)}), '')`, "AB"},
+		{`len(1..3)`, 3},
+	}
+	for _, tt := range tests {
+		got, err := evalExpr(env, tt.src)
+		if err != nil {
+			t.Errorf("%s: %v", tt.src, err)
+			continue
+		}
+		if got != tt.want {
+			t.Errorf("%s: got %v (%T), want %v", tt.src, got, got, tt.want)
+		}
+	}
+}
