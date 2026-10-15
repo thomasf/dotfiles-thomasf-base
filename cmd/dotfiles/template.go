@@ -8,6 +8,7 @@ import (
 	"io/fs"
 	"os"
 	"path/filepath"
+	"regexp"
 	"strings"
 	"text/template"
 
@@ -26,12 +27,13 @@ func renderTemplate(name, text, dstRoot string, vars map[string]string) ([]byte,
 
 // parseTemplate parses text as a Go text/template. The funcs are those from
 // exprFuncs plus expr, which evaluates an expr expression like a condition,
-// with the content vars has when it is called.
+// with the content vars has when it is called, and shellQuote.
 func parseTemplate(name, text, dstRoot string, vars map[string]string) (*template.Template, error) {
 	funcs := exprFuncs(dstRoot)
 	funcs["expr"] = func(src string) (any, error) {
 		return evalExpr(exprEnv(dstRoot, vars), src)
 	}
+	funcs["shellQuote"] = shellQuote
 	return template.New(name).Option("missingkey=error").Funcs(funcs).Parse(text)
 }
 
@@ -43,6 +45,22 @@ func executeTemplate(t *template.Template, vars map[string]string) ([]byte, erro
 	}
 	return buf.Bytes(), nil
 }
+
+// shellQuote quotes s as a single word for a POSIX shell, so that it is read
+// as s whatever characters it contains, newlines included. A non-empty string
+// of only letters, digits and @%+=:,./_- is returned as it is; anything else
+// is put in single quotes. A NUL byte cannot be quoted.
+func shellQuote(s string) (string, error) {
+	if strings.ContainsRune(s, 0) {
+		return "", errors.New("shellQuote: a shell word cannot contain a NUL byte")
+	}
+	if shellSafeRe.MatchString(s) {
+		return s, nil
+	}
+	return "'" + strings.ReplaceAll(s, "'", `'\''`) + "'", nil
+}
+
+var shellSafeRe = regexp.MustCompile(`^[A-Za-z0-9@%+=:,./_-]+$`)
 
 // renderValue renders a config value, such as a src or dst path, with
 // renderTemplate. A value without "{{" is returned as is.

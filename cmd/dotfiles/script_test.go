@@ -236,3 +236,61 @@ func TestShellAction(t *testing.T) {
 		t.Error("file was not touched")
 	}
 }
+
+func TestScriptTemplate(t *testing.T) {
+	t.Parallel()
+	repoDir := t.TempDir()
+	mfs := fstest.MapFS{
+		"dotfiles.toml": &fstest.MapFile{Data: []byte(`
+[vars]
+greeting = 'hello world'
+
+[[script]]
+src = '''
+echo "{{.vars.greeting}} from {{.os}}" > out.txt
+echo '${HOME:+set}' >> out.txt
+'''
+
+[[script]]
+src = '{{if eq .os "plan9-nope"}}echo never > never.txt{{end}}'
+`), Mode: 0o644},
+	}
+	if err := os.CopyFS(repoDir, mfs); err != nil {
+		t.Fatal(err)
+	}
+	repo := NewRepository(repoDir, t.TempDir())
+	if err := repo.LoadConfig(); err != nil {
+		t.Fatal(err)
+	}
+	actions, err := repo.Sync()
+	if err != nil {
+		t.Fatal(err)
+	}
+	var scripts int
+	for _, a := range actions {
+		if _, ok := a.(*ScriptAction); ok {
+			scripts++
+			if err := a.Run(); err != nil {
+				t.Fatal(err)
+			}
+		}
+	}
+	if scripts != 1 {
+		t.Errorf("got %d script actions, want 1: a script that renders empty is dropped", scripts)
+	}
+	data, err := os.ReadFile(filepath.Join(repoDir, "out.txt"))
+	if err != nil {
+		t.Fatal(err)
+	}
+	if want := "hello world from " + runtime.GOOS + "\n${HOME:+set}\n"; string(data) != want {
+		t.Errorf("got %q, want %q", data, want)
+	}
+
+	// A template error is reported when the config is loaded.
+	if err := os.WriteFile(filepath.Join(repoDir, "dotfiles.toml"), []byte("[[script]]\nsrc = 'echo {{.vars.nope}}'\n"), 0o644); err != nil {
+		t.Fatal(err)
+	}
+	if err := NewRepository(repoDir, t.TempDir()).LoadConfig(); err == nil || !strings.Contains(err.Error(), "script[0].src") {
+		t.Errorf("got error %v, want one naming script[0].src", err)
+	}
+}

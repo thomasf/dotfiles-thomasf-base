@@ -54,6 +54,17 @@ Set global git configuration values when the repository is synchronized.
 
 To unset a git configuration value, set it to an empty string.
 
+Values are [templates](#templates), rendered when the config is loaded, so
+they can come from variables or differ between machines. A value that renders
+to an empty string unsets the key:
+
+```toml
+[git]
+"user.email" = "{{.vars.email}}"
+"core.editor" = '{{lookPath "nvim" "vim" "vi"}}'
+"gpg.program" = '{{if eq .os "darwin"}}/opt/homebrew/bin/gpg{{end}}'
+```
+
 ### Scripts
 
 Run shell scripts at different stages of the synchronization process. Scripts
@@ -80,6 +91,24 @@ src = "echo Syncing on macOS..."
 phase = "post"
 src = "echo Sync complete."
 ```
+
+`src` is a [template](#templates), rendered when the config is loaded, with
+the same variables and functions as `[[template]]` files:
+
+```toml
+[[script]]
+src = '''
+foo-config set font.size "{{.vars.font_size}}"
+{{if lookPath "fc-cache"}}fc-cache -f{{end}}
+'''
+```
+
+The rendered text is inserted into the shell code as it is. Quote values with
+`shellQuote`, which makes any string a single shell word, quotes, `$` and
+newlines included: `foo-config set font.family {{shellQuote .vars.font}}`. A
+script that renders to an empty string is skipped. Because
+`src` is rendered during [planning](#planning), functions such as `isDir` see
+the files as they were before the run.
 
 ### Repositories
 
@@ -166,9 +195,15 @@ Templates have the same variables and functions as
 `{{.vars.email}}`)
 and functions as template functions (`{{env "HOME"}}`,
 `{{lookPath "pinentry-mac" "pinentry-gnome3"}}`,
-`{{if isDir "/Applications/Emacs.app"}}...{{end}}`). In addition,
-`{{expr "..."}}` returns the value of an expression evaluated like a
-condition, e.g. ``{{if expr `hostname in ["yak", "flam"]`}}...{{end}}``.
+`{{if isDir "/Applications/Emacs.app"}}...{{end}}`). In addition:
+
+- `{{expr "..."}}` returns the value of an expression evaluated like a
+  condition, e.g. ``{{if expr `hostname in ["yak", "flam"]`}}...{{end}}``.
+- `{{shellQuote s}}` quotes `s` as a single word for a POSIX shell (`sh`,
+  `bash`, `zsh`): `two words` becomes `'two words'`, and a word that needs no
+  quoting is left as it is. Use it for values in `[[script]]` code and in
+  templates of shell files.
+
 Using a field that does not exist, such as `{{.hostnme}}`, is an error.
 
 If a `dst` ends in `.json` or `.toml`, the rendered output must parse as that
@@ -422,13 +457,14 @@ dst = '.config/foo/foo.conf'
 They are rendered when the config is loaded. An entry whose `src` or `dst`
 renders to an empty string is skipped, e.g.
 `dst = '{{if eq .os "linux"}}.config/foo{{end}}'`; for `[[template]]`, only
-that `dst` is skipped. `[[script]]` and `[[starlark]]` `src` is code and is
-not a template.
+that `dst` is skipped. `[[script]]` `src` is shell code but a template too
+(see [Scripts](#scripts)); `[[starlark]]` `src` is not a template, because the
+script gets the variables directly.
 
 ### Variables
 
-`[vars]` defines variables for templates, templated paths, conditions and
-[`[[starlark]]` entries](#starlark):
+`[vars]` defines variables for templates, templated paths, scripts, `[git]`
+values, conditions and [`[[starlark]]` entries](#starlark):
 
 ```toml
 [vars]
@@ -540,8 +576,8 @@ four steps, each done for all repositories before the next:
    giving each repository its own view of them (see
    [Precedence](#precedence)).
 3. **Resolve**: each repository's variables are resolved, rendering them as
-   templates, and then its templated `src` and `dst` paths are rendered with
-   them.
+   templates, and then its templated `src` and `dst` paths, `[[script]]`
+   sources and `[git]` values are rendered with them.
 4. **Plan**: each repository's `condition`s are evaluated and its actions are
    planned.
 

@@ -351,11 +351,11 @@ func parseFileMode(s string) (fs.FileMode, error) {
 	return fs.FileMode(v), nil
 }
 
-// render renders every src and dst of mounts, go packages and templates, and
-// every dst of [[starlark]] entries, as a template (see renderTemplate) with
-// the resolved [vars] vars. An entry with a src or dst that renders to an
-// empty string is dropped; for templates and [[starlark]] entries, only that
-// dst is dropped.
+// render renders every src and dst of mounts, go packages and templates, the
+// src of scripts, every [git] value and every dst of [[starlark]] entries as
+// a template (see renderTemplate) with the resolved [vars] vars. An entry with a src or dst
+// that renders to an empty string is dropped; for templates and [[starlark]]
+// entries, only that dst is dropped.
 func (c *Config) render(dstRoot string, vars map[string]string) error {
 	var errs []error
 	render := func(name, value string) string {
@@ -382,6 +382,18 @@ func (c *Config) render(dstRoot string, vars map[string]string) error {
 		}
 	}
 	c.Go = gos
+
+	for _, k := range slices.Sorted(maps.Keys(c.Git)) {
+		c.Git[k] = render("git."+k, c.Git[k]) // an empty value unsets the key
+	}
+
+	var scripts []Script
+	for i, sc := range c.Script {
+		if sc.Src = render(fmt.Sprintf("script[%d].src", i), sc.Src); sc.Src != "" {
+			scripts = append(scripts, sc)
+		}
+	}
+	c.Script = scripts
 
 	var templates []Template
 	for i, t := range c.Template {

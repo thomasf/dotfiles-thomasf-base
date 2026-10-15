@@ -1,8 +1,10 @@
 package main
 
 import (
+	"context"
 	"fmt"
 	"io/fs"
+	"maps"
 	"os"
 	"path/filepath"
 	"runtime"
@@ -13,6 +15,8 @@ import (
 	"time"
 
 	"github.com/pelletier/go-toml/v2"
+	"mvdan.cc/sh/v3/interp"
+	shsyntax "mvdan.cc/sh/v3/syntax"
 )
 
 func TestStringList(t *testing.T) {
@@ -91,6 +95,10 @@ func TestRenderTemplate(t *testing.T) {
 		{text: `{{isFile "file"}} {{isFile "dir"}} {{isFile "link"}} {{isFile "nope"}}`, want: "true false true false"},
 		{text: `{{isDir "dir"}} {{isDir "file"}} {{isDir "nope"}}`, want: "true false false"},
 		{text: `{{isFile "` + absFile + `"}}`, want: "true"},
+		{text: `{{shellQuote "plain-word_1.2"}}`, want: `plain-word_1.2`},
+		{text: `{{shellQuote "two words"}}`, want: `'two words'`},
+		{text: `{{shellQuote ""}}`, want: `''`},
+		{text: `{{shellQuote "nul\x00"}}`, wantErr: true},
 		{text: `{{.hostnme}}`, wantErr: true},
 		{text: `{{expr "os ==="}}`, wantErr: true},
 		{text: `{{if}}`, wantErr: true},
@@ -566,5 +574,67 @@ func TestSyncTemplateExistingForce(t *testing.T) {
 				}
 			}
 		}
+	}
+}
+
+// TestShellQuote checks that the shell reads a word quoted by shellQuote back
+// as the original string.
+func TestShellQuote(t *testing.T) {
+	t.Parallel()
+	for _, s := range []string{"plain", "two words", "it's", `say "hi"`, "$HOME `id` $(id)", "a\\b", "line\nbreak", "*?[x]", "~user", "", "-n"} {
+		q, err := shellQuote(s)
+		if err != nil {
+			t.Errorf("%q: %v", s, err)
+			continue
+		}
+		f, err := shsyntax.NewParser().Parse(strings.NewReader("printf %s "+q), "")
+		if err != nil {
+			t.Errorf("%q quoted as %s: %v", s, q, err)
+			continue
+		}
+		var out strings.Builder
+		runner, err := interp.New(interp.StdIO(nil, &out, os.Stderr))
+		if err != nil {
+			t.Fatal(err)
+		}
+		if err := runner.Run(context.Background(), f); err != nil {
+			t.Errorf("%q quoted as %s: %v", s, q, err)
+			continue
+		}
+		if out.String() != s {
+			t.Errorf("%q quoted as %s reads back as %q", s, q, out.String())
+		}
+	}
+}
+
+func TestGitValueTemplates(t *testing.T) {
+	t.Parallel()
+	repoDir := t.TempDir()
+	config := `
+[vars]
+email = 'me@example.com'
+
+[git]
+'user.email' = '{{.vars.email}}'
+'core.pager' = '{{if eq .os "plan9-nope"}}less{{end}}'
+'alias.st' = 'status'
+`
+	if err := os.WriteFile(filepath.Join(repoDir, "dotfiles.toml"), []byte(config), 0o644); err != nil {
+		t.Fatal(err)
+	}
+	repo := NewRepository(repoDir, t.TempDir())
+	if err := repo.LoadConfig(); err != nil {
+		t.Fatal(err)
+	}
+	want := map[string]string{"user.email": "me@example.com", "core.pager": "", "alias.st": "status"}
+	if !maps.Equal(repo.config.Git, want) {
+		t.Errorf("got git config %q, want %q", repo.config.Git, want)
+	}
+
+	if err := os.WriteFile(filepath.Join(repoDir, "dotfiles.toml"), []byte("[git]\n'user.email' = '{{.vars.nope}}'\n"), 0o644); err != nil {
+		t.Fatal(err)
+	}
+	if err := NewRepository(repoDir, t.TempDir()).LoadConfig(); err == nil || !strings.Contains(err.Error(), "git.user.email") {
+		t.Errorf("got error %v, want one naming git.user.email", err)
 	}
 }
