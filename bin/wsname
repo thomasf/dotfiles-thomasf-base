@@ -6,7 +6,7 @@
 
 # TODO: this is here for backwards compatible, remove later. Callers
 # left: the w.* launchers and nautilus in xmonad/bin-xmonad, emacs
-# init.el, wsenv-* and cdd in config-base/bash/functions, and scripts
+# init.el, cdd in config-base/bash/functions, and scripts
 # in the private and divio repositories.
 
 hash ws 2>/dev/null || exit 1

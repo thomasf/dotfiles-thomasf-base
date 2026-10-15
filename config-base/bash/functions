@@ -155,37 +155,21 @@ wsdir-get() {
   ws dir 2>/dev/null
 }
 
-# TODO: wsenv-edit and wsenv-source still use wsname, move them to
-# ws name -p so that wsname can be removed.
+# Workspace environments: the shell script in ~/.config/wsenv for the
+# workspace. See ws env.
 wsenv-edit() {
-  hash wsname 2>/dev/null || return 0
-  local wsnamep=""
-  if [[ $(wsname -p) ]]; then
-    if [[ $(wsdir-get) ]]; then
-      wsnamep=$(basename $(wsdir-get))
-    else
-      wsnamep=$(wsname -p)
-    fi
-    mkdir -p ~/.config/wsenv/
-    e "~/.config/wsenv/$wsnamep"
-  fi
+  hash ws 2>/dev/null || return 0
+  local file
+  file=$(ws env -file) || return 1
+  mkdir -p "$(dirname "$file")"
+  e "$file"
 }
 
 wsenv-source() {
-  hash wsname 2>/dev/null || return 0
-  local wsnamep=""
-  if [[ $(wsname -p) ]]; then
-    if [[ $(wsdir-get) ]]; then
-      wsnamep=$(basename $(wsdir-get))
-    else
-      wsnamep=$(wsname -p)
-    fi
-    if [ -f ~/.config/wsenv/$wsnamep ]; then
-      . "${HOME}/.config/wsenv/$wsnamep"
-    else
-      return 1
-    fi
-  fi
+  hash ws 2>/dev/null || return 0
+  local code
+  code=$(ws env 2>/dev/null) || return 1
+  eval "$code"
 }
 
 eless() {
