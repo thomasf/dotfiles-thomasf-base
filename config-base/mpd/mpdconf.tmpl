@@ -69,7 +69,9 @@ set where the HVSC collection is reachable when dotfiles installs this.
 Elsewhere SID tunes play for default_songlength. The path is relative to
 $HOME.
 */}}
-{{- if isFile "Music/sphere/not-recordings/C64Music/DOCUMENTS/Songlengths.md5"}}
+{{- if isFile "Music/C64Music/DOCUMENTS/Songlengths.md5"}}
+  songlength_database   "~/Music/C64Music/DOCUMENTS/Songlengths.md5"
+{{- else if isFile "Music/sphere/not-recordings/C64Music/DOCUMENTS/Songlengths.md5"}}
   songlength_database   "~/Music/sphere/not-recordings/C64Music/DOCUMENTS/Songlengths.md5"
 {{- end}}
   default_songlength    "180"
