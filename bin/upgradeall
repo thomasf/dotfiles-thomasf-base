@@ -17,25 +17,22 @@ ts() {
   echo "${reset}[$(date +%T)] ${@}"
 }
 
-# runCmd runs a command in a subshell, on graphical terminals this
+# runCmd runs a command in a new terminal window using term-run if there is a
+# display and term-run is available, otherwise in a subshell.
 runCmd() {
-  if [ -n "$DISPLAY" ] && [ `which urxvt` ]; then
-    exec alacritty \
-         --title "upgradeall" \
-         --class "upgradeall" \
-         -e bash -c \
-         "termcolors; echo RUN \" $* \";
-$*
-echo ;
-echo \"COMPLETED: $* \";
-echo \">>> ENTER KEY CLOSES TERMINAL!\";
-read any;" &
+  if [ -n "$DISPLAY$WAYLAND_DISPLAY" ] && hash term-run 2>/dev/null; then
+    term-run -n upgradeall -m hold -- "$@" &
   else
     (
       set +e
-      $*
+      "$@"
     )
   fi
+}
+
+upgrader-apt() {
+  sudo apt update
+  sudo apt dist-upgrade
 }
 
 
@@ -166,19 +163,19 @@ upgrader-docker() {
 
 cmd=${1}
 case $cmd in
-  go|npm|pip|docker|cargo|chrome)
+  apt|go|npm|pip|docker|cargo|chrome)
     upgrader-${cmd}
     ;;
   all)
-    # runCmd "sudo nala upgrade"
-    runCmd "sudo apt update ; sudo apt dist-upgrade"
-    runCmd "dotfiles pull"
-    runCmd "$0 go" &
-    runCmd "$0 pip" &
-    runCmd "$0 cargo" &
+    # runCmd sudo nala upgrade
+    runCmd "$0" apt
+    runCmd dotfiles pull
+    runCmd "$0" go &
+    runCmd "$0" pip &
+    runCmd "$0" cargo &
     ;;
   *)
-    echo "$0 all cargo go npm pip"
+    echo "$0 all apt cargo go npm pip"
     ;;
 esac
 
