@@ -83,7 +83,6 @@ type Config struct {
 	Host       string
 	HostTags   string
 	VirtualEnv string
-	RVM        string
 	SSHClient  string
 	EUID       int
 	Time       time.Time
@@ -120,7 +119,6 @@ func ResolveDefaultConfig() Config {
 		Host:       ResolveHostname(),
 		HostTags:   os.Getenv("HOST_TAGS"),
 		VirtualEnv: os.Getenv("VIRTUAL_ENV"),
-		RVM:        os.Getenv("RVM"),
 		SSHClient:  ssh,
 		EUID:       os.Geteuid(),
 		Time:       time.Now(),
@@ -244,10 +242,10 @@ func BuildPrompt(cfg Config, vcs VCSProvider) string {
 	}
 
 	// Working directory compaction:
-	// pwdw = w - PADDING - ${#LAST} - ${#VCS} - ${#VENV} - ${#RVM}
+	// pwdw = w - PADDING - ${#LAST} - ${#VCS} - ${#VENV}
 	padding := 5
 	vcsLen := VisualLen(vcsStr)
-	pwdw := max(w-padding-utf8.RuneCountInString(last)-vcsLen-utf8.RuneCountInString(venv)-utf8.RuneCountInString(cfg.RVM), 10)
+	pwdw := max(w-padding-utf8.RuneCountInString(last)-vcsLen-utf8.RuneCountInString(venv), 10)
 	pwd := DirChomp(cfg.Dir, pwdw, cfg.HomeDir)
 
 	// Host color based on HOST_TAGS
@@ -274,7 +272,7 @@ func BuildPrompt(cfg Config, vcs VCSProvider) string {
 
 	// Assemble PS1:
 	// Line 1:
-	// ${TITLEBAR}${yellowH}▶${HH} ${blue}${PWD}${cyanH}${VCS}${yellowH}${VENV}${RVM}
+	// ${TITLEBAR}${yellowH}▶${HH} ${blue}${PWD}${cyanH}${VCS}${yellowH}${VENV}
 	var sb strings.Builder
 	sb.WriteString(titlebar)
 	sb.WriteString(cfg.Shell.Escape(colorYellowH))
@@ -290,9 +288,6 @@ func BuildPrompt(cfg Config, vcs VCSProvider) string {
 	sb.WriteString(cfg.Shell.Escape(colorYellowH))
 	if venv != "" {
 		sb.WriteString(venv)
-	}
-	if cfg.RVM != "" {
-		sb.WriteString(cfg.RVM)
 	}
 
 	// Line 2:

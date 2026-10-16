@@ -18,14 +18,6 @@ src = 'config-base/rpmc'
 dst = '.config/rpmc'
 
 [[mount]]
-src = 'config-base/flake8'
-dst = '.config/flake8'
-
-[[mount]]
-src = 'config-base/pudb'
-dst = '.config/pudb'
-
-[[mount]]
 src = 'config-base/pulse/default.pa'
 dst = '.pulse/default.pa'
 

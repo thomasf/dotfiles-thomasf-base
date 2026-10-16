@@ -55,7 +55,6 @@ if [ -d ~/.gem/ruby ]; then
 fi
 
 # Misc User home path prepends
-ppath ~/.rvm/bin
 ppath ~/.cask/bin
 ppath ~/.rbenv/bin
 ppath ~/.npm-global/bin
@@ -211,9 +210,6 @@ if hash locale 2>/dev/null ; then
 fi
 
 # ptyhon configuration
-[ -d "${HOME}/.config-base/ipython" ] && \
-    IPYTHONDIR="${HOME}/.config-base/ipython" && \
-    export IPYTHONDIR
 [ -e "${HOME}/.config-base/python/pythonrc.py" ] && \
     PYTHONSTARTUP="${HOME}/.config-base/python/pythonrc.py" && \
     export PYTHONSTARTUP

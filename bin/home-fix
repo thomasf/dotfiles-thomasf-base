@@ -29,8 +29,6 @@ if  [ "${1}" = "o" ]; then
   [ -d "${HOME}/.virtualenvs" ] && sudo chown -R ${USER} "${HOME}/.virtualenvs"
   # Node version manager
   [ -d "${HOME}/.nvm" ] && sudo chown -R ${USER} "${HOME}/.nvm"
-  # Ruby version manager
-  [ -d "${HOME}/.rvm" ] && sudo chown -R ${USER} "${HOME}/.rvm"
   # Haskell/Cabal
   [ -d "${HOME}/.cabal" ] && sudo chown -R ${USER} "${HOME}/.cabal"
   [ -d "${HOME}/.ghc" ] && sudo chown -R ${USER} "${HOME}/.ghc"

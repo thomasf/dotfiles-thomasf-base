@@ -28,7 +28,6 @@ func TestBuildPrompt(t *testing.T) {
 		Host:       "flam",
 		HostTags:   ":workstation:",
 		VirtualEnv: "",
-		RVM:        "",
 		SSHClient:  "",
 		EUID:       1000,
 		Time:       fixedTime,
@@ -143,17 +142,13 @@ func TestBuildPrompt(t *testing.T) {
 		}
 	})
 
-	t.Run("virtualenv and rvm", func(t *testing.T) {
+	t.Run("virtualenv", func(t *testing.T) {
 		cfg := baseCfg
 		cfg.VirtualEnv = "/home/t/.virtualenvs/myproject"
-		cfg.RVM = " ruby-3.2.0"
 
 		prompt := BuildPrompt(cfg, nil)
 		if !strings.Contains(prompt, " p:myproject") {
 			t.Errorf("prompt missing virtualenv: %s", prompt)
-		}
-		if !strings.Contains(prompt, " ruby-3.2.0") {
-			t.Errorf("prompt missing RVM: %s", prompt)
 		}
 	})
 

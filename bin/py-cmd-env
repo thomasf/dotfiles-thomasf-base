@@ -74,10 +74,6 @@ case ${bn} in
     echo "usage ${0} upgrade"
     exit 1
     ;;
-  pre-commit|pre-commit-validate-manifest|pre-commit-validate-config)
-    packages=pre-commit
-    env_name=pre-commit
-    ;;
   ansible|ansible-playbook|ansible-config|ansible-connection|ansible-console|ansible-doc|ansible-galaxy|ansible-inventory|ansible-pull|ansible-vault)
     packages=ansible
     env_name=ansible
@@ -96,12 +92,6 @@ case ${bn} in
   devpi*)
     packages="devpi-client devpi-server"
     env_name="devpi"
-    ;;
-  gitlab)
-    packages=python-gitlab
-    ;;
-  dephell)
-    packages="dephell[full]"
     ;;
   sam)
     packages="aws-sam-cli"

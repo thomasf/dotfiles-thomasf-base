@@ -88,29 +88,7 @@ upgrader-pip() {
 }
 
 upgrader-npm() {
-  npm install -g \
-      babel-eslint \
-      bower \
-      browserify watchify \
-      coffee-script \
-      coffeelint \
-      eslint \
-      eslint-plugin-react \
-      grunt-cli \
-      gulp \
-      js2coffee \
-      jshint \
-      jsonlint \
-      jsxhint \
-      npm-proxy-cache \
-      stylus \
-      tern \
-      titanium \
-      uglify-js \
-      uglifycss \
-      webpack \
-  ;
-
+  echo "no npm packages"
 }
 
 upgrader-cargo() {
