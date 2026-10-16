@@ -29,6 +29,10 @@ dst = '.config/pudb'
 src = 'config-base/pulse/default.pa'
 dst = '.pulse/default.pa'
 
+[[template]]
+src = 'config-base/mpd/mpdconf.tmpl'
+dst = '.mpdconf'
+
 [git]
 'advice.commitbeforemerge' = 'false'
 'advice.detachedhead' = 'false'
