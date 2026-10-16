@@ -33,10 +33,15 @@ type App struct {
 	Stdout      io.Writer
 	Stderr      io.Writer
 	MaxNameLen  int
-	mu          sync.Mutex
-	repoLocks   sync.Map
-	resultsMu   sync.Mutex
-	results     []LangResult
+	*appState
+}
+
+// appState is mutable state shared between all copies of an App.
+type appState struct {
+	mu        sync.Mutex
+	repoLocks sync.Map
+	resultsMu sync.Mutex
+	results   []LangResult
 }
 
 func (a *App) getRepoLock(repoName string) *sync.Mutex {
@@ -475,6 +480,7 @@ func main() {
 		Out:         os.Stdout,
 		Stdout:      os.Stdout,
 		Stderr:      os.Stderr,
+		appState:    &appState{},
 	}
 
 	if !app.Verbose {
