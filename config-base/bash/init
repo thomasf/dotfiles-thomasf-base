@@ -69,24 +69,24 @@ source ~/.config-base/bash/interactive
   && . "${HOME}/.bashrc-local" \
   && log "loaded .bashrc-local"
 
-# Solarized dark for console terminal
+# Selenized dark for console terminal
 if [ "$TERM" = "linux" ]; then
-  echo -en "\e]P0073642"
-  echo -en "\e]P8002b36"
-  echo -en "\e]P1dc322f"
-  echo -en "\e]P9cb4b16"
-  echo -en "\e]P2859900"
-  echo -en "\e]PA586e75"
-  echo -en "\e]P3b58900"
-  echo -en "\e]PB657b83"
-  echo -en "\e]P4268bd2"
-  echo -en "\e]PC839496"
-  echo -en "\e]P5d33682"
-  echo -en "\e]PD6c71c4"
-  echo -en "\e]P62aa198"
-  echo -en "\e]PE93a1a1"
-  echo -en "\e]P7eee8d5"
-  echo -en "\e]PFfdf6e3"
+  echo -en "\e]P0103c48"
+  echo -en "\e]P8a7b0ab"
+  echo -en "\e]P1fa5750"
+  echo -en "\e]P9ed8649"
+  echo -en "\e]P275b938"
+  echo -en "\e]PA72898f"
+  echo -en "\e]P3dbb32d"
+  echo -en "\e]PBadbcbc"
+  echo -en "\e]P44695f7"
+  echo -en "\e]PCadbcbc"
+  echo -en "\e]P5f275be"
+  echo -en "\e]PDaf88eb"
+  echo -en "\e]P641c7b9"
+  echo -en "\e]PEcad8d9"
+  echo -en "\e]P7adbcbc"
+  echo -en "\e]PFfbf3db"
   clear
   (
     [ -e /tmp/.X11-unix ] &&
@@ -159,36 +159,6 @@ __pwd_logger() {
 }
 export -f __pwd_logger
 
-# ------------------------------------------------------------------------------
-#
-# TERMINAL COLOR THEME
-
-__darkmode_switcher() {
-  if [ -e ~/.config/darkmode ]; then
-    [ ! "${DARKMODE}" = dark ] && export DARKMODE=dark && termcolors
-  else
-    [ "${DARKMODE}" = dark ] && export DARKMODE=light && termcolors
-  fi
-}
-export -f __darkmode_switcher
-
-case $HOST_TAGS in
-  *:minimalshell:*)
-  # nothing
-  ;;
-  *)
-    if hash termcolors 2>/dev/null && [ -z $SSH_TTY ] && [ -z $TMUX ]; then
-      case $TERM in
-        rxvt*|xterm*)
-          [ -e ~/.config/darkmode ] && export DARKMODE=dark || export DARKMODE=light
-          termcolors
-          ;;
-      esac
-    fi
-    ;;
-esac
-
-#
 # ------------------------------------------------------------------------------
 #
 # TERMINAL OPTIONS

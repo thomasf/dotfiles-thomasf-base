@@ -263,7 +263,6 @@ add-zsh-hook precmd __prompt_precmd
     *)
       [ "$CONFIDENTAL" == "confidental" ] || __pwd_logger 2>/dev/null
       [ "$CONFIDENTAL" == "confidental" ] || history -a 2>/dev/null
-      [ -n "${DARKMODE}" ] && __darkmode_switcher 2>/dev/null
       echo -ne '\a'
       ;;
   esac
