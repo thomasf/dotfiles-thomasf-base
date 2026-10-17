@@ -54,7 +54,12 @@ func (d *Dotfiles) Run(stdout, stderr io.Writer, args []string) error {
 	d.Stdout = stdout
 	d.Stderr = stderr
 
-	fs := flag.NewFlagSet("dotfiles", flag.ContinueOnError)
+	home, err := os.UserHomeDir()
+	if err != nil {
+		return fmt.Errorf("could not get home directory: %w", err)
+	}
+
+	fs := d.flagSet(home)
 	fs.SetOutput(stderr)
 	fs.Usage = func() {
 		fmt.Fprintf(stderr, "Usage: dotfiles [options] <command>\n")
@@ -76,20 +81,7 @@ func (d *Dotfiles) Run(stdout, stderr io.Writer, args []string) error {
 		fs.PrintDefaults()
 	}
 
-	home, err := os.UserHomeDir()
-	if err != nil {
-		return fmt.Errorf("could not get home directory: %w", err)
-	}
-
-	fs.StringVar(&d.RepoList, "repository", "", "comma-separated list of dotfiles repositories")
-	fs.StringVar(&d.ReposPath, "repos", filepath.Join(home, "src", "dotfiles"), "repositories path (defaults to $HOME/src/dotfiles)")
-	fs.StringVar(&d.DstPath, "dst", home, "target path (defaults to $HOME)")
-	fs.BoolVar(&d.Force, "f", false, "force overwrite existing files")
-	fs.BoolVar(&d.Copy, "copy", false, "copy files instead of symlinking")
-	fs.BoolVar(&d.DryRun, "dry-run", false, "dry run (print actions without running them; only for repos fix and repos clone)")
-	fs.BoolVar(&d.Verbose, "v", false, "log more non errors")
-
-	if err := ff.Parse(fs, args, ff.WithEnvVarPrefix("DOTFILES")); err != nil {
+	if err := ff.Parse(fs, args, ff.WithEnvVarPrefix(envVarPrefix)); err != nil {
 		return err
 	}
 
@@ -158,6 +150,30 @@ func (d *Dotfiles) Run(stdout, stderr io.Writer, args []string) error {
 	}
 
 	return nil
+}
+
+// flagSet returns the global options of dotfiles, which set the fields of d.
+// The defaults of -repos and -dst are in home.
+func (d *Dotfiles) flagSet(home string) *flag.FlagSet {
+	fs := flag.NewFlagSet("dotfiles", flag.ContinueOnError)
+	fs.StringVar(&d.RepoList, "repository", "", "comma-separated list of dotfiles repositories")
+	fs.StringVar(&d.ReposPath, "repos", filepath.Join(home, "src", "dotfiles"), "repositories path")
+	fs.StringVar(&d.DstPath, "dst", home, "target path")
+	fs.BoolVar(&d.Force, "f", false, "force overwrite existing files")
+	fs.BoolVar(&d.Copy, "copy", false, "copy files instead of symlinking")
+	fs.BoolVar(&d.DryRun, "dry-run", false, "dry run (print actions without running them; only for repos fix and repos clone)")
+	fs.BoolVar(&d.Verbose, "v", false, "log more non errors")
+	return fs
+}
+
+// envVarPrefix is the prefix of the environment variables that set the
+// global options.
+const envVarPrefix = "DOTFILES"
+
+// envVarName returns the environment variable that sets the global option
+// name, as ff names it: -dry-run is DOTFILES_DRY_RUN.
+func envVarName(name string) string {
+	return envVarPrefix + "_" + strings.NewReplacer("-", "_", ".", "_", "/", "_").Replace(strings.ToUpper(name))
 }
 
 func (d *Dotfiles) discoverRepos() error {

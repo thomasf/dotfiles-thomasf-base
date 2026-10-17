@@ -10,6 +10,12 @@ or heading matches the topic, e.g. `dotfiles doc 2.7`, `dotfiles doc starlark`
 or `dotfiles doc order of execution`; an exact heading wins over headings that
 only contain the topic. Pipe it to a pager, e.g. `dotfiles doc | less`.
 
+After this file, `dotfiles doc` prints appendices that it generates from the
+program, so that they always match it: A, the files that are always ignored;
+B, every key of `dotfiles.toml`; C, the options with their environment
+variables; and D, every variable and function of expressions, templates and
+Starlark scripts. `dotfiles doc appendix b` prints only appendix B.
+
 ## Dotfiles Repositories
 
 `dotfiles` works on a set of dotfiles repositories: it finds them on disk

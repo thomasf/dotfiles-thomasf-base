@@ -8,14 +8,15 @@ import (
 	"strings"
 )
 
-// DocCommand prints the README, or with arguments, the sections of it that
-// match them as a topic (see docTopic).
+// DocCommand prints the README and its appendices, or with arguments, the
+// sections of them that match the arguments as a topic (see docTopic).
 func (d *Dotfiles) DocCommand(args []string) error {
+	text := docText()
 	if len(args) == 0 {
-		fmt.Fprint(d.Stdout, readme)
+		fmt.Fprint(d.Stdout, text)
 		return nil
 	}
-	out, err := docTopic(readme, strings.Join(args, " "))
+	out, err := docTopic(text, strings.Join(args, " "))
 	if err != nil {
 		fmt.Fprintln(d.Stderr, err)
 		return err

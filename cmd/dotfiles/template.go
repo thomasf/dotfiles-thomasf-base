@@ -18,16 +18,29 @@ func renderTemplate(name, text, dstRoot string, vars map[string]string) ([]byte,
 	return executeTemplate(t, vars)
 }
 
-// parseTemplate parses text as a Go text/template. The funcs are those from
-// exprFuncs plus expr, which evaluates an expr expression like a condition,
-// with the content vars has when it is called, and shellQuote.
+// parseTemplate parses text as a Go text/template, with the funcs from
+// templateFuncs.
 func parseTemplate(name, text, dstRoot string, vars map[string]string) (*template.Template, error) {
+	return template.New(name).Option("missingkey=error").Funcs(templateFuncs(dstRoot, vars)).Parse(text)
+}
+
+// templateFuncs returns the funcs of templates: those from exprFuncs plus
+// expr, which evaluates an expr expression like a condition, with the content
+// vars has when it is called, and shellQuote.
+func templateFuncs(dstRoot string, vars map[string]string) template.FuncMap {
 	funcs := exprFuncs(dstRoot)
 	funcs["expr"] = func(src string) (any, error) {
 		return evalExpr(exprEnv(dstRoot, vars), src)
 	}
 	funcs["shellQuote"] = shellQuote
-	return template.New(name).Option("missingkey=error").Funcs(funcs).Parse(text)
+	return funcs
+}
+
+// templateBuiltins are the functions that text/template predefines. The
+// package does not export them.
+var templateBuiltins = []string{
+	"and", "call", "eq", "ge", "gt", "html", "index", "js", "le", "len", "lt",
+	"ne", "not", "or", "print", "printf", "println", "slice", "urlquery",
 }
 
 // executeTemplate executes t, parsed by parseTemplate with the same vars.

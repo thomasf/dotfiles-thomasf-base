@@ -102,8 +102,8 @@ func TestDocCommand(t *testing.T) {
 	if err := new(Dotfiles).Run(&stdout, &stderr, []string{"doc"}); err != nil {
 		t.Fatal(err)
 	}
-	if stdout.String() != readme {
-		t.Error("doc without a topic does not print the whole README")
+	if stdout.String() != docText() {
+		t.Error("doc without a topic does not print the README and the appendices")
 	}
 }
 

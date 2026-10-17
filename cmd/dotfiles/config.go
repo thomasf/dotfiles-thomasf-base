@@ -94,6 +94,10 @@ type Starlark struct {
 	program *starlark.Program // Src, compiled by Config.validate
 }
 
+// defaultIndent is the indent of JSON written by a [[starlark]] entry without
+// indent.
+const defaultIndent = 2
+
 // MissingAction says what a [[starlark]] entry does when its destination
 // does not exist. The empty value means MissingSkip.
 type MissingAction string
@@ -434,6 +438,8 @@ func (c *Config) render(dstRoot string, vars map[string]string) error {
 	return errors.Join(errs...)
 }
 
+// alwaysIgnoredFiles are the names that are ignored in every repository, in
+// addition to alwaysIgnoredPatterns and the patterns of [[ignore]] entries.
 var alwaysIgnoredFiles = map[string]bool{
 	"dotfiles.toml":  true,
 	".dotfiles.toml": true,
@@ -451,13 +457,17 @@ var alwaysIgnoredFiles = map[string]bool{
 	".agents":        true,
 }
 
+// alwaysIgnoredPatterns are the patterns that are ignored in every
+// repository: Emacs lock files.
+var alwaysIgnoredPatterns = []string{".#.*"}
+
 func (r *Repository) IsIgnored(path string) bool {
 	base := filepath.Base(path)
 	if alwaysIgnoredFiles[base] {
 		return true
 	}
 
-	patterns := []string{".#.*"}
+	patterns := slices.Clone(alwaysIgnoredPatterns)
 	for _, i := range r.config.Ignore {
 		if i.ShouldRun(r) {
 			patterns = append(patterns, i.Match...)

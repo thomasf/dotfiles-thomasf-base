@@ -160,5 +160,5 @@ func (t *StarlarkAction) apply(dst, format string, data []byte) ([]byte, error) 
 			return nil, fmt.Errorf("doc must be a dict, not a %s", v.Type())
 		}
 	}
-	return encodeDocument(format, doc, cmp.Or(t.Indent, 2))
+	return encodeDocument(format, doc, cmp.Or(t.Indent, defaultIndent))
 }
