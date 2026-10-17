@@ -48,7 +48,7 @@ func TestPublishSkip(t *testing.T) {
 	d.Publish()
 
 	out := stdout.String()
-	expectedSkip := "skipping publish for " + filepath.Base(repoDir) + ": remote 'publish' not found"
+	expectedSkip := filepath.Base(repoDir) + "  publish  SKIPPED: remote not found"
 	if !strings.Contains(out, expectedSkip) {
 		t.Errorf("Expected skip message '%s', got stdout: '%s'", expectedSkip, out)
 	}
@@ -79,15 +79,16 @@ func TestPublishRemoteExists(t *testing.T) {
 	stdout := &bytes.Buffer{}
 	stderr := &bytes.Buffer{}
 	d := &Dotfiles{
-		Stdout: stdout,
-		Stderr: stderr,
-		repos:  []string{repoDir},
+		Verbose: true, // print the git commands
+		Stdout:  stdout,
+		Stderr:  stderr,
+		repos:   []string{repoDir},
 	}
 
 	d.Publish()
 
 	out := stdout.String()
-	expectedPush := "[" + filepath.Base(repoDir) + "] git push -q publish master"
+	expectedPush := "[" + filepath.Base(repoDir) + "] git push --porcelain publish master"
 	if !strings.Contains(out, expectedPush) {
 		t.Errorf("Expected push message '%s', got stdout: '%s'", expectedPush, out)
 	}
@@ -118,15 +119,16 @@ func TestPublishWithMainBranch(t *testing.T) {
 	stdout := &bytes.Buffer{}
 	stderr := &bytes.Buffer{}
 	d := &Dotfiles{
-		Stdout: stdout,
-		Stderr: stderr,
-		repos:  []string{repoDir},
+		Verbose: true, // print the git commands
+		Stdout:  stdout,
+		Stderr:  stderr,
+		repos:   []string{repoDir},
 	}
 
 	d.Publish()
 
 	out := stdout.String()
-	expectedPush := "[" + filepath.Base(repoDir) + "] git push -q publish main"
+	expectedPush := "[" + filepath.Base(repoDir) + "] git push --porcelain publish main"
 	if !strings.Contains(out, expectedPush) {
 		t.Errorf("Expected push message '%s', got stdout: '%s'", expectedPush, out)
 	}
@@ -157,15 +159,16 @@ func TestPublishNotPublic(t *testing.T) {
 	stdout := &bytes.Buffer{}
 	stderr := &bytes.Buffer{}
 	d := &Dotfiles{
-		Stdout: stdout,
-		Stderr: stderr,
-		repos:  []string{repoDir},
+		Verbose: true, // print the git commands
+		Stdout:  stdout,
+		Stderr:  stderr,
+		repos:   []string{repoDir},
 	}
 
 	d.Publish()
 
 	out := stdout.String()
-	if strings.Contains(out, "git push -q publish") {
+	if strings.Contains(out, "git push --porcelain publish") {
 		t.Errorf("Did not expect push command for non-public repo, got stdout: '%s'", out)
 	}
 }
@@ -196,15 +199,16 @@ func TestPublishWithBackupBranches(t *testing.T) {
 	stdout := &bytes.Buffer{}
 	stderr := &bytes.Buffer{}
 	d := &Dotfiles{
-		Stdout: stdout,
-		Stderr: stderr,
-		repos:  []string{repoDir},
+		Verbose: true, // print the git commands
+		Stdout:  stdout,
+		Stderr:  stderr,
+		repos:   []string{repoDir},
 	}
 
 	d.Publish()
 
 	out := stdout.String()
-	if !strings.Contains(out, "git push -q publish master") {
+	if !strings.Contains(out, "git push --porcelain publish master") {
 		t.Errorf("Expected push command with master branch, got stdout: '%s'", out)
 	}
 }

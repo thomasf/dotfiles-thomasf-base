@@ -5,13 +5,14 @@ import (
 	"flag"
 	"fmt"
 	"io"
-	"maps"
 	"os"
 	"os/exec"
 	"path/filepath"
 	"slices"
 	"strings"
 	"sync"
+	"sync/atomic"
+	"time"
 
 	"github.com/peterbourgon/ff/v3"
 )
@@ -30,34 +31,11 @@ type Dotfiles struct {
 	Verbose   bool
 
 	// Internal state
-	repos     []string
-	runErrors []error
-	errMu     sync.Mutex
-}
-
-func hasChanges(path string) (bool, error) {
-	cmd := exec.Command("git", "status", "--porcelain")
-	cmd.Dir = path
-	out, err := cmd.Output()
-	if err != nil {
-		return false, err
-	}
-	return len(strings.TrimSpace(string(out))) > 0, nil
-}
-
-func hasDiff(path string) (bool, error) {
-	cmd := exec.Command("git", "diff", "--quiet")
-	cmd.Dir = path
-	err := cmd.Run()
-	if err == nil {
-		return false, nil
-	}
-	if exitError, ok := err.(*exec.ExitError); ok {
-		if exitError.ExitCode() == 1 {
-			return true, nil
-		}
-	}
-	return false, err
+	repos            []string
+	runErrors        []error
+	errMu            sync.Mutex
+	hostCheckTimeout time.Duration // of checkSSHHosts; zero means defaultHostCheckTimeout
+	interrupted      atomic.Bool   // SIGINT or SIGTERM stopped runRemotes
 }
 
 func (d *Dotfiles) collectErr(err error) {
@@ -82,7 +60,7 @@ func (d *Dotfiles) Run(stdout, stderr io.Writer, args []string) error {
 		fmt.Fprintf(stderr, "  plan      Print synchronization plan without taking action\n")
 		fmt.Fprintf(stderr, "  push      Run git push on all repos in parallel\n")
 		fmt.Fprintf(stderr, "  publish   Run git push publish on all repos in parallel\n")
-		fmt.Fprintf(stderr, "  pull      Run git pull origin on all repos in parallel\n")
+		fmt.Fprintf(stderr, "  pull [options]  Run git pull origin on all repos in parallel, summarize the changes and install (see pull -h)\n")
 		fmt.Fprintf(stderr, "  status, s Run git status on all repos (only if changes exist)\n")
 		fmt.Fprintf(stderr, "  diff, d   Run git diff on all repos\n")
 		fmt.Fprintf(stderr, "  magit     Open magit-status in emacs for all repos with changes\n")
@@ -133,9 +111,12 @@ func (d *Dotfiles) Run(stdout, stderr io.Writer, args []string) error {
 	case "publish":
 		d.Publish()
 	case "pull":
-		d.Pull()
-		fmt.Fprintln(d.Stdout, "Installing...")
-		d.Install()
+		if err := d.PullCommand(remainingArgs[1:]); err != nil {
+			if errors.Is(err, flag.ErrHelp) {
+				return nil
+			}
+			return err
+		}
 	case "status", "s":
 		d.Status()
 	case "diff", "d":
@@ -201,249 +182,6 @@ func (d *Dotfiles) discoverRepos() error {
 		return errors.New("no repositories found or specified")
 	}
 	return nil
-}
-
-func (d *Dotfiles) Push() {
-	set, err := d.loadRepoSet()
-	if err != nil {
-		d.fail(err)
-		return
-	}
-
-	var (
-		wg      sync.WaitGroup
-		mu      sync.Mutex
-		skipped = make(map[string][]string) // reason -> repository names
-	)
-	skip := func(reason, name string) {
-		mu.Lock()
-		defer mu.Unlock()
-		skipped[reason] = append(skipped[reason], name)
-	}
-
-	for _, repoPath := range d.repos {
-		name := filepath.Base(repoPath)
-		wg.Go(func() {
-			targets, err := d.pushTargets(set, repoPath)
-			if err != nil {
-				fmt.Fprintf(d.Stderr, "error finding remotes in %s: %v\n", name, err)
-				return
-			}
-			remotes, err := gitRemotes(repoPath)
-			if err != nil {
-				fmt.Fprintf(d.Stderr, "error finding remotes in %s: %v\n", name, err)
-				return
-			}
-
-			branch := d.getMainBranch(repoPath)
-			for _, target := range targets {
-				if target.backup {
-					remote, ok := remotes[target.name]
-					if !ok {
-						skip(fmt.Sprintf("remote %s is not configured (run 'dotfiles repos fix')", target.name), name)
-						continue
-					}
-					switch localBackupState(remote.pushTo()) {
-					case backupNotCreated:
-						skip(fmt.Sprintf("remote %s repository does not exist (run 'dotfiles repos fix')", target.name), name)
-						continue
-					case backupUnavailable:
-						skip(fmt.Sprintf("remote %s is unavailable", target.name), name)
-						continue
-					}
-				}
-
-				action := &ExecCommandAction{
-					SrcRoot: repoPath,
-					Command: "git",
-					Args:    []string{"push", "-q", target.name, branch},
-				}
-				fmt.Fprintln(d.Stdout, action.String())
-				if err := action.Run(); err != nil {
-					if target.backup {
-						fmt.Fprintf(d.Stderr, "warning: %s (%s): %v\n", name, target.name, err)
-						continue
-					}
-					fmt.Fprintf(d.Stderr, "error in %s (%s): %v\n", name, target.name, err)
-					d.collectErr(fmt.Errorf("%s: %w", action.String(), err))
-				}
-			}
-		})
-	}
-	wg.Wait()
-
-	for _, reason := range slices.Sorted(maps.Keys(skipped)) {
-		names := skipped[reason]
-		slices.Sort(names)
-		fmt.Fprintf(d.Stderr, "warning: %s, skipped for %d repos: %s\n", reason, len(names), strings.Join(names, ", "))
-	}
-}
-
-type pushTarget struct {
-	name   string
-	backup bool // failures are warnings, not errors
-}
-
-// pushTargets returns the active private and backup remotes, or without
-// configured remotes, origin and backup.* from the repository itself.
-func (d *Dotfiles) pushTargets(set *repoSet, path string) ([]pushTarget, error) {
-	var targets []pushTarget
-	if set.configured() {
-		for _, r := range set.active(RemoteKindPrivate, RemoteKindBackup) {
-			targets = append(targets, pushTarget{name: r.Name, backup: r.Kind == RemoteKindBackup})
-		}
-		return targets, nil
-	}
-	names, err := d.getPushRemotes(path)
-	if err != nil {
-		return nil, err
-	}
-	for _, name := range names {
-		targets = append(targets, pushTarget{name: name, backup: strings.HasPrefix(name, "backup.")})
-	}
-	return targets, nil
-}
-
-func (d *Dotfiles) getPushRemotes(path string) ([]string, error) {
-	cmd := exec.Command("git", "remote")
-	cmd.Dir = path
-	output, err := cmd.Output()
-	if err != nil {
-		return nil, err
-	}
-
-	lines := strings.Split(strings.TrimSpace(string(output)), "\n")
-	var remotes []string
-	for _, line := range lines {
-		remote := strings.TrimSpace(line)
-		if remote == "" {
-			continue
-		}
-
-		if remote == "origin" || strings.HasPrefix(remote, "backup.") {
-			remotes = append(remotes, remote)
-		}
-	}
-
-	if len(remotes) == 0 {
-		return []string{"origin"}, nil
-	}
-
-	return remotes, nil
-}
-
-func (d *Dotfiles) getMainBranch(path string) string {
-	cmd := exec.Command("git", "branch", "--list", "main", "master")
-	cmd.Dir = path
-	output, _ := cmd.Output()
-	lines := strings.SplitSeq(strings.TrimSpace(string(output)), "\n")
-	for line := range lines {
-		line = strings.TrimSpace(line)
-		line = strings.TrimPrefix(line, "* ")
-		if line == "main" || line == "master" {
-			return line
-		}
-	}
-	return "master"
-}
-
-func (d *Dotfiles) Publish() {
-	set, err := d.loadRepoSet()
-	if err != nil {
-		d.fail(err)
-		return
-	}
-	targets := []string{"publish"}
-	if set.configured() {
-		targets = nil
-		for _, r := range set.active(RemoteKindPublish) {
-			targets = append(targets, r.Name)
-		}
-	}
-
-	var wg sync.WaitGroup
-	for _, repoPath := range d.repos {
-		name := filepath.Base(repoPath)
-		wg.Go(func() {
-			remotes, err := gitRemotes(repoPath)
-			if err != nil {
-				fmt.Fprintf(d.Stderr, "error checking remotes in %s: %v\n", name, err)
-				return
-			}
-
-			if !set.public(repoPath) {
-				if v := set.publishViolations(repoPath, remotes); len(v) > 0 {
-					d.fail(fmt.Errorf("%s: publish remote %s on a repository that is not public", name, strings.Join(v, ", ")))
-					return
-				}
-				if d.Verbose {
-					fmt.Fprintf(d.Stdout, "skipping publish for %s: repository is not public\n", name)
-				}
-				return
-			}
-
-			branch := d.getMainBranch(repoPath)
-			for _, remote := range targets {
-				if _, ok := remotes[remote]; !ok {
-					fmt.Fprintf(d.Stdout, "skipping publish for %s: remote '%s' not found\n", name, remote)
-					continue
-				}
-				action := &ExecCommandAction{
-					SrcRoot: repoPath,
-					Command: "git",
-					Args:    []string{"push", "-q", remote, branch},
-				}
-				fmt.Fprintln(d.Stdout, action.String())
-				if err := action.Run(); err != nil {
-					fmt.Fprintf(d.Stderr, "error in %s: %v\n", name, err)
-					d.collectErr(fmt.Errorf("%s: %w", action.String(), err))
-				}
-			}
-		})
-	}
-	wg.Wait()
-}
-
-func (d *Dotfiles) Pull() {
-	remote, err := d.pullRemote()
-	if err != nil {
-		d.fail(err)
-		return
-	}
-
-	var wg sync.WaitGroup
-	for _, repoPath := range d.repos {
-		name := filepath.Base(repoPath)
-		wg.Go(func() {
-			branch := d.getMainBranch(repoPath)
-			action := &ExecCommandAction{
-				SrcRoot: repoPath,
-				Command: "git",
-				Args:    []string{"pull", "-q", remote, branch},
-			}
-
-			fmt.Fprintln(d.Stdout, action.String())
-			if err := action.Run(); err != nil {
-				fmt.Fprintf(d.Stderr, "error in %s: %v\n", name, err)
-				d.collectErr(fmt.Errorf("%s: %w", action.String(), err))
-			}
-		})
-	}
-	wg.Wait()
-}
-
-// pullRemote returns the upstream remote, or origin when no remotes are
-// configured.
-func (d *Dotfiles) pullRemote() (string, error) {
-	set, err := d.loadRepoSet()
-	if err != nil {
-		return "", err
-	}
-	if !set.configured() {
-		return "origin", nil
-	}
-	r, err := set.upstream()
-	return r.Name, err
 }
 
 func (d *Dotfiles) Status() {

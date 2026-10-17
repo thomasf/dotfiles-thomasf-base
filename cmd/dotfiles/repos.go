@@ -2,11 +2,11 @@ package main
 
 import (
 	"cmp"
+	"context"
 	"errors"
 	"fmt"
 	"maps"
 	"os"
-	"os/exec"
 	"path/filepath"
 	"slices"
 	"strings"
@@ -204,45 +204,6 @@ func (s *repoSet) publishViolations(path string, remotes map[string]gitRemote) [
 		}
 	}
 	return found
-}
-
-// gitRemote holds the URLs configured for a git remote.
-type gitRemote struct {
-	url     string
-	pushURL string // remote.<name>.pushurl, if set
-}
-
-// pushTo returns the URL that git pushes to.
-func (g gitRemote) pushTo() string { return cmp.Or(g.pushURL, g.url) }
-
-// gitRemotes returns the remotes of the repository at path, keyed by remote
-// name.
-func gitRemotes(path string) (map[string]gitRemote, error) {
-	cmd := exec.Command("git", "config", "--get-regexp", `^remote\..*\.(url|pushurl)$`)
-	cmd.Dir = path
-	out, err := cmd.Output()
-	remotes := make(map[string]gitRemote)
-	if err != nil {
-		// Exit status 1 means that no remote has a URL.
-		if exitErr, ok := errors.AsType[*exec.ExitError](err); ok && exitErr.ExitCode() == 1 {
-			return remotes, nil
-		}
-		return nil, err
-	}
-	for line := range strings.Lines(string(out)) {
-		key, value, _ := strings.Cut(strings.TrimSpace(line), " ")
-		key = strings.TrimPrefix(key, "remote.")
-		if name, ok := strings.CutSuffix(key, ".pushurl"); ok {
-			r := remotes[name]
-			r.pushURL = value
-			remotes[name] = r
-		} else if name, ok := strings.CutSuffix(key, ".url"); ok {
-			r := remotes[name]
-			r.url = value
-			remotes[name] = r
-		}
-	}
-	return remotes, nil
 }
 
 type backupState int
@@ -522,14 +483,40 @@ func (d *Dotfiles) ReposClone(names []string) {
 		}
 	}
 
-	var cloned []string
+	var targets []remoteTarget
 	for _, e := range d.repoEntries(set) {
 		if e.cloned || !e.listed || (len(names) > 0 && !slices.Contains(names, e.name)) {
 			continue
 		}
-		d.runActions([]Action{&GitCloneAction{Remote: upstream.Name, URL: upstream.urlFor(e.name), Dst: e.path}})
-		if isDir(e.path) {
-			cloned = append(cloned, e.path)
+		url := upstream.urlFor(e.name)
+		if d.DryRun {
+			fmt.Fprintf(d.Stdout, "plan: %s\n", gitDesc(e.path, cloneArgs(upstream.Name, url, e.path)...))
+			continue
+		}
+		// The host check needs the URL that git connects to, after
+		// url.<base>.insteadOf rewrites.
+		resolved, _ := gitText(d.ReposPath, "ls-remote", "--get-url", url)
+		targets = append(targets, remoteTarget{repoPath: e.path, remote: upstream.Name, url: cmp.Or(resolved, url)})
+	}
+	if len(targets) > 0 {
+		d.runRemotes(targets, nil, func(ctx context.Context, t remoteTarget) remoteResult {
+			// Clone from the configured URL, which repos fix expects.
+			args := cloneArgs(t.remote, upstream.urlFor(filepath.Base(t.repoPath)), t.repoPath)
+			if _, err := d.runTargetGit(ctx, t, args...); err != nil {
+				return remoteResult{target: t, err: err}
+			}
+			return remoteResult{target: t, note: "cloned"}
+		})
+	}
+
+	if d.interrupted.Load() {
+		return
+	}
+
+	var cloned []string
+	for _, t := range targets {
+		if isDir(t.repoPath) {
+			cloned = append(cloned, t.repoPath)
 		}
 	}
 
@@ -544,6 +531,12 @@ func (d *Dotfiles) ReposClone(names []string) {
 		}
 	}
 	d.fixAll(set)
+}
+
+// cloneArgs returns the git arguments for cloning url into dst, naming the
+// remote remote.
+func cloneArgs(remote, url, dst string) []string {
+	return []string{"clone", "-q", "-o", remote, url, dst}
 }
 
 // runActions runs actions in order, or only prints them in dry-run mode.

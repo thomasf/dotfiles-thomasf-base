@@ -84,6 +84,41 @@ The `repos` commands use this configuration:
 Pass `-dry-run` before the command (`dotfiles -dry-run repos fix`) to print the
 actions without running them.
 
+### Pulling and Pushing
+
+`pull`, `push` and `publish` work on the main branch (`main`, or else
+`master`) of every repository, with the repositories in parallel:
+
+- `dotfiles pull [-no-install]`: pull from the upstream remote, then run
+  `install`. `install` is skipped with `-no-install`, or if a pull failed. A
+  repository that has another branch checked out is skipped, since pulling
+  would merge or rebase that branch.
+- `dotfiles push`: push to the private and backup remotes. One repository's
+  remotes are pushed one after the other.
+- `dotfiles publish`: push public repositories to their publish remotes.
+
+`dotfiles repos clone` clones in parallel too, with the same host check and
+summary.
+
+First, each ssh host that the remotes point to is checked once, with `git
+ls-remote`. If a host does not answer within 20 seconds or the login fails,
+its remotes are skipped, so a broken login is reported once rather than once
+per repository. With ssh's `ControlMaster auto` and `ControlPersist`, the
+check's connection becomes the master that the pulls and pushes share.
+
+At the end, a summary shows one line per repository and remote: the number
+of commits pulled or pushed and their `git diff --shortstat`, `up to date`,
+`new branch`, `forced update`, `cloned`, `SKIPPED` with the reason, or
+`FAILED` with git's error. A pull counts the commits that came from the
+remote, not local commits that it rebased, and also shows how many local
+commits are not pushed. On a terminal the summary is colored. Pass `-v` to
+also print each git command as it starts.
+
+Interrupting with Ctrl-C (or SIGTERM) stops the running git commands, lets
+them clean up, and still prints the summary, which shows for each repository
+the git command it was interrupted in, or that it was not started. `install`
+is then skipped. A second Ctrl-C quits at once.
+
 ## Order of Execution
 
 `install` first plans every action of every repository, then runs them. `plan`

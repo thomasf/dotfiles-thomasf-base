@@ -326,8 +326,9 @@ func TestReposClone(t *testing.T) {
 	}
 	gitRun(t, root, "clone", "-q", filepath.Join(root, "origin", "alpha.git"), filepath.Join(reposPath, "alpha"))
 
+	stdout := &bytes.Buffer{}
 	d := &Dotfiles{
-		Stdout:    &bytes.Buffer{},
+		Stdout:    stdout,
 		Stderr:    &bytes.Buffer{},
 		ReposPath: reposPath,
 		repos:     []string{filepath.Join(reposPath, "alpha")},
@@ -335,6 +336,9 @@ func TestReposClone(t *testing.T) {
 	d.ReposClone(nil)
 	if len(d.runErrors) > 0 {
 		t.Fatalf("errors: %v\nstderr: %s", d.runErrors, d.Stderr)
+	}
+	if want := "beta  origin  cloned"; !strings.Contains(stdout.String(), want) {
+		t.Errorf("summary missing %q:\n%s", want, stdout)
 	}
 
 	beta := filepath.Join(reposPath, "beta")
@@ -460,13 +464,13 @@ func TestPushConfiguredRemotes(t *testing.T) {
 
 	stdout := &bytes.Buffer{}
 	stderr := &bytes.Buffer{}
-	d := &Dotfiles{Stdout: stdout, Stderr: stderr, repos: []string{alpha}}
+	d := &Dotfiles{Stdout: stdout, Stderr: stderr, Verbose: true, repos: []string{alpha}}
 	d.Push()
 
 	if len(d.runErrors) > 0 {
 		t.Fatalf("errors: %v\nstderr: %s", d.runErrors, stderr)
 	}
-	if !strings.Contains(stdout.String(), "[alpha] git push -q origin main") {
+	if !strings.Contains(stdout.String(), "[alpha] git push --porcelain origin main") {
 		t.Errorf("origin not pushed:\n%s", stdout)
 	}
 	if strings.Contains(stdout.String(), "backup.off") {
