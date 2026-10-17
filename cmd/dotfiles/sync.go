@@ -46,7 +46,7 @@ func (r *Repository) Sync() ([]Action, error) {
 				}
 
 				if r.copy {
-					actions = append(actions, &CopyFile{
+					actions = append(actions, &CopyAction{
 						SrcRoot: r.srcRoot,
 						Src:     rel,
 						DstRoot: r.dstRoot,
@@ -54,7 +54,7 @@ func (r *Repository) Sync() ([]Action, error) {
 						Force:   r.force,
 					})
 				} else {
-					actions = append(actions, &SymLinker{
+					actions = append(actions, &SymlinkAction{
 						SrcRoot: r.srcRoot,
 						Src:     rel,
 						DstRoot: r.dstRoot,
@@ -81,7 +81,7 @@ func (r *Repository) Sync() ([]Action, error) {
 			}
 
 			if r.copy {
-				actions = append(actions, &CopyFile{
+				actions = append(actions, &CopyAction{
 					SrcRoot: r.srcRoot,
 					Src:     srcRel,
 					DstRoot: r.dstRoot,
@@ -89,7 +89,7 @@ func (r *Repository) Sync() ([]Action, error) {
 					Force:   r.force,
 				})
 			} else {
-				actions = append(actions, &SymLinker{
+				actions = append(actions, &SymlinkAction{
 					SrcRoot: r.srcRoot,
 					Src:     srcRel,
 					DstRoot: r.dstRoot,
@@ -253,7 +253,7 @@ func (r *Repository) syncRootItem(name string) (Action, error) {
 	targetName := r.dotName(name)
 
 	if r.copy {
-		return &CopyFile{
+		return &CopyAction{
 			SrcRoot: r.srcRoot,
 			Src:     name,
 			DstRoot: r.dstRoot,
@@ -261,7 +261,7 @@ func (r *Repository) syncRootItem(name string) (Action, error) {
 			Force:   r.force,
 		}, nil
 	}
-	return &SymLinker{
+	return &SymlinkAction{
 		SrcRoot: r.srcRoot,
 		Src:     name,
 		DstRoot: r.dstRoot,

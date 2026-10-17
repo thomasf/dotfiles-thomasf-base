@@ -8,8 +8,8 @@ import (
 	"strings"
 )
 
-// PullCommand runs dotfiles pull: Pull, and then Install unless a pull failed
-// or -no-install is given.
+// PullCommand runs dotfiles pull: Pull, and then InstallCommand unless a pull
+// failed or -no-install is given.
 func (d *Dotfiles) PullCommand(args []string) error {
 	fs := flag.NewFlagSet("dotfiles pull", flag.ContinueOnError)
 	fs.SetOutput(d.Stderr)
@@ -34,7 +34,7 @@ func (d *Dotfiles) PullCommand(args []string) error {
 		fmt.Fprintln(d.Stdout, "Not installing because a pull failed; run 'dotfiles install' to install anyway.")
 	case !*noInstall:
 		fmt.Fprintln(d.Stdout, "Installing...")
-		d.Install()
+		d.InstallCommand()
 	}
 	return nil
 }

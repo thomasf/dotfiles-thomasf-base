@@ -8,6 +8,22 @@ import (
 	"strings"
 )
 
+// DocCommand prints the README, or with arguments, the sections of it that
+// match them as a topic (see docTopic).
+func (d *Dotfiles) DocCommand(args []string) error {
+	if len(args) == 0 {
+		fmt.Fprint(d.Stdout, readme)
+		return nil
+	}
+	out, err := docTopic(readme, strings.Join(args, " "))
+	if err != nil {
+		fmt.Fprintln(d.Stderr, err)
+		return err
+	}
+	fmt.Fprint(d.Stdout, out)
+	return nil
+}
+
 //go:generate go run ./internal/cmd/gendoc README.md README.txt
 
 // readme is README.md rendered as plain text by glow. Headings keep their
@@ -179,20 +195,4 @@ func docTopic(text, topic string) (string, error) {
 		end = s.end
 	}
 	return b.String(), nil
-}
-
-// Doc prints the README, or with arguments, the sections of it that match
-// them as a topic (see docTopic).
-func (d *Dotfiles) Doc(args []string) error {
-	if len(args) == 0 {
-		fmt.Fprint(d.Stdout, readme)
-		return nil
-	}
-	out, err := docTopic(readme, strings.Join(args, " "))
-	if err != nil {
-		fmt.Fprintln(d.Stderr, err)
-		return err
-	}
-	fmt.Fprint(d.Stdout, out)
-	return nil
 }

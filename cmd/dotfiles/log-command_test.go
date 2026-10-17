@@ -49,13 +49,13 @@ func logTestRepos(t *testing.T) (a, b string) {
 	return a, b
 }
 
-// runLog runs Log with args on the repositories and fails the test on
+// runLog runs LogCommand with args on the repositories and fails the test on
 // errors.
 func runLog(t *testing.T, repos []string, args ...string) string {
 	t.Helper()
 	var stdout, stderr bytes.Buffer
 	d := &Dotfiles{Stdout: &stdout, Stderr: &stderr, repos: repos}
-	if err := d.Log(args); err != nil {
+	if err := d.LogCommand(args); err != nil {
 		t.Fatalf("log %v: %v", args, err)
 	}
 	if len(d.runErrors) > 0 {
@@ -131,14 +131,14 @@ func TestLogTextconv(t *testing.T) {
 
 	var stdout, stderr bytes.Buffer
 	d := &Dotfiles{Stdout: &stdout, Stderr: &stderr, repos: []string{a, b}}
-	d.Log([]string{"-patch", "-textconv"})
+	d.LogCommand([]string{"-patch", "-textconv"})
 	if len(d.runErrors) != 1 {
 		t.Errorf("-textconv did not turn textconv on: %v", d.runErrors)
 	}
 }
 
-// TestLogMatchesGit checks that Log prints what git log prints with the same
-// format, including merge commits and commit messages with a body.
+// TestLogMatchesGit checks that LogCommand prints what git log prints with the
+// same format, including merge commits and commit messages with a body.
 func TestLogMatchesGit(t *testing.T) {
 	a, _ := logTestRepos(t)
 	gitRun(t, a, "checkout", "-q", "-b", "side", "HEAD~")
@@ -168,7 +168,7 @@ func TestLogErrors(t *testing.T) {
 	notRepo := t.TempDir()
 	var stdout, stderr bytes.Buffer
 	d := &Dotfiles{Stdout: &stdout, Stderr: &stderr, repos: []string{a, notRepo, b}}
-	if err := d.Log(nil); err != nil {
+	if err := d.LogCommand(nil); err != nil {
 		t.Fatal(err)
 	}
 	if len(d.runErrors) != 1 || !strings.Contains(d.runErrors[0].Error(), "not a git repository") {
@@ -181,7 +181,7 @@ func TestLogErrors(t *testing.T) {
 	for _, args := range [][]string{{"--oneline"}, {"extra"}, {"-compact", "-short"}, {"-h"}} {
 		stderr.Reset()
 		d := &Dotfiles{Stdout: &stdout, Stderr: &stderr, repos: []string{a, b}}
-		err := d.Log(args)
+		err := d.LogCommand(args)
 		if err == nil {
 			t.Errorf("%v: no error", args)
 		}

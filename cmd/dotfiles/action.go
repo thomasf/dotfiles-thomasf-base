@@ -1,335 +1,91 @@
 package main
 
 import (
-	"context"
+	"bytes"
 	"errors"
 	"fmt"
-	"io"
+	"io/fs"
 	"os"
-	"os/exec"
 	"path/filepath"
-	"sort"
-	"strings"
-
-	"mvdan.cc/sh/v3/interp"
-	"mvdan.cc/sh/v3/syntax"
 )
 
+// An Action is one change that a command makes, such as creating a symlink,
+// writing a file or running git. Commands build a list of actions and then
+// run them in order, or for plan and -dry-run only print them.
 type Action interface {
+	// Run makes the change. An error fails only this action; the actions
+	// after it still run.
 	Run() error
+
+	// String describes in one line what Run does, starting with the name of
+	// the repository in brackets:
+	//
+	//	[base] symlink: bashrc -> .bashrc
+	//
+	// It must not change anything: plan and -dry-run print it instead of
+	// calling Run. Errors from Run are reported prefixed with it.
 	String() string
 }
 
+// A Targeter is an [Action] that writes a single destination path. Before
+// running any action, install warns about Targeters that share a destination,
+// since they would overwrite each other or fail. Actions that write several
+// paths, or none, do not implement it.
 type Targeter interface {
+	// DstAbsolutePath returns the path that Run writes, joined to the
+	// destination root, so that actions writing the same file return the
+	// same path.
 	DstAbsolutePath() string
 }
 
-type SymLinker struct {
-	SrcRoot string
-	Src     string
-	DstRoot string
-	Dst     string
-	Force   bool
-}
-
-func (s *SymLinker) DstAbsolutePath() string {
-	return filepath.Join(s.DstRoot, s.Dst)
-}
-
-func (s *SymLinker) String() string {
-	return fmt.Sprintf("[%s] symlink: %s -> %s", filepath.Base(s.SrcRoot), s.Src, s.Dst)
-}
-
-func (s *SymLinker) Run() error {
-	fullSrc := filepath.Join(s.SrcRoot, s.Src)
-	fullDst := filepath.Join(s.DstRoot, s.Dst)
-
-	absSrc, err := filepath.Abs(fullSrc)
-	if err != nil {
-		return err
-	}
-
-	dstDir := filepath.Dir(fullDst)
-	if _, err := os.Stat(dstDir); os.IsNotExist(err) {
-		if err := os.MkdirAll(dstDir, 0o755); err != nil {
-			return err
+// writeFile makes the regular file path have the content data and the
+// permission bits perm, and reports whether it changed anything. A file that
+// already has that content is never rewritten; if only its permissions
+// differ, they are changed in place. Otherwise the file is replaced
+// atomically, and missing parent directories are created.
+//
+// A path that is a symlink is refused, so that writing never changes a file
+// in another location, such as one linked by a mount.
+func writeFile(path string, data []byte, perm fs.FileMode) (bool, error) {
+	info, err := os.Lstat(path)
+	switch {
+	case err == nil:
+		if info.Mode()&fs.ModeSymlink != 0 {
+			return false, fmt.Errorf("refusing to write through symlink: %s", path)
 		}
-	}
-
-	if info, err := os.Lstat(fullDst); err == nil {
-		if info.Mode()&os.ModeSymlink != 0 {
-			target, err := os.Readlink(fullDst)
-			if err == nil && target == absSrc {
-				// already correctly linked
-				return nil
-			}
+		if !info.Mode().IsRegular() {
+			return false, fmt.Errorf("not a regular file: %s", path)
 		}
-
-		if !s.Force {
-			return fmt.Errorf("target exists: %s", fullDst)
-		}
-
-		if err := os.RemoveAll(fullDst); err != nil {
-			return err
-		}
-	}
-
-	return os.Symlink(absSrc, fullDst)
-}
-
-type CopyFile struct {
-	SrcRoot string
-	Src     string
-	DstRoot string
-	Dst     string
-	Force   bool
-}
-
-func (c *CopyFile) DstAbsolutePath() string {
-	return filepath.Join(c.DstRoot, c.Dst)
-}
-
-func (c *CopyFile) String() string {
-	return fmt.Sprintf("[%s] copy: %s -> %s", filepath.Base(c.SrcRoot), c.Src, c.Dst)
-}
-
-func (c *CopyFile) Run() error {
-	fullSrc := filepath.Join(c.SrcRoot, c.Src)
-	fullDst := filepath.Join(c.DstRoot, c.Dst)
-
-	dstDir := filepath.Dir(fullDst)
-	if _, err := os.Stat(dstDir); os.IsNotExist(err) {
-		if err := os.MkdirAll(dstDir, 0o755); err != nil {
-			return err
-		}
-	}
-
-	if _, err := os.Lstat(fullDst); err == nil {
-		if !c.Force {
-			return fmt.Errorf("target exists: %s", fullDst)
-		}
-
-		if err := os.RemoveAll(fullDst); err != nil {
-			return err
-		}
-	}
-
-	srcInfo, err := os.Stat(fullSrc)
-	if err != nil {
-		return err
-	}
-
-	if srcInfo.IsDir() {
-		return filepath.Walk(fullSrc, func(path string, info os.FileInfo, err error) error {
-			if err != nil {
-				return err
-			}
-			rel, err := filepath.Rel(fullSrc, path)
-			if err != nil {
-				return err
-			}
-			target := filepath.Join(fullDst, rel)
-			if info.IsDir() {
-				return os.MkdirAll(target, info.Mode())
-			}
-			return copyFile(path, target, info.Mode())
-		})
-	}
-
-	return copyFile(fullSrc, fullDst, srcInfo.Mode())
-}
-
-func copyFile(src, dst string, mode os.FileMode) error {
-	in, err := os.Open(src)
-	if err != nil {
-		return err
-	}
-	defer in.Close()
-
-	out, err := os.OpenFile(dst, os.O_CREATE|os.O_WRONLY|os.O_TRUNC, mode)
-	if err != nil {
-		return err
-	}
-	defer out.Close()
-
-	_, err = io.Copy(out, in)
-	return err
-}
-
-type GitConfigAction struct {
-	SrcRoot string
-	Config  map[string]string
-}
-
-func (g *GitConfigAction) String() string {
-	var set, unset int
-	for _, v := range g.Config {
-		if v == "" {
-			unset++
-		} else {
-			set++
-		}
-	}
-
-	var parts []string
-	if set > 0 {
-		parts = append(parts, fmt.Sprintf("set %d", set))
-	}
-	if unset > 0 {
-		parts = append(parts, fmt.Sprintf("unset %d", unset))
-	}
-
-	return fmt.Sprintf("[%s] git config: %s", filepath.Base(g.SrcRoot), strings.Join(parts, ", "))
-}
-
-func (g *GitConfigAction) Run() error {
-	var keys []string
-	for k := range g.Config {
-		keys = append(keys, k)
-	}
-	sort.Strings(keys)
-
-	var errs []error
-	for _, k := range keys {
-		v := g.Config[k]
-		var args []string
-		if v == "" {
-			args = []string{"config", "--global", "--unset", k}
-		} else {
-			args = []string{"config", "--global", k, v}
-		}
-
-		cmd := exec.Command("git", args...)
-		prefix := fmt.Sprintf("[%s] git config %s: ", filepath.Base(g.SrcRoot), k)
-		cmd.Stdout = newPrefixWriter(os.Stdout, prefix)
-		cmd.Stderr = newPrefixWriter(os.Stderr, prefix)
-		err := cmd.Run()
+		old, err := os.ReadFile(path)
 		if err != nil {
-			if v == "" {
-				if exitError, ok := err.(*exec.ExitError); ok {
-					if exitError.ExitCode() == 5 {
-						continue
-					}
-				}
-			}
-			errs = append(errs, fmt.Errorf("git config %s: %w", k, err))
+			return false, err
 		}
-	}
-	return errors.Join(errs...)
-}
-
-type GoInstallAction struct {
-	SrcRoot string
-	Path    string
-}
-
-func (g *GoInstallAction) String() string {
-	return fmt.Sprintf("[%s] go install %s", filepath.Base(g.SrcRoot), g.Path)
-}
-
-func (g *GoInstallAction) Run() error {
-	dirPath := filepath.Join(g.SrcRoot, g.Path)
-	hasGo, err := hasGoFiles(dirPath)
-	if err != nil {
-		return err
-	}
-	if !hasGo {
-		return fmt.Errorf("no go files in %s", dirPath)
+		if bytes.Equal(old, data) {
+			if info.Mode().Perm() == perm {
+				return false, nil
+			}
+			return true, os.Chmod(path, perm)
+		}
+	case errors.Is(err, fs.ErrNotExist):
+		if err := os.MkdirAll(filepath.Dir(path), 0o755); err != nil {
+			return false, err
+		}
+	default:
+		return false, err
 	}
 
-	cmd := exec.Command("go", "install", ".")
-	cmd.Dir = dirPath
-	prefix := fmt.Sprintf("[%s] go install %s: ", filepath.Base(g.SrcRoot), g.Path)
-	cmd.Stdout = newPrefixWriter(os.Stdout, prefix)
-	cmd.Stderr = newPrefixWriter(os.Stderr, prefix)
-	if err := cmd.Run(); err != nil {
-		return fmt.Errorf("go install in %s: %w", g.Path, err)
-	}
-	return nil
-}
-
-func hasGoFiles(dir string) (bool, error) {
-	entries, err := os.ReadDir(dir)
+	f, err := os.CreateTemp(filepath.Dir(path), "."+filepath.Base(path)+".*")
 	if err != nil {
 		return false, err
 	}
-	for _, entry := range entries {
-		if !entry.IsDir() && strings.HasSuffix(entry.Name(), ".go") {
-			return true, nil
-		}
+	_, err = f.Write(data)
+	err = errors.Join(err, f.Chmod(perm), f.Close())
+	if err == nil {
+		err = os.Rename(f.Name(), path)
 	}
-	return false, nil
-}
-
-type ScriptAction struct {
-	SrcRoot string
-	Script  string
-}
-
-func (s *ScriptAction) String() string {
-	return fmt.Sprintf("[%s] run script: %s", filepath.Base(s.SrcRoot), ellipsis(s.Script, 66))
-}
-
-func (s *ScriptAction) Run() error {
-	wrapErr := func(err error) error {
-		if err == nil {
-			return nil
-		}
-		return fmt.Errorf("script error in '%s': %w", s.SrcRoot, err)
-	}
-
-	reader := strings.NewReader(s.Script)
-	f, err := syntax.NewParser().Parse(reader, "")
 	if err != nil {
-		return wrapErr(err)
+		os.Remove(f.Name())
+		return false, err
 	}
-	prefix := fmt.Sprintf("[%s] script: ", filepath.Base(s.SrcRoot))
-	runner, err := interp.New(
-		interp.Dir(s.SrcRoot),
-		interp.StdIO(os.Stdin, newPrefixWriter(os.Stdout, prefix), newPrefixWriter(os.Stderr, prefix)),
-		interp.Params("-e"),
-	)
-	if err != nil {
-		return wrapErr(err)
-	}
-
-	return wrapErr(runner.Run(context.Background(), f))
-}
-
-type ExecCommandAction struct {
-	SrcRoot string
-	Command string
-	Args    []string
-}
-
-func (s *ExecCommandAction) String() string {
-	return fmt.Sprintf("[%s] %s %s", filepath.Base(s.SrcRoot), s.Command, strings.Join(s.Args, " "))
-}
-
-func (s *ExecCommandAction) Run() error {
-	prefix := s.String() + ": "
-	cmd := exec.Command(s.Command, s.Args...)
-	cmd.Dir = s.SrcRoot
-	cmd.Stdout = newPrefixWriter(os.Stdout, prefix)
-	cmd.Stderr = newPrefixWriter(os.Stderr, prefix)
-	return cmd.Run()
-}
-
-func ellipsis(input string, maxLen int) string {
-	var lines []string
-	for l := range strings.Lines(input) {
-		l = strings.TrimSpace(l)
-		if l != "" {
-			lines = append(lines, l)
-		}
-	}
-	cleaned := strings.Join(lines, "⏎")
-	if len(cleaned) <= maxLen {
-		return cleaned
-	}
-	runes := []rune(cleaned)
-	if len(runes) > maxLen {
-		return string(runes[:maxLen]) + "…"
-	}
-	return cleaned
+	return true, nil
 }

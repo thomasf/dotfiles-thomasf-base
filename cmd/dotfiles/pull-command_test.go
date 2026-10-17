@@ -9,6 +9,7 @@ import (
 	"sync"
 	"syscall"
 	"testing"
+	"testing/fstest"
 	"time"
 )
 
@@ -386,5 +387,23 @@ func TestPullCommandInterruptedDuringPull(t *testing.T) {
 	}
 	if strings.Contains(out, "Installing") {
 		t.Errorf("installed after an interrupt:\n%s", out)
+	}
+}
+
+func TestPullConfiguredRemote(t *testing.T) {
+	t.Parallel()
+	root := t.TempDir()
+	alpha := filepath.Join(root, "repos", "alpha")
+	config := `
+[repositories.remote.upstream]
+kind = "private"
+url = '/srv/{name}.git'
+`
+	newGitRepo(t, alpha, fstest.MapFS{"dotfiles.toml": tomlFile(config)})
+
+	d := &Dotfiles{Stdout: &bytes.Buffer{}, Stderr: &bytes.Buffer{}, repos: []string{alpha}}
+	remote, err := d.pullRemote()
+	if err != nil || remote != "upstream" {
+		t.Errorf("pullRemote() = %q, %v; want upstream", remote, err)
 	}
 }

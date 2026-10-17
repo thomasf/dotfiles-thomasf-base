@@ -43,7 +43,7 @@ dst = "second-config"
 	var foundConfigBase, foundFlake8, foundSecondConfig, foundConfig2 bool
 
 	for _, a := range actions {
-		s, ok := a.(*SymLinker)
+		s, ok := a.(*SymlinkAction)
 		if !ok {
 			continue
 		}

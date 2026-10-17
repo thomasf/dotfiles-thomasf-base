@@ -9,60 +9,6 @@ import (
 	"testing/fstest"
 )
 
-func TestScriptAction(t *testing.T) {
-	t.Parallel()
-	repoDir := t.TempDir()
-
-	outputFile := filepath.Join(repoDir, "output.txt")
-	script := "echo 'hello world' > output.txt"
-
-	action := &ScriptAction{
-		SrcRoot: repoDir,
-		Script:  script,
-	}
-
-	err := action.Run()
-	if err != nil {
-		t.Fatalf("script failed: %v", err)
-	}
-
-	data, err := os.ReadFile(outputFile)
-	if err != nil {
-		t.Fatalf("could not read output file: %v", err)
-	}
-
-	if strings.TrimSpace(string(data)) != "hello world" {
-		t.Errorf("expected 'hello world', got %q", string(data))
-	}
-}
-
-func TestScriptActionEnv(t *testing.T) {
-	t.Parallel()
-	repoDir := t.TempDir()
-
-	outputFile := filepath.Join(repoDir, "env_output.txt")
-	script := "FOO=bar; echo $FOO > env_output.txt"
-
-	action := &ScriptAction{
-		SrcRoot: repoDir,
-		Script:  script,
-	}
-
-	err := action.Run()
-	if err != nil {
-		t.Fatalf("script failed: %v", err)
-	}
-
-	data, err := os.ReadFile(outputFile)
-	if err != nil {
-		t.Fatalf("could not read output file: %v", err)
-	}
-
-	if strings.TrimSpace(string(data)) != "bar" {
-		t.Errorf("expected 'bar', got %q", string(data))
-	}
-}
-
 func TestScriptsPrePostRepo(t *testing.T) {
 	t.Parallel()
 	repoDir := t.TempDir()
@@ -215,25 +161,6 @@ src = "echo hostname-match >> log.txt"
 	}
 	if !found {
 		t.Errorf("expected script action to be created for matching hostname %q", hostname)
-	}
-}
-
-func TestShellAction(t *testing.T) {
-	t.Parallel()
-	repoDir := t.TempDir()
-
-	action := &ExecCommandAction{
-		SrcRoot: repoDir,
-		Command: "touch",
-		Args:    []string{"touched.txt"},
-	}
-
-	if err := action.Run(); err != nil {
-		t.Fatal(err)
-	}
-
-	if _, err := os.Stat(filepath.Join(repoDir, "touched.txt")); os.IsNotExist(err) {
-		t.Error("file was not touched")
 	}
 }
 

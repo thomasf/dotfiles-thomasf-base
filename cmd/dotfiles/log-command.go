@@ -19,10 +19,10 @@ import (
 	"golang.org/x/term"
 )
 
-// Log prints the commits of all repositories as one log, ordered by commit
-// date with the newest first. When stdout is a terminal, the log is colored
-// and shown in git's pager.
-func (d *Dotfiles) Log(args []string) error {
+// LogCommand prints the commits of all repositories as one log, ordered by
+// commit date with the newest first. When stdout is a terminal, the log is
+// colored and shown in git's pager.
+func (d *Dotfiles) LogCommand(args []string) error {
 	fs := flag.NewFlagSet("dotfiles log", flag.ContinueOnError)
 	fs.SetOutput(d.Stderr)
 	fs.Usage = func() {
@@ -145,19 +145,19 @@ type logFormat struct {
 	oneline   bool   // no blank line or --- between the first line and the diff
 }
 
-// defaultLogFormat is the format of Log.
+// defaultLogFormat is the format of LogCommand.
 var defaultLogFormat = logFormat{
 	format:    "%C(green)%ad%C(reset) {name} %C(yellow)%H%C(reset) %C(cyan)%ae%C(reset)%n%n%s%n%n%b",
 	separated: true,
 }
 
-// compactLogFormat is the format of Log -compact and -short.
+// compactLogFormat is the format of LogCommand -compact and -short.
 var compactLogFormat = logFormat{
 	format:  "%C(green)%ad%C(reset) {name} %C(yellow)%h%C(reset) %C(cyan)%ae%C(reset) %s",
 	oneline: true,
 }
 
-// logOptions are the options of Log for every repository.
+// logOptions are the options of LogCommand for every repository.
 type logOptions struct {
 	format logFormat
 	args   []string // for git log
@@ -252,7 +252,7 @@ func (s *logStream) advance() {
 	}
 	s.entry, s.atMarker = s.readEntry()
 	if s.format.separated && s.atMarker {
-		// Log writes the separator only between the commits it prints.
+		// LogCommand writes the separator only between the commits it prints.
 		s.entry = bytes.TrimSuffix(s.entry, []byte("\n"))
 	}
 	if first, rest, ok := bytes.Cut(s.entry, []byte("\n")); ok && s.format.oneline {

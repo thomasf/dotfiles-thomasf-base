@@ -46,7 +46,7 @@ func TestPushWithMasterBranch(t *testing.T) {
 		repos:   []string{repoDir},
 	}
 
-	d.Push()
+	d.PushCommand()
 
 	out := stdout.String()
 	t.Logf("Stdout: %s", out)
@@ -93,7 +93,7 @@ func TestPushWithMainBranch(t *testing.T) {
 		repos:   []string{repoDir},
 	}
 
-	d.Push()
+	d.PushCommand()
 
 	out := stdout.String()
 	t.Logf("Stdout: %s", out)
@@ -142,7 +142,7 @@ func TestPushSummary(t *testing.T) {
 
 	stdout, stderr := &lockedBuffer{}, &lockedBuffer{}
 	d := &Dotfiles{Stdout: stdout, Stderr: stderr, repos: repos}
-	d.Push()
+	d.PushCommand()
 
 	out := stdout.String()
 	for _, want := range []string{
@@ -178,7 +178,7 @@ func TestPushChecksPushURL(t *testing.T) {
 
 	stdout := &lockedBuffer{}
 	d := &Dotfiles{Stdout: stdout, Stderr: &lockedBuffer{}, repos: []string{alpha}}
-	d.Push()
+	d.PushCommand()
 
 	out := stdout.String()
 	if strings.Contains(out, "git push") {
@@ -222,7 +222,7 @@ func TestPushUnreadableRemotes(t *testing.T) {
 
 	stdout := &lockedBuffer{}
 	d := &Dotfiles{Stdout: stdout, Stderr: &lockedBuffer{}, repos: []string{notRepo}}
-	d.Push()
+	d.PushCommand()
 
 	if want := "notrepo    FAILED: cannot read remotes: "; !strings.Contains(stdout.String(), want) {
 		t.Errorf("summary missing %q:\n%s", want, stdout)
@@ -230,4 +230,40 @@ func TestPushUnreadableRemotes(t *testing.T) {
 	if len(d.runErrors) != 1 {
 		t.Errorf("runErrors = %v, want one", d.runErrors)
 	}
+}
+
+func TestPushConfiguredRemotes(t *testing.T) {
+	t.Parallel()
+	root := t.TempDir()
+	alpha := filepath.Join(root, "repos", "alpha")
+	newGitRepo(t, alpha, fstest.MapFS{
+		"dotfiles.toml": tomlFile(reposConfig(root, "alpha")),
+	})
+	originDir := filepath.Join(root, "origin", "alpha.git")
+	offDir := filepath.Join(root, "off", "alpha.git")
+	gitRun(t, root, "init", "-q", "--bare", originDir)
+	gitRun(t, root, "init", "-q", "--bare", offDir)
+	gitRun(t, alpha, "remote", "add", "origin", originDir)
+	gitRun(t, alpha, "remote", "add", "backup.off", offDir)
+	// The backup disk is not mounted.
+	gitRun(t, alpha, "remote", "add", "backup.disk", root+"/backup/alpha.git")
+
+	stdout := &bytes.Buffer{}
+	stderr := &bytes.Buffer{}
+	d := &Dotfiles{Stdout: stdout, Stderr: stderr, Verbose: true, repos: []string{alpha}}
+	d.PushCommand()
+
+	if len(d.runErrors) > 0 {
+		t.Fatalf("errors: %v\nstderr: %s", d.runErrors, stderr)
+	}
+	if !strings.Contains(stdout.String(), "[alpha] git push --porcelain origin main") {
+		t.Errorf("origin not pushed:\n%s", stdout)
+	}
+	if strings.Contains(stdout.String(), "backup.off") {
+		t.Errorf("inactive remote pushed:\n%s", stdout)
+	}
+	if want := "warning: remote backup.disk is unavailable, skipped for 1 repos: alpha"; !strings.Contains(stderr.String(), want) {
+		t.Errorf("stderr missing %q:\n%s", want, stderr)
+	}
+	gitRun(t, originDir, "rev-parse", "--verify", "-q", "main")
 }

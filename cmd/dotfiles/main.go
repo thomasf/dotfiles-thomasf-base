@@ -6,9 +6,7 @@ import (
 	"fmt"
 	"io"
 	"os"
-	"os/exec"
 	"path/filepath"
-	"slices"
 	"strings"
 	"sync"
 	"sync/atomic"
@@ -45,6 +43,11 @@ func (d *Dotfiles) collectErr(err error) {
 	d.errMu.Lock()
 	defer d.errMu.Unlock()
 	d.runErrors = append(d.runErrors, err)
+}
+
+func (d *Dotfiles) fail(err error) {
+	fmt.Fprintf(d.Stderr, "error: %v\n", err)
+	d.collectErr(err)
 }
 
 func (d *Dotfiles) Run(stdout, stderr io.Writer, args []string) error {
@@ -98,7 +101,7 @@ func (d *Dotfiles) Run(stdout, stderr io.Writer, args []string) error {
 
 	command := remainingArgs[0]
 	if command == "doc" {
-		return d.Doc(remainingArgs[1:])
+		return d.DocCommand(remainingArgs[1:])
 	}
 
 	if err := d.discoverRepos(); err != nil {
@@ -107,9 +110,9 @@ func (d *Dotfiles) Run(stdout, stderr io.Writer, args []string) error {
 
 	switch command {
 	case "push":
-		d.Push()
+		d.PushCommand()
 	case "publish":
-		d.Publish()
+		d.PublishCommand()
 	case "pull":
 		if err := d.PullCommand(remainingArgs[1:]); err != nil {
 			if errors.Is(err, flag.ErrHelp) {
@@ -118,28 +121,28 @@ func (d *Dotfiles) Run(stdout, stderr io.Writer, args []string) error {
 			return err
 		}
 	case "status", "s":
-		d.Status()
+		d.StatusCommand()
 	case "diff", "d":
-		d.Diff()
+		d.DiffCommand()
 	case "magit":
-		d.Magit()
+		d.MagitCommand()
 	case "log":
-		if err := d.Log(remainingArgs[1:]); err != nil {
+		if err := d.LogCommand(remainingArgs[1:]); err != nil {
 			if errors.Is(err, flag.ErrHelp) {
 				return nil
 			}
 			return err
 		}
 	case "repos":
-		if err := d.Repos(remainingArgs[1:]); err != nil {
+		if err := d.ReposCommand(remainingArgs[1:]); err != nil {
 			fmt.Fprintln(stderr, err)
 			fs.Usage()
 			return err
 		}
 	case "install", "i":
-		d.Install()
+		d.InstallCommand()
 	case "plan":
-		d.Plan()
+		d.PlanCommand()
 	default:
 		fmt.Fprintf(stderr, "unknown command: %s\n", command)
 		fs.Usage()
@@ -182,142 +185,6 @@ func (d *Dotfiles) discoverRepos() error {
 		return errors.New("no repositories found or specified")
 	}
 	return nil
-}
-
-func (d *Dotfiles) Status() {
-	for _, repoPath := range d.repos {
-		name := filepath.Base(repoPath)
-		changed, err := hasChanges(repoPath)
-		if err != nil {
-			fmt.Fprintf(d.Stderr, "error checking status for %s: %v\n", name, err)
-			d.collectErr(fmt.Errorf("status %s: %w", name, err))
-			continue
-		}
-		if changed {
-			fmt.Fprintf(d.Stdout, "[- %s ]\n", name)
-			cmd := exec.Command("git", "status", "--short", "--branch")
-			cmd.Dir = repoPath
-			cmd.Stdout = d.Stdout
-			cmd.Stderr = d.Stderr
-			cmd.Run()
-		}
-	}
-}
-
-func (d *Dotfiles) Diff() {
-	for _, repoPath := range d.repos {
-		name := filepath.Base(repoPath)
-		changed, err := hasDiff(repoPath)
-		if err != nil {
-			fmt.Fprintf(d.Stderr, "error checking diff for %s: %v\n", name, err)
-			d.collectErr(fmt.Errorf("diff %s: %w", name, err))
-			continue
-		}
-		if changed {
-			fmt.Fprintf(d.Stdout, "[- %s ]\n", name)
-			cmd := exec.Command("git", "diff")
-			cmd.Dir = repoPath
-			cmd.Stdout = d.Stdout
-			cmd.Stderr = d.Stderr
-			cmd.Run()
-		}
-	}
-}
-
-func (d *Dotfiles) Magit() {
-	var magitArgs []string
-	for _, repoPath := range d.repos {
-		name := filepath.Base(repoPath)
-		changed, err := hasChanges(repoPath)
-		if err != nil {
-			fmt.Fprintf(d.Stderr, "error checking status for %s: %v\n", name, err)
-			d.collectErr(fmt.Errorf("magit %s: %w", name, err))
-			continue
-		}
-		if changed {
-			absPath, _ := filepath.Abs(repoPath)
-			magitArgs = append(magitArgs, fmt.Sprintf("(magit-status \"%s/\")", absPath))
-		}
-	}
-
-	if len(magitArgs) == 0 {
-		fmt.Fprintln(d.Stdout, "no changes")
-	} else {
-		evalStr := fmt.Sprintf("(progn %s (delete-other-windows) )", strings.Join(magitArgs, " "))
-		cmd := exec.Command("emacs", "-eval", evalStr)
-		prefix := "magit: "
-		cmd.Stdout = newPrefixWriter(d.Stdout, prefix)
-		cmd.Stderr = newPrefixWriter(d.Stderr, prefix)
-		if err := cmd.Run(); err != nil {
-			fmt.Fprintf(d.Stderr, "error: %v\n", err)
-			d.collectErr(fmt.Errorf("magit: %w", err))
-		}
-	}
-}
-
-func (d *Dotfiles) Install() { d.sync(false) }
-func (d *Dotfiles) Plan()    { d.sync(true) }
-
-func (d *Dotfiles) sync(isPlan bool) {
-	var (
-		allActions     []Action
-		allGoInstall   []Action
-		allPreScripts  []Action
-		allPostScripts []Action
-	)
-
-	for _, r := range d.loadRepos(WithForce(d.Force), WithCopy(d.Copy)) {
-		name := filepath.Base(r.srcRoot)
-		actions, err := r.Sync()
-		if err != nil {
-			fmt.Fprintf(d.Stderr, "error planning %s: %v\n", r.srcRoot, err)
-			d.collectErr(fmt.Errorf("plan %s: %w", name, err))
-			continue
-		}
-		allActions = append(allActions, actions...)
-
-		allPreScripts = append(allPreScripts, r.PreScript()...)
-		allPostScripts = append(allPostScripts, r.PostScript()...)
-		allGoInstall = append(allGoInstall, r.GoInstall()...)
-	}
-
-	all := slices.Concat(allGoInstall, allPreScripts, allActions, allPostScripts)
-
-	// Check for multiple actions targeting the same destination path
-	destMap := make(map[string][]Action)
-	for _, action := range all {
-		if t, ok := action.(Targeter); ok {
-			dst := t.DstAbsolutePath()
-			if dst != "" {
-				destMap[dst] = append(destMap[dst], action)
-			}
-		}
-	}
-
-	for dst, actions := range destMap {
-		if len(actions) > 1 {
-			fmt.Fprintf(d.Stderr, "Warning: multiple actions target the same destination: %s\n", dst)
-			for _, action := range actions {
-				fmt.Fprintf(d.Stderr, "  - %s\n", action.String())
-			}
-		}
-	}
-
-	for _, script := range all {
-		if isPlan {
-			fmt.Fprintf(d.Stdout, "plan: %s\n", script.String())
-			continue
-		}
-		if d.Verbose {
-			fmt.Fprintf(d.Stdout, "%s\n", script.String())
-		}
-		if err := script.Run(); err != nil {
-			if d.Verbose {
-				fmt.Fprintf(d.Stderr, "error: %v\n", err)
-			}
-			d.collectErr(fmt.Errorf("%s: %w", script.String(), err))
-		}
-	}
 }
 
 func main() {

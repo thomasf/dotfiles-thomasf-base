@@ -45,7 +45,7 @@ func TestPublishSkip(t *testing.T) {
 		repos:  []string{repoDir},
 	}
 
-	d.Publish()
+	d.PublishCommand()
 
 	out := stdout.String()
 	expectedSkip := filepath.Base(repoDir) + "  publish  SKIPPED: remote not found"
@@ -85,7 +85,7 @@ func TestPublishRemoteExists(t *testing.T) {
 		repos:   []string{repoDir},
 	}
 
-	d.Publish()
+	d.PublishCommand()
 
 	out := stdout.String()
 	expectedPush := "[" + filepath.Base(repoDir) + "] git push --porcelain publish master"
@@ -125,7 +125,7 @@ func TestPublishWithMainBranch(t *testing.T) {
 		repos:   []string{repoDir},
 	}
 
-	d.Publish()
+	d.PublishCommand()
 
 	out := stdout.String()
 	expectedPush := "[" + filepath.Base(repoDir) + "] git push --porcelain publish main"
@@ -165,7 +165,7 @@ func TestPublishNotPublic(t *testing.T) {
 		repos:   []string{repoDir},
 	}
 
-	d.Publish()
+	d.PublishCommand()
 
 	out := stdout.String()
 	if strings.Contains(out, "git push --porcelain publish") {
@@ -205,7 +205,7 @@ func TestPublishWithBackupBranches(t *testing.T) {
 		repos:   []string{repoDir},
 	}
 
-	d.Publish()
+	d.PublishCommand()
 
 	out := stdout.String()
 	if !strings.Contains(out, "git push --porcelain publish master") {
