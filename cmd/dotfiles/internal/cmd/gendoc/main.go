@@ -7,8 +7,9 @@
 //
 // The text is at most 79 columns wide. Headings keep their leading #s and
 // code blocks are indented, so the doc command can still find the sections.
-// If glow is not installed or fails, gendoc prints a warning and copies the
-// Markdown file as it is.
+// Glow is run with go run at a fixed version, so that every machine renders
+// the same text. If it fails, for example because the module cannot be
+// downloaded, gendoc prints a warning and copies the Markdown file as it is.
 package main
 
 import (
@@ -18,6 +19,9 @@ import (
 	"strconv"
 	"strings"
 )
+
+// glow is the version of glow that renders the text.
+const glow = "github.com/charmbracelet/glow/v2@v2.1.2"
 
 // width is the maximum width of the text. Glow puts a margin of two columns
 // on each side of it.
@@ -34,10 +38,10 @@ func main() {
 	}
 }
 
-// run writes input rendered by glow to output. If glow is not installed or
-// fails, it prints a warning and copies input as it is.
+// run writes input rendered by glow to output. If glow fails, it prints a
+// warning and copies input as it is.
 func run(input, output string) error {
-	cmd := exec.Command("glow", "-s", "notty", "-w", strconv.Itoa(width+4), input)
+	cmd := exec.Command("go", "run", glow, "-s", "notty", "-w", strconv.Itoa(width+4), input)
 	cmd.Stderr = os.Stderr
 	out, err := cmd.Output()
 	if err != nil {
