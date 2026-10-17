@@ -33,12 +33,20 @@ max_connections       "30"
 max_output_buffer_size "65536"
 
 audio_output {
-type                  "pulse"
-name                  "MPD"
-#server               "localhost"   # optional
-#sink                 "ssre"
-#sink                 "alsa_output" # optional
+type            "pipewire"
+name            "PipeWire output"
+# Optional
+#target          "bluez_output.F4_9D_8A_B4_8D_37.1"
 }
+
+# audio_output {
+# type                  "pulse"
+# name                  "pulse"
+# #server               "localhost"   # optional
+# #sink                 "ssre"
+# #sink                 "alsa_output" # optional
+# enabled               "no"
+# }
 
 audio_output {
 type                  "httpd"
