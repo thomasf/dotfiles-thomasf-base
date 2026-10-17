@@ -19,7 +19,7 @@ import (
 )
 
 // defaultHostCheckTimeout is how long checkSSHHosts waits for a host.
-const defaultHostCheckTimeout = 20 * time.Second
+const defaultHostCheckTimeout = 2 * time.Minute
 
 // errInterrupted is the error of work that SIGINT or SIGTERM stopped.
 var errInterrupted = errors.New("interrupted")
