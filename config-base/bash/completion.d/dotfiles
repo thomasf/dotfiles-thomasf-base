@@ -1,17 +1,135 @@
 # -*- mode: bash -*-
 
+__dotfiles_repos()
+{
+    local rdir="${1:-${DOTFILES_REPOS:-$HOME/src/dotfiles}}"
+    if type dotfiles &>/dev/null; then
+        if [[ -n "$1" ]]; then
+            dotfiles -repos "$1" repos 2>/dev/null | awk 'NR>1 {print $1}'
+        else
+            dotfiles repos 2>/dev/null | awk 'NR>1 {print $1}'
+        fi
+    elif [[ -d "$rdir" ]]; then
+        command ls -1 "$rdir" 2>/dev/null
+    fi
+}
+
 
 _dotfiles()
 {
-    local cur prev opts
+    local cur prev cmd subcmd i skip_next repos_dir_arg
     COMPREPLY=()
     cur="${COMP_WORDS[COMP_CWORD]}"
     prev="${COMP_WORDS[COMP_CWORD-1]}"
-    opts="install plan push publish pull status diff magit"
 
-    if [[ ${cur} == * ]] ; then
-        COMPREPLY=( $(compgen -W "${opts}" -- ${cur}) )
+    cmd=""
+    subcmd=""
+    i=1
+    skip_next=0
+    repos_dir_arg=""
+
+    while [[ $i -lt $COMP_CWORD ]]; do
+        local w="${COMP_WORDS[i]}"
+        if [[ $skip_next -eq 1 ]]; then
+            skip_next=0
+            ((i++))
+            continue
+        fi
+
+        case "$w" in
+            -dst|--dst|-n|--n)
+                skip_next=1
+                ;;
+            -repos|--repos)
+                repos_dir_arg="${COMP_WORDS[i+1]}"
+                skip_next=1
+                ;;
+            -repository|--repository)
+                skip_next=1
+                ;;
+            -*)
+                ;;
+            *)
+                if [[ -z "$cmd" ]]; then
+                    cmd="$w"
+                elif [[ -z "$subcmd" ]]; then
+                    subcmd="$w"
+                fi
+                ;;
+        esac
+        ((i++))
+    done
+
+    case "$prev" in
+        -dst|--dst|-repos|--repos)
+            if type _filedir &>/dev/null; then
+                _filedir -d
+            else
+                compopt -o filenames 2>/dev/null
+                COMPREPLY=( $(compgen -d -- "$cur") )
+            fi
+            return 0
+            ;;
+        -repository|--repository)
+            local repos
+            repos="$(__dotfiles_repos "$repos_dir_arg")"
+            if [[ "$cur" == *,* ]]; then
+                local prefix="${cur%,*}"
+                local word="${cur##*,}"
+                COMPREPLY=( $(compgen -W "$repos" -P "${prefix}," -- "$word") )
+            else
+                COMPREPLY=( $(compgen -W "$repos" -- "$cur") )
+            fi
+            return 0
+            ;;
+        -n|--n)
+            return 0
+            ;;
+    esac
+
+    if [[ -z "$cmd" ]]; then
+        if [[ "$cur" == -* ]]; then
+            local global_opts="-copy --copy -dry-run --dry-run -dst --dst -f -repos --repos -repository --repository -v -h --help"
+            COMPREPLY=( $(compgen -W "${global_opts}" -- "${cur}") )
+        else
+            local commands="install plan push publish pull status diff magit log repos doc i s d"
+            COMPREPLY=( $(compgen -W "${commands}" -- "${cur}") )
+        fi
         return 0
     fi
+
+    case "$cmd" in
+        pull)
+            local pull_opts="-no-install --no-install -h --help"
+            COMPREPLY=( $(compgen -W "${pull_opts}" -- "${cur}") )
+            return 0
+            ;;
+        log)
+            local log_opts="-compact --compact -short --short -patch --patch -textconv --textconv -n --n -h --help"
+            COMPREPLY=( $(compgen -W "${log_opts}" -- "${cur}") )
+            return 0
+            ;;
+        repos)
+            case "$subcmd" in
+                "")
+                    local subcmds="status s fix clone"
+                    COMPREPLY=( $(compgen -W "${subcmds}" -- "${cur}") )
+                    return 0
+                    ;;
+                clone)
+                    local repos
+                    repos="$(__dotfiles_repos "$repos_dir_arg")"
+                    COMPREPLY=( $(compgen -W "${repos}" -- "${cur}") )
+                    return 0
+                    ;;
+                status|s|fix)
+                    return 0
+                    ;;
+            esac
+            ;;
+        install|i|plan|push|publish|status|s|diff|d|magit|doc)
+            return 0
+            ;;
+    esac
 }
 complete -F _dotfiles dotfiles
