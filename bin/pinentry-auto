@@ -1,0 +1,24 @@
+#!/bin/sh
+#
+# pinentry-auto is the gpg-agent pinentry-program on every machine. It asks
+# in the terminal when the gpg client set PINENTRY_USER_DATA=tty (bash init
+# does that in ssh sessions) or when there is no desktop pinentry, and in a
+# desktop dialog otherwise.
+
+case $(uname) in
+Darwin)
+  bin=/opt/homebrew/bin
+  [ -d "$bin" ] || bin=/usr/local/bin
+  gui=$bin/pinentry-mac
+  ;;
+*)
+  bin=/usr/bin
+  gui=$bin/pinentry-gnome3
+  ;;
+esac
+
+case $PINENTRY_USER_DATA in
+*tty*) ;;
+*) [ -x "$gui" ] && exec "$gui" "$@" ;;
+esac
+exec "$bin/pinentry-curses" "$@"
