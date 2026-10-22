@@ -9,6 +9,7 @@ import (
 	"io"
 	"os/exec"
 	"path/filepath"
+	"runtime"
 	"strings"
 	"syscall"
 	"time"
@@ -37,7 +38,12 @@ func (d *Dotfiles) runGit(ctx context.Context, repoPath string, args ...string) 
 	// When ctx ends, let git clean up, such as its lock files, and kill it
 	// if it has not exited a second later. Its ssh may keep our pipes open
 	// after that; stop waiting for them too.
-	cmd.Cancel = func() error { return cmd.Process.Signal(syscall.SIGTERM) }
+	cmd.Cancel = func() error {
+		if runtime.GOOS == "windows" {
+			return cmd.Process.Kill() // Windows has no SIGTERM.
+		}
+		return cmd.Process.Signal(syscall.SIGTERM)
+	}
 	cmd.WaitDelay = time.Second
 	err := cmd.Run()
 	if cause := context.Cause(ctx); cause != nil && !errors.Is(cause, errInterrupted) {

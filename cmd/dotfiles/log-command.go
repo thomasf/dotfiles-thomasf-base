@@ -289,7 +289,12 @@ func (d *Dotfiles) startPager(paging bool) (w io.Writer, close func()) {
 		return d.Stdout, noPager
 	}
 
-	cmd := exec.Command("sh", "-c", pager)
+	// Git for Windows does not put its sh on PATH.
+	sh, err := exec.LookPath("sh")
+	if err != nil {
+		return d.Stdout, noPager
+	}
+	cmd := exec.Command(sh, "-c", pager)
 	cmd.Stdout = d.Stdout
 	cmd.Stderr = d.Stderr
 	// The defaults git uses for less and lv.

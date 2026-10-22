@@ -7,6 +7,7 @@ import (
 	"io"
 	"os"
 	"path/filepath"
+	"runtime"
 	"strings"
 	"sync"
 	"sync/atomic"
@@ -167,7 +168,8 @@ func (d *Dotfiles) flagSet(home string) *flag.FlagSet {
 	fs.StringVar(&d.ReposPath, "repos", filepath.Join(home, "src", "dotfiles"), "repositories path")
 	fs.StringVar(&d.DstPath, "dst", home, "target path")
 	fs.BoolVar(&d.Force, "f", false, "force overwrite existing files")
-	fs.BoolVar(&d.Copy, "copy", false, "copy files instead of symlinking")
+	// Creating symlinks on Windows needs Developer Mode or an administrator.
+	fs.BoolVar(&d.Copy, "copy", runtime.GOOS == "windows", "copy files instead of symlinking")
 	fs.BoolVar(&d.DryRun, "dry-run", false, "dry run (print actions without running them; only for repos fix and repos clone)")
 	fs.BoolVar(&d.Verbose, "v", false, "log more non errors")
 	return fs

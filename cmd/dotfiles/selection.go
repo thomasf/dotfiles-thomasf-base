@@ -21,14 +21,14 @@ type selector struct {
 }
 
 // parseSelection parses the arguments of install and plan. An argument that
-// is . or .. or contains a / is a path. Otherwise it is the name of a
-// repository, which stands for the repository's directory, or if no
-// repository has that name, an existing path.
+// is . or .. or contains a / (or \ on Windows) is a path. Otherwise it is
+// the name of a repository, which stands for the repository's directory, or
+// if no repository has that name, an existing path.
 func (d *Dotfiles) parseSelection(args []string) (selection, error) {
 	var sel selection
 	for _, arg := range args {
 		path := arg
-		if arg != "." && arg != ".." && !strings.ContainsRune(arg, filepath.Separator) {
+		if arg != "." && arg != ".." && !strings.ContainsAny(arg, "/"+string(filepath.Separator)) {
 			if i := slices.IndexFunc(d.repos, func(r string) bool { return filepath.Base(r) == arg }); i >= 0 {
 				path = d.repos[i]
 			} else if _, err := os.Lstat(arg); err != nil {
