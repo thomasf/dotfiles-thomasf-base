@@ -1,8 +1,9 @@
 package main
 
 import (
+	"errors"
 	"fmt"
-	"io"
+	"io/fs"
 	"os"
 	"path/filepath"
 )
@@ -27,65 +28,74 @@ func (c *CopyAction) String() string {
 	return fmt.Sprintf("[%s] copy: %s -> %s", filepath.Base(c.SrcRoot), c.Src, c.Dst)
 }
 
+// Run makes Dst a copy of Src, file by file. Files that already have the
+// content and permissions of their source are left alone, and files in Dst
+// that are not in Src are kept. Symlinks in Src are copied as what they point
+// to; dangling ones, such as Emacs lock files, are skipped.
+//
+// A destination of the wrong type, such as a symlink from an install without
+// copying or a file where Src has a directory, is only replaced with Force.
 func (c *CopyAction) Run() error {
-	fullSrc := filepath.Join(c.SrcRoot, c.Src)
-	fullDst := filepath.Join(c.DstRoot, c.Dst)
-
-	dstDir := filepath.Dir(fullDst)
-	if _, err := os.Stat(dstDir); os.IsNotExist(err) {
-		if err := os.MkdirAll(dstDir, 0o755); err != nil {
-			return err
-		}
-	}
-
-	if _, err := os.Lstat(fullDst); err == nil {
-		if !c.Force {
-			return fmt.Errorf("target exists: %s", fullDst)
-		}
-
-		if err := os.RemoveAll(fullDst); err != nil {
-			return err
-		}
-	}
-
-	srcInfo, err := os.Stat(fullSrc)
-	if err != nil {
-		return err
-	}
-
-	if srcInfo.IsDir() {
-		return filepath.Walk(fullSrc, func(path string, info os.FileInfo, err error) error {
-			if err != nil {
-				return err
-			}
-			rel, err := filepath.Rel(fullSrc, path)
-			if err != nil {
-				return err
-			}
-			target := filepath.Join(fullDst, rel)
-			if info.IsDir() {
-				return os.MkdirAll(target, info.Mode())
-			}
-			return copyFile(path, target, info.Mode())
-		})
-	}
-
-	return copyFile(fullSrc, fullDst, srcInfo.Mode())
+	return c.copy(filepath.Join(c.SrcRoot, c.Src), c.DstAbsolutePath())
 }
 
-func copyFile(src, dst string, mode os.FileMode) error {
-	in, err := os.Open(src)
+func (c *CopyAction) copy(src, dst string) error {
+	info, err := os.Stat(src)
 	if err != nil {
 		return err
 	}
-	defer in.Close()
+	if err := c.clear(dst, info.IsDir()); err != nil {
+		return err
+	}
+	if !info.IsDir() {
+		data, err := os.ReadFile(src)
+		if err != nil {
+			return err
+		}
+		changed, err := writeFile(dst, data, info.Mode().Perm())
+		if changed {
+			rel, _ := filepath.Rel(c.DstRoot, dst)
+			fmt.Fprintf(os.Stdout, "[%s] copy: %s: updated\n", filepath.Base(c.SrcRoot), rel)
+		}
+		return err
+	}
 
-	out, err := os.OpenFile(dst, os.O_CREATE|os.O_WRONLY|os.O_TRUNC, mode)
+	if err := os.MkdirAll(dst, info.Mode().Perm()); err != nil {
+		return err
+	}
+	entries, err := os.ReadDir(src)
 	if err != nil {
 		return err
 	}
-	defer out.Close()
+	var errs []error
+	for _, e := range entries {
+		path := filepath.Join(src, e.Name())
+		if e.Type()&fs.ModeSymlink != 0 {
+			if _, err := os.Stat(path); errors.Is(err, fs.ErrNotExist) {
+				continue
+			}
+		}
+		errs = append(errs, c.copy(path, filepath.Join(dst, e.Name())))
+	}
+	return errors.Join(errs...)
+}
 
-	_, err = io.Copy(out, in)
-	return err
+// clear removes dst if it is not a directory when dir is set, or not a
+// regular file otherwise, which requires Force. A dst that does not exist is
+// fine.
+func (c *CopyAction) clear(dst string, dir bool) error {
+	info, err := os.Lstat(dst)
+	if errors.Is(err, fs.ErrNotExist) {
+		return nil
+	}
+	if err != nil {
+		return err
+	}
+	if dir && info.IsDir() || !dir && info.Mode().IsRegular() {
+		return nil
+	}
+	if !c.Force {
+		return fmt.Errorf("target exists: %s", dst)
+	}
+	return os.RemoveAll(dst)
 }
