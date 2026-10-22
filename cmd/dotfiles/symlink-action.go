@@ -18,6 +18,10 @@ func (s *SymlinkAction) DstAbsolutePath() string {
 	return filepath.Join(s.DstRoot, s.Dst)
 }
 
+func (s *SymlinkAction) Paths() []string {
+	return []string{filepath.Join(s.SrcRoot, s.Src), s.DstAbsolutePath()}
+}
+
 func (s *SymlinkAction) String() string {
 	return fmt.Sprintf("[%s] symlink: %s -> %s", filepath.Base(s.SrcRoot), s.Src, s.Dst)
 }

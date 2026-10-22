@@ -192,6 +192,38 @@ in private except private's own post scripts.
 A failing action does not stop the run. All errors are listed at the end, and
 dotfiles exits with a non-zero status.
 
+### Installing Part of the Dotfiles
+
+install and plan take arguments that limit them to some of the actions,
+for example after editing one template:
+
+  dotfiles install .                # what is in the current directory
+  dotfiles install base private     # the repositories base and private
+  dotfiles install ./mpdconf.tmpl   # the actions that read this file
+  dotfiles install ~/.mpdconf       # the actions that write this path
+
+Every repository is still loaded and planned, so variables and conditions are
+the same as in a full install; only the selected actions run, in their usual
+order. Unlike -repository, which leaves the other repositories out
+completely, their [vars] are still used.
+
+An argument that is . or .. or contains a / is a path; any other
+argument is the name of a repository or, if no repository has that name, a
+path that exists. A repository name selects all of its actions. A path
+selects:
+
+• all actions of the repositories inside it, such as . at the top of a
+repository;
+• the actions whose source in a repository or destination is the path or is
+inside it: symlinks, copies, templates, [[go]] programs and the dst
+of [[starlark]];
+• the actions whose source or destination contains the path, so a file in a
+directory that is symlinked as a whole selects that symlink.
+
+[[script]] entries, [git] settings and the code of [[starlark]] entries
+are not files, so a path selects them only together with their whole
+repository. An argument that selects nothing is an error.
+
 ## dotfiles.toml Configuration
 
 Each repository can contain a dotfiles.toml or .dotfiles.toml file to

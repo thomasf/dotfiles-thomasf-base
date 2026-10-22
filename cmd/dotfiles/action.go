@@ -38,6 +38,15 @@ type Targeter interface {
 	DstAbsolutePath() string
 }
 
+// A Pather is an [Action] that reads or writes files at known paths, so that
+// install and plan can select it by path. Actions that are not Pathers, such
+// as scripts, are only selected with their whole repository.
+type Pather interface {
+	// Paths returns the paths that Run reads in the repository or writes in
+	// the destination, joined to their roots. A path may be a glob.
+	Paths() []string
+}
+
 // writeFile makes the regular file path have the content data and the
 // permission bits perm, and reports whether it changed anything. A file that
 // already has that content is never rewritten; if only its permissions

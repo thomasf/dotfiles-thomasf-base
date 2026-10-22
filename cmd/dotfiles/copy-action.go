@@ -19,6 +19,10 @@ func (c *CopyAction) DstAbsolutePath() string {
 	return filepath.Join(c.DstRoot, c.Dst)
 }
 
+func (c *CopyAction) Paths() []string {
+	return []string{filepath.Join(c.SrcRoot, c.Src), c.DstAbsolutePath()}
+}
+
 func (c *CopyAction) String() string {
 	return fmt.Sprintf("[%s] copy: %s -> %s", filepath.Base(c.SrcRoot), c.Src, c.Dst)
 }

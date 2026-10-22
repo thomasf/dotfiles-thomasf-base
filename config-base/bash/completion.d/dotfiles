@@ -127,7 +127,14 @@ _dotfiles()
                     ;;
             esac
             ;;
-        install|i|plan|push|publish|status|s|diff|d|magit|doc)
+        install|i|plan)
+            local repos
+            repos="$(__dotfiles_repos "$repos_dir_arg")"
+            compopt -o filenames 2>/dev/null
+            COMPREPLY=( $(compgen -W "${repos}" -- "${cur}") $(compgen -f -- "${cur}") )
+            return 0
+            ;;
+        push|publish|status|s|diff|d|magit|doc)
             return 0
             ;;
     esac

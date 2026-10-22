@@ -34,7 +34,7 @@ func (d *Dotfiles) PullCommand(args []string) error {
 		fmt.Fprintln(d.Stdout, "Not installing because a pull failed; run 'dotfiles install' to install anyway.")
 	case !*noInstall:
 		fmt.Fprintln(d.Stdout, "Installing...")
-		d.InstallCommand()
+		d.InstallCommand(nil) // cannot fail without arguments
 	}
 	return nil
 }

@@ -31,6 +31,10 @@ func (t *TemplateAction) DstAbsolutePath() string {
 	return filepath.Join(t.DstRoot, t.Dst)
 }
 
+func (t *TemplateAction) Paths() []string {
+	return []string{filepath.Join(t.SrcRoot, t.Src), t.DstAbsolutePath()}
+}
+
 func (t *TemplateAction) String() string {
 	return fmt.Sprintf("[%s] template: %s -> %s", filepath.Base(t.SrcRoot), t.Src, t.Dst)
 }

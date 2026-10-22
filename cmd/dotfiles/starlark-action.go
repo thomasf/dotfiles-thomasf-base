@@ -32,6 +32,11 @@ type StarlarkAction struct {
 	Vars    map[string]string
 }
 
+// Paths returns only Dst, since Src is code rather than a file.
+func (t *StarlarkAction) Paths() []string {
+	return []string{filepath.Join(t.DstRoot, t.Dst)}
+}
+
 func (t *StarlarkAction) String() string {
 	return fmt.Sprintf("[%s] starlark: %s", filepath.Base(t.SrcRoot), t.Dst)
 }
