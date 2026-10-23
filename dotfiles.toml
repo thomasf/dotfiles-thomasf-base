@@ -1,5 +1,8 @@
 public = true
 
+[[ignore]]
+match = ["context.md"]
+
 [[script]]
 src = '''
 bin/home-fix

@@ -477,7 +477,17 @@ anything else runs, so scripts can use them.
 
 Specify patterns for files and directories that should not be synchronized.
 
-  ignore = ["*.log", "temp/", "local-config"]
+  [[ignore]]
+  match = ["*.log", "temp", "local-config"]
+
+  [[ignore]]
+  condition = "os == 'darwin'"
+  match = ["config/systemd"]
+
+A pattern is a filepath.Match pattern that is matched against both the
+base name of a path and its path relative to the repository root, so
+context.md ignores every file with that name and config/systemd only that
+directory. Leading and trailing slashes never match.
 
 ### [[mount]]
 
