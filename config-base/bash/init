@@ -342,7 +342,7 @@ log "source wsenv"
 if [ ! "${TERM}" == "dumb" ] &&
      [ "${PWD}" == "${HOME}" ]; then
   if wsdir-cd >/dev/null || cdd  >/dev/null ; then
-    wsenv-source >/dev/null || true
+    [ -z "${WSENV_SKIP}" ] && { wsenv-source >/dev/null || true; }
     # [ -z $VIRTUAL_ENV ] &&
     #   hash wsname 2>/dev/null &&
     #   [ $(wsname -p >/dev/null ) ] &&
