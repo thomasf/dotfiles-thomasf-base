@@ -35,11 +35,6 @@ __SHBASE="${HOME}/.config-base/bash"
 export __SHBASE
 
 
-# __BASH is an legacy alias for __SHBASE
-# TODO: remove __BASH variable references and alias
-__BASH=$__SHBASE; export __BASH
-
-
 # __OS is a variable that holds a simplified version of $OSTYPE
 case "$OSTYPE" in
   solaris*)

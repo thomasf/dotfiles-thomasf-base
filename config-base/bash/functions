@@ -176,7 +176,6 @@ eless() {
   zless $(which ${1})
 }
 
-alias j="jobs -l"
 if [ ${__OS} = darwin ]; then
   alias ls="ls -G"
 else

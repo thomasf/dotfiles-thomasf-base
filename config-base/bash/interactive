@@ -14,7 +14,6 @@ rehistory() {
 
 # rebash reloads all shell init stuff
 rebash() {
-  unset __common
   unset __SHCOMMON
   . "${HOME}/.bash_profile"
 }

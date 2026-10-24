@@ -95,15 +95,6 @@ if [ "$TERM" = "linux" ]; then
   )
 fi
 
-# Only do this automatically if not root
-if [ $UID != 0 ]; then
-
-  # Pip download cache
-  # mkdir -p "${HOME}/.cache/pip_download" \
-  #   && export PIP_DOWNLOAD_CACHE="${HOME}/.cache/pip_download"
-  mkdir -p "${HOME}/.cache/pip_download"
-fi
-
 # ------------------------------------------------------------------------------
 # BASH
 #
@@ -194,7 +185,6 @@ alias t=todo.sh
 log "dircolors"
 if [ -x /usr/bin/dircolors ]; then
   test -r ~/.config-base/dircolors/default && eval "$(dircolors -b ~/.config-base/dircolors/default 2>/dev/null)" || eval "$(dircolors -b)"
-  alias ls='ls --color=auto'
   alias grep='grep --color=auto'
   alias fgrep='fgrep --color=auto'
   alias egrep='egrep --color=auto'
@@ -283,11 +273,9 @@ if [ -x /usr/bin/lesspipe ]; then
   fi
 fi
 
-if [ ! -z "${BASH}" ]; then
-  [ -f "${__BASH}/functions" ] \
-    && log "functions" \
-    && . "${__BASH}/functions"
-fi
+[ -f "${__SHBASE}/functions" ] \
+  && log "functions" \
+  && . "${__SHBASE}/functions"
 
 
 # clipboard paste
@@ -303,23 +291,21 @@ fi
 # Activate the prompt
 log "activate prompt"
 
-if [ ! -z "${BASH}" ]; then
-  case $TERM in
-    dumb)
-      # do nothing
-      ;;
-    *)
-      if hash shell-prompt 2>/dev/null; then
-        log "prompt"
-        eval "$(shell-prompt init bash)"
-      fi
-      ;;
-  esac
-fi
+case $TERM in
+  dumb)
+    # do nothing
+    ;;
+  *)
+    if hash shell-prompt 2>/dev/null; then
+      log "prompt"
+      eval "$(shell-prompt init bash)"
+    fi
+    ;;
+esac
 
 # Activate mise after the prompt since shell-prompt overwrites PROMPT_COMMAND
 log "mise"
-if [ ! -z "${BASH}" ] && hash mise 2>/dev/null; then
+if hash mise 2>/dev/null; then
   eval "$(mise activate bash)"
 fi
 

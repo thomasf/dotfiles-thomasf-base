@@ -1,12 +1,12 @@
 # shell-prompt
 
-`shell-prompt` is a fast port of the bash prompt (`base/config-base/bash/prompt`) written in Go.
+`shell-prompt` is a fast port of the old bash prompt written in Go.
 
 It replaces slow multi-process shell scripts (`whoami`, `hostname`, `date`, `pwd`, subshell forks) with a single, highly-optimized executable that computes the full prompt in ~3ms.
 
 ## Features
 
-- **Exact bash prompt layout**: Matches the colors, unicode symbols (`▶`), and layout of `config-base/bash/prompt`.
+- **Exact bash prompt layout**: Matches the colors, unicode symbols (`▶`), and layout of the old bash prompt.
 - **`DirChomp` algorithm**: Faithfully reproduces the directory shortening algorithm (`__dir_chomp`) to fit the path into available terminal width.
 - **Fast VCS integration**:
   - Automatically queries `vcprompt` if installed in `PATH`.
@@ -47,7 +47,7 @@ __prompt_command() {
 export PROMPT_COMMAND="__prompt_command"
 ```
 
-To include command history, dark mode switching, and the DEBUG titlebar trap identical to `config-base/bash/prompt`, run:
+To include command history, dark mode switching, and the DEBUG titlebar trap, run:
 
 ```bash
 eval "$(shell-prompt init bash)"
