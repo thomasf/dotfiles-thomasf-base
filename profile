@@ -235,6 +235,6 @@ MPD_HOST=localhost && export MPD_HOST
 EDITOR="editor" && export EDITOR
 VISUAL="${EDITOR}" && export VISUAL
 ALTERNATE_EDITOR="" && export ALTERNATE_EDITOR
-hash les 2>/dev/null && PAGER="less -R" && export PAGER
+hash less 2>/dev/null && PAGER="less -R" && export PAGER
 
 export MGFXC_WINE_PATH="${HOME}/.winemonogame"
