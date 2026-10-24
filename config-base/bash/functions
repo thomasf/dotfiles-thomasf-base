@@ -595,7 +595,11 @@ case $HOST_TAGS in
   *)
     man() {
       command man "$@" >/dev/null || return $?
-      emacs -q -nw -eval "(progn (setq Man-notify-method 'bully) (man \"$@\"))"
+      # Quote the arguments as one elisp string, like M-x man takes them.
+      local topic="$*"
+      topic=${topic//\\/\\\\}
+      topic=${topic//\"/\\\"}
+      emacs -q -nw -eval "(progn (setq Man-notify-method 'bully) (man \"${topic}\"))"
     }
     
     ;;
