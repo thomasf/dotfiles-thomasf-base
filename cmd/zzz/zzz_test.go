@@ -381,3 +381,51 @@ func TestUpDir(t *testing.T) {
 		}
 	}
 }
+
+func TestBookmark(t *testing.T) {
+	dir := t.TempDir()
+	t.Setenv("HOME", "/home/me")
+	files := map[string]string{
+		"a.toml": `[bookmarks]
+s = "~/src"
+d = "/tmp/downloads"
+`,
+		"b.toml": `[bookmarks]
+d = "~/Downloads"
+w = "/work"
+`,
+		"notes.txt": `[bookmarks]
+n = "/ignored"
+`,
+	}
+	for name, content := range files {
+		if err := os.WriteFile(filepath.Join(dir, name), []byte(content), 0o644); err != nil {
+			t.Fatal(err)
+		}
+	}
+
+	tests := []struct {
+		name string
+		want string
+		ok   bool
+	}{
+		{"s", "/home/me/src", true},
+		// b.toml comes after a.toml and wins.
+		{"d", "/home/me/Downloads", true},
+		{"w", "/work", true},
+		{"n", "", false},
+		{"src", "", false},
+	}
+	for _, tt := range tests {
+		got, ok := bookmark(dir, tt.name)
+		if got != tt.want || ok != tt.ok {
+			t.Errorf("bookmark(%q) = %q, %v; want %q, %v", tt.name, got, ok, tt.want, tt.ok)
+		}
+	}
+}
+
+func TestBookmarkNoConfig(t *testing.T) {
+	if _, ok := bookmark(filepath.Join(t.TempDir(), "missing"), "s"); ok {
+		t.Error("bookmark() without config = true, want false")
+	}
+}

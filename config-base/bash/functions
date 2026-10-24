@@ -513,38 +513,14 @@ cdr() {
 }
 alias ur="cdr"
 
+# z jumps to a bookmark or a frecent directory (see ~/.config/zzz/), or lets
+# you pick one with fzf without arguments.
 z() {
   if [[ -z "$*" ]]; then
     local dir
     dir=$(zzz -pick) && cd "$dir"
   else
-    case $1 in
-      s)
-        cd "${HOME}/src"
-        ;;
-      g)
-        cd "${HOME}/src/github.com"
-        ;;
-
-      d)
-        cd "${HOME}/Downloads"
-        ;;
-
-      n)
-        cd "${HOME}/notes"
-        ;;
-
-      2)
-        cd "${HOME}/src/gitlab.23c.se"
-        ;;
-      t)
-        cd "${HOME}/src/gitlab.tracklib.com/web"
-        ;;
-
-      *)
-        _z "$@"
-        ;;
-    esac
+    _z "$@"
   fi
 }
 

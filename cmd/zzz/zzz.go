@@ -8,6 +8,7 @@ import (
 	"flag"
 	"fmt"
 	"io"
+	"maps"
 	"os"
 	"os/exec"
 	"path/filepath"
@@ -15,6 +16,8 @@ import (
 	"strconv"
 	"strings"
 	"time"
+
+	"github.com/pelletier/go-toml/v2"
 )
 
 const CleanupInterval = 100      // remove dead entries every nth call to add.
@@ -182,6 +185,12 @@ func main() {
 			os.Exit(1)
 		}
 		return
+	}
+	if len(queryArgs) == 1 && !f.List && !f.ListPaths {
+		if dir, ok := bookmark(configDir(), queryArgs[0]); ok {
+			fmt.Print(dir)
+			return
+		}
 	}
 	if len(queryArgs) > 0 || f.List || f.ListPaths {
 		runSearch(store, queryArgs, f.List, f.ListPaths)
@@ -368,6 +377,62 @@ func runPick(s *Store, queryParts []string) bool {
 	}
 	fmt.Print(path)
 	return true
+}
+
+// Config is read from the *.toml files in the config directory, in name
+// order. Later files override bookmarks from earlier ones.
+type Config struct {
+	// Bookmarks maps a name to a directory. A query that is exactly a name
+	// gives its directory instead of a frecency match. A leading ~/ stands
+	// for the home directory.
+	Bookmarks map[string]string `toml:"bookmarks"`
+}
+
+// configDir returns $XDG_CONFIG_HOME/zzz, or ~/.config/zzz if it's unset.
+func configDir() string {
+	if d := os.Getenv("XDG_CONFIG_HOME"); d != "" {
+		return filepath.Join(d, "zzz")
+	}
+	return filepath.Join(os.Getenv("HOME"), ".config", "zzz")
+}
+
+// loadConfig merges the config files in dir. On error it returns what was
+// read before it.
+func loadConfig(dir string) (*Config, error) {
+	cfg := &Config{Bookmarks: map[string]string{}}
+	files, err := filepath.Glob(filepath.Join(dir, "*.toml"))
+	if err != nil {
+		return cfg, err
+	}
+	for _, file := range files {
+		b, err := os.ReadFile(file)
+		if err != nil {
+			return cfg, err
+		}
+		var c Config
+		if err := toml.Unmarshal(b, &c); err != nil {
+			return cfg, fmt.Errorf("%s: %w", file, err)
+		}
+		maps.Copy(cfg.Bookmarks, c.Bookmarks)
+	}
+	return cfg, nil
+}
+
+// bookmark returns the directory of the bookmark called name in the config
+// in dir.
+func bookmark(dir, name string) (string, bool) {
+	cfg, err := loadConfig(dir)
+	if err != nil {
+		fmt.Fprintf(os.Stderr, "zzz: %v\n", err)
+	}
+	path, ok := cfg.Bookmarks[name]
+	if !ok {
+		return "", false
+	}
+	if rest, found := strings.CutPrefix(path, "~/"); found {
+		path = filepath.Join(os.Getenv("HOME"), rest)
+	}
+	return path, true
 }
 
 // runUp prints the ancestor of the working directory that upDir finds for the
