@@ -27,6 +27,7 @@ type Flags struct {
 	List      bool
 	ListPaths bool
 	Pick      bool
+	Up        bool
 	Cleanup   bool
 	Debug     bool
 }
@@ -37,6 +38,7 @@ func (f *Flags) Register(fs *flag.FlagSet) {
 	fs.BoolVar(&f.List, "l", false, "List matches with their scores")
 	fs.BoolVar(&f.ListPaths, "lp", false, "List matching paths only (without scores)")
 	fs.BoolVar(&f.Pick, "pick", false, "Select one of the matching paths with fzf")
+	fs.BoolVar(&f.Up, "up", false, "Print the nearest ancestor of the working directory matching the query, or its parent without one")
 	fs.BoolVar(&f.Cleanup, "cleanup", false, "Remove entries that are no longer valid directories")
 	fs.BoolVar(&f.Debug, "debug", false, "print debug info")
 }
@@ -169,6 +171,12 @@ func main() {
 	}
 
 	queryArgs := flag.Args()
+	if f.Up {
+		if !runUp(queryArgs) {
+			os.Exit(1)
+		}
+		return
+	}
 	if f.Pick {
 		if !runPick(store, queryArgs) {
 			os.Exit(1)
@@ -360,6 +368,54 @@ func runPick(s *Store, queryParts []string) bool {
 	}
 	fmt.Print(path)
 	return true
+}
+
+// runUp prints the ancestor of the working directory that upDir finds for the
+// segment in args. It reports false if there is none.
+func runUp(args []string) bool {
+	if len(args) > 1 {
+		fmt.Fprintln(os.Stderr, "zzz: -up takes at most one segment")
+		return false
+	}
+	wd, err := os.Getwd()
+	if err != nil {
+		fmt.Fprintf(os.Stderr, "zzz: %v\n", err)
+		return false
+	}
+	var seg string
+	if len(args) == 1 {
+		seg = args[0]
+	}
+	dir, ok := upDir(wd, seg)
+	if !ok {
+		fmt.Fprintf(os.Stderr, "zzz: no ancestor of %s matches %q\n", wd, seg)
+		return false
+	}
+	fmt.Print(dir)
+	return true
+}
+
+// upDir returns the nearest ancestor of dir named seg or, if there is none,
+// the nearest one whose name contains seg. An empty seg gives the parent.
+func upDir(dir, seg string) (string, bool) {
+	dir = filepath.Clean(dir)
+	if seg == "" {
+		return filepath.Dir(dir), true
+	}
+	var partial string
+	for d := filepath.Dir(dir); ; d = filepath.Dir(d) {
+		name := filepath.Base(d)
+		if name == seg {
+			return d, true
+		}
+		if partial == "" && strings.Contains(name, seg) {
+			partial = d
+		}
+		if d == filepath.Dir(d) {
+			break
+		}
+	}
+	return partial, partial != ""
 }
 
 // search returns the entries matching queryParts, sorted by ascending score.

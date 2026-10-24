@@ -280,32 +280,11 @@ findname() {
 }
 alias fn='findname'
 
-# cdup maches upwards the path and sets PWD to the first partial match.
+# cdup changes to the nearest ancestor directory matching $1, or to the
+# parent directory without arguments.
 cdup() {
-
-  if [ $# == 0 ]; then
-    cd ..
-    return 0
-  fi
-
-  local dir="$1"
-  local old=`pwd`
-
-  # Try matching the full segment in path name
-  local new=`perl -pe "s{(.*/\Q$dir\E)(?=/|$).*?$}{\1};" <<< $old`
-
-  # If failed, try partial match of segment
-  if [ "$old" == "$new" ]; then
-    new=`perl -pe "s{(.*/[^/]*?\Q$dir\E[^/]*?)(?=/|$).*?$}{\1}" <<< $old`
-  fi
-
-  # No replacements done, so we failed
-  if [ "$old" == "$new" ]; then
-    echo "Can't find '$dir' among ancestor directories ($old == $new)." 1>&2
-    return 1
-  fi
-
-  cd $new
+  local dir
+  dir=$(zzz -up "$@") && cd "$dir"
 }
 
 cdl() {

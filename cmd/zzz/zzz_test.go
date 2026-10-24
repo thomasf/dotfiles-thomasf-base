@@ -355,3 +355,29 @@ func TestRunPickEmpty(t *testing.T) {
 		t.Error("runPick() with no entries = true, want false")
 	}
 }
+
+func TestUpDir(t *testing.T) {
+	tests := []struct {
+		dir, seg string
+		want     string
+		ok       bool
+	}{
+		{"/a/b/c", "", "/a/b", true},
+		{"/", "", "/", true},
+		{"/src/foo/bar/baz", "foo", "/src/foo", true},
+		{"/src/foo/bar/baz", "ba", "/src/foo/bar", true},
+		// An exact name further up wins over a nearer partial match.
+		{"/src/foo/foobar/baz", "foo", "/src/foo", true},
+		// The nearest of several exact matches wins.
+		{"/foo/x/foo/y", "foo", "/foo/x/foo", true},
+		// The directory itself is not its own ancestor.
+		{"/src/foo", "foo", "", false},
+		{"/src/foo/bar", "nope", "", false},
+	}
+	for _, tt := range tests {
+		got, ok := upDir(tt.dir, tt.seg)
+		if got != tt.want || ok != tt.ok {
+			t.Errorf("upDir(%q, %q) = %q, %v; want %q, %v", tt.dir, tt.seg, got, ok, tt.want, tt.ok)
+		}
+	}
+}
