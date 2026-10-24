@@ -125,67 +125,38 @@ export SKIP_SIMPLE_GIT_HOOKS=1
 
 # Prohibit perl from complaining about missing locales
 PERL_BADLANG=0 && export PERL_BADLANG
-# Locale settings (man page: locale)
+# Locale settings (man page: locale): English, with Swedish formats if
+# installed. The same locale is called en_US.utf8 or en_US.UTF-8 depending on
+# the system.
 if hash locale 2>/dev/null ; then
-    if $(locale -a 2>/dev/null | grep -q -x en_US.utf8); then
-      unset LC_ALL
-      LANGUAGE="en_US:en" && export LANGUAGE
-      LANG="en_US.utf8" && export LANG
-      LC_CTYPE="en_US.utf8" && export LC_CTYPE
-      LC_NUMERIC="en_US.utf8" && export LC_NUMERIC
-      LC_TIME="en_US.utf8" && export LC_TIME
-      LC_COLLATE="en_US.utf8" && export LC_COLLATE
-      LC_MONETARY="en_US.utf8" && export LC_MONETARY
-      LC_MESSAGES="en_US.utf8" && export LC_MESSAGES
-      LC_PAPER="en_US.utf8" && export LC_PAPER
-      LC_NAME="en_US.utf8" && export LC_NAME
-      LC_ADDRESS="en_US.utf8" && export LC_ADDRESS
-      LC_TELEPHONE="en_US.utf8" && export LC_TELEPHONE
-      LC_MEASUREMENT="en_US.utf8" && export LC_MEASUREMENT
-      LC_IDENTIFICATION="en_US.utf8" && export LC_IDENTIFICATION
-    elif $(locale -a 2>/dev/null | grep -q -x en_US.UTF-8); then
-      unset LC_ALL
-      LANGUAGE="en_US:en" && export LANGUAGE
-      LANG="en_US.UTF-8" && export LANG
-      LC_CTYPE="en_US.UTF-8" && export LC_CTYPE
-      LC_NUMERIC="en_US.UTF-8" && export LC_NUMERIC
-      LC_TIME="en_US.UTF-8" && export LC_TIME
-      LC_COLLATE="en_US.UTF-8" && export LC_COLLATE
-      LC_MONETARY="en_US.UTF-8" && export LC_MONETARY
-      LC_MESSAGES="en_US.UTF-8" && export LC_MESSAGES
-      LC_PAPER="en_US.UTF-8" && export LC_PAPER
-      LC_NAME="en_US.UTF-8" && export LC_NAME
-      LC_ADDRESS="en_US.UTF-8" && export LC_ADDRESS
-      LC_TELEPHONE="en_US.UTF-8" && export LC_TELEPHONE
-      LC_MEASUREMENT="en_US.UTF-8" && export LC_MEASUREMENT
-      LC_IDENTIFICATION="en_US.UTF-8" && export LC_IDENTIFICATION
+    _locales=$(locale -a 2>/dev/null)
+    # _first_locale prints the first of its arguments that is installed.
+    _first_locale() {
+        for _l in "$@"; do
+            if printf '%s\n' "${_locales}" | grep -q -x "${_l}"; then
+                echo "${_l}"
+                return 0
+            fi
+        done
+        return 1
+    }
+    if _l=$(_first_locale en_US.utf8 en_US.UTF-8); then
+        unset LC_ALL
+        LANGUAGE="en_US:en" && export LANGUAGE
+        LANG="${_l}" && export LANG
+        for _v in LC_CTYPE LC_NUMERIC LC_TIME LC_COLLATE LC_MONETARY LC_MESSAGES \
+                  LC_PAPER LC_NAME LC_ADDRESS LC_TELEPHONE LC_MEASUREMENT LC_IDENTIFICATION; do
+            eval "${_v}=\${_l}; export ${_v}"
+        done
     fi
-
-    if $(locale -a 2>/dev/null | grep -q -x sv_SE.utf8); then
-        LC_CTYPE="sv_SE.utf8" && export LC_CTYPE
-        LC_NUMERIC="sv_SE.utf8" && export LC_NUMERIC
-        LC_TIME="sv_SE.utf8" && export LC_TIME
-        LC_COLLATE="sv_SE.utf8" && export LC_COLLATE
-        LC_MONETARY="sv_SE.utf8" && export LC_MONETARY
-        LC_PAPER="sv_SE.utf8" && export LC_PAPER
-        LC_NAME="sv_SE.utf8" && export LC_NAME
-        LC_ADDRESS="sv_SE.utf8" && export LC_ADDRESS
-        LC_TELEPHONE="sv_SE.utf8" && export LC_TELEPHONE
-        LC_MEASUREMENT="sv_SE.utf8" && export LC_MEASUREMENT
-        LC_IDENTIFICATION="sv_SE.utf8" && export LC_IDENTIFICATION
-    elif $(locale -a 2>/dev/null | grep -q -x sv_SE.UTF-8); then
-        LC_CTYPE="sv_SE.UTF-8" && export LC_CTYPE
-        LC_NUMERIC="sv_SE.UTF-8" && export LC_NUMERIC
-        LC_TIME="sv_SE.UTF-8" && export LC_TIME
-        LC_COLLATE="sv_SE.UTF-8" && export LC_COLLATE
-        LC_MONETARY="sv_SE.UTF-8" && export LC_MONETARY
-        LC_PAPER="sv_SE.UTF-8" && export LC_PAPER
-        LC_NAME="sv_SE.UTF-8" && export LC_NAME
-        LC_ADDRESS="sv_SE.UTF-8" && export LC_ADDRESS
-        LC_TELEPHONE="sv_SE.UTF-8" && export LC_TELEPHONE
-        LC_MEASUREMENT="sv_SE.UTF-8" && export LC_MEASUREMENT
-        LC_IDENTIFICATION="sv_SE.UTF-8" && export LC_IDENTIFICATION
+    if _l=$(_first_locale sv_SE.utf8 sv_SE.UTF-8); then
+        for _v in LC_CTYPE LC_NUMERIC LC_TIME LC_COLLATE LC_MONETARY \
+                  LC_PAPER LC_NAME LC_ADDRESS LC_TELEPHONE LC_MEASUREMENT LC_IDENTIFICATION; do
+            eval "${_v}=\${_l}; export ${_v}"
+        done
     fi
+    unset -f _first_locale
+    unset _locales _l _v
 fi
 
 # ptyhon configuration
