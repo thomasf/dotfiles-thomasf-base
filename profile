@@ -9,13 +9,17 @@
 export WINIT_X11_SCALE_FACTOR=1.7
 export PNPM_HOME="${HOME}/.local/share/pnpm"
 
-# Prepend paths
+# Prepend paths that exist and aren't in PATH already
 ppath() {
- [ -d "${1}" ] && PATH="${1}:${PATH}"
+  [ -d "${1}" ] || return 1
+  case ":${PATH}:" in *":${1}:"*) return 0 ;; esac
+  PATH="${1}:${PATH}"
 }
-# Append paths
+# Append paths that exist and aren't in PATH already
 apath() {
- [ -d "${1}" ] && PATH="${PATH}:${1}"
+  [ -d "${1}" ] || return 1
+  case ":${PATH}:" in *":${1}:"*) return 0 ;; esac
+  PATH="${PATH}:${1}"
 }
 
 # general global path prepends
