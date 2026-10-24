@@ -74,14 +74,10 @@ ppath ~/sdk/go/bin
 ppath ~/sdk/zig
 ppath ~/sdk/odin
 
-ppath ~/sdk/ec2-api-tools/bin \
-    && EC2_HOME=~/.sdk/ec2-api-tools \
-    && export EC2_HOME
 ppath ~/sdk/groovy/bin
 ppath ~/sdk/gradle/bin
 ppath ~/sdk/apache-maven/bin
 ppath ~/sdk/arm-cs-tools/bin
-ppath ~/src/github.com/pfalcon/esp-open-sdk/xtensa-lx106-elf/bin/
 
 # ppath ~/Android/Sdk/platform-tools
 # ppath ~/Android/Sdk/cmdline-tools/latest/bin
@@ -90,17 +86,12 @@ ppath ~/src/github.com/pfalcon/esp-open-sdk/xtensa-lx106-elf/bin/
   export DENO_INSTALL="${HOME}/.deno" &&
   ppath ~/.deno/bin
 
-
-[ -d ~/src/github.com/pfalcon/esp-open-sdk/ ] &&
-  export ESP_ROOT=${HOME}/src/github.com/pfalcon/esp-open-sdk
-
 # Default go env
 [ -d ~/sdk/go/bin ] &&
   export GOROOT=~/sdk/go
 
 export GOPATH="${HOME}"
 ppath "${GOPATH}/bin"
-export GO15VENDOREXPERIMENT=1
 
 export DOCKER_CLI_HINTS=false
 
@@ -131,22 +122,6 @@ AWS_VAULT_PASS_PASSWORD_STORE_DIR="${PASSWORD_STORE_DIR}"
 export AWS_VAULT_PASS_PASSWORD_STORE_DIR
 
 export SKIP_SIMPLE_GIT_HOOKS=1
-
-case ${OSTYPE} in
-    darwin*)
-        # do nothing
-        ;;
-    *)
-      # set JAVA_HOME
-      if hash javac 2>/dev/null ; then
-        JAVA_HOME=$(resolvelink $(which javac) | sed "s:/bin/javac::")
-        export JAVA_HOME
-      elif hash java 2>/dev/null; then
-        JAVA_HOME=$(resolvelink $(which java) | sed "s:/bin/java::")
-        export JAVA_HOME
-      fi
-        ;;
-esac
 
 # Prohibit perl from complaining about missing locales
 PERL_BADLANG=0 && export PERL_BADLANG
