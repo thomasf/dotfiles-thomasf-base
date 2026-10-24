@@ -26,6 +26,7 @@ type Flags struct {
 	Remove    string
 	List      bool
 	ListPaths bool
+	Pick      bool
 	Cleanup   bool
 	Debug     bool
 }
@@ -35,6 +36,7 @@ func (f *Flags) Register(fs *flag.FlagSet) {
 	fs.StringVar(&f.Remove, "remove", "", "remove a path from the database")
 	fs.BoolVar(&f.List, "l", false, "List matches with their scores")
 	fs.BoolVar(&f.ListPaths, "lp", false, "List matching paths only (without scores)")
+	fs.BoolVar(&f.Pick, "pick", false, "Select one of the matching paths with fzf")
 	fs.BoolVar(&f.Cleanup, "cleanup", false, "Remove entries that are no longer valid directories")
 	fs.BoolVar(&f.Debug, "debug", false, "print debug info")
 }
@@ -167,6 +169,12 @@ func main() {
 	}
 
 	queryArgs := flag.Args()
+	if f.Pick {
+		if !runPick(store, queryArgs) {
+			os.Exit(1)
+		}
+		return
+	}
 	if len(queryArgs) > 0 || f.List || f.ListPaths {
 		runSearch(store, queryArgs, f.List, f.ListPaths)
 	}
@@ -298,6 +306,64 @@ func checkAndTriggerCleanup(s *Store) {
 }
 
 func runSearch(s *Store, queryParts []string, listMode bool, listPathsMode bool) {
+	matches, err := search(s, queryParts)
+	if err != nil {
+		fmt.Fprintf(s.Stderr, "[zzz] error reading data file=%s\n ", s.Path)
+		return
+	}
+
+	if listPathsMode {
+		for _, m := range matches {
+			fmt.Printf("%s\n", m.Path)
+		}
+	} else if listMode {
+		for _, m := range matches {
+			fmt.Printf("%-10.2f %s\n", m.Score, m.Path)
+		}
+	} else if len(matches) > 0 {
+		fmt.Print(matches[len(matches)-1].Path)
+	}
+}
+
+// runPick lets the user select one of the paths matching queryParts with fzf,
+// best match first, and prints it. It reports false if there was nothing to
+// select from, fzf failed or the selection was cancelled.
+func runPick(s *Store, queryParts []string) bool {
+	matches, err := search(s, queryParts)
+	if err != nil {
+		fmt.Fprintf(s.Stderr, "[zzz] error reading data file=%s\n ", s.Path)
+		return false
+	}
+	if len(matches) == 0 {
+		return false
+	}
+
+	var in bytes.Buffer
+	for _, m := range matches {
+		fmt.Fprintf(&in, "%s\n", m.Path)
+	}
+	// fzf draws on the terminal itself, so only its stdout is captured.
+	cmd := exec.Command("fzf", "--tac")
+	cmd.Stdin = &in
+	cmd.Stderr = os.Stderr
+	out, err := cmd.Output()
+	if err != nil {
+		var exitErr *exec.ExitError
+		if !errors.As(err, &exitErr) {
+			fmt.Fprintf(os.Stderr, "zzz: %v\n", err)
+		}
+		return false
+	}
+	path := strings.TrimSuffix(string(out), "\n")
+	if path == "" {
+		return false
+	}
+	fmt.Print(path)
+	return true
+}
+
+// search returns the entries matching queryParts, sorted by ascending score.
+func search(s *Store, queryParts []string) ([]Entry, error) {
 	var matches []Entry
 	var lowerParts []string
 	for _, p := range queryParts {
@@ -306,8 +372,7 @@ func runSearch(s *Store, queryParts []string, listMode bool, listPathsMode bool)
 
 	entries, err := s.LoadEntries()
 	if err != nil {
-		fmt.Fprintf(s.Stderr, "[zzz] error reading data file=%s\n ", s.Path)
-		return
+		return nil, err
 	}
 
 	for _, entry := range entries {
@@ -336,18 +401,7 @@ func runSearch(s *Store, queryParts []string, listMode bool, listPathsMode bool)
 	slices.SortFunc(matches, func(a, b Entry) int {
 		return cmp.Compare(a.Score, b.Score)
 	})
-
-	if listPathsMode {
-		for _, m := range matches {
-			fmt.Printf("%s\n", m.Path)
-		}
-	} else if listMode {
-		for _, m := range matches {
-			fmt.Printf("%-10.2f %s\n", m.Score, m.Path)
-		}
-	} else if len(matches) > 0 {
-		fmt.Print(matches[len(matches)-1].Path)
-	}
+	return matches, nil
 }
 
 func matchParts(s string, lowerParts []string) bool {

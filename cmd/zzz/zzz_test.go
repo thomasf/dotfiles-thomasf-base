@@ -5,8 +5,8 @@ import (
 	"io"
 	"os"
 	"path/filepath"
-	"testing"
 	"strings"
+	"testing"
 	"time"
 )
 
@@ -283,5 +283,75 @@ func TestRunSearchListPaths(t *testing.T) {
 	}
 	if strings.Contains(output, "10.00") || strings.Contains(output, "5.00") {
 		t.Errorf("expected no scores in output, got %q", output)
+	}
+}
+
+// fakeFzf puts an fzf on PATH that runs script with the input on stdin.
+func fakeFzf(t *testing.T, script string) {
+	t.Helper()
+	dir := t.TempDir()
+	if err := os.WriteFile(filepath.Join(dir, "fzf"), []byte("#!/bin/sh\n"+script+"\n"), 0o755); err != nil {
+		t.Fatal(err)
+	}
+	t.Setenv("PATH", dir+string(os.PathListSeparator)+os.Getenv("PATH"))
+}
+
+func TestRunPick(t *testing.T) {
+	tmpDir := t.TempDir()
+	dataFile := filepath.Join(tmpDir, "zzz.db")
+	store := &Store{Path: dataFile, Stderr: os.Stderr}
+
+	now := time.Now().Unix()
+	entries := []Entry{
+		{Path: "/foo/bar", Rank: 10, Time: now},
+		{Path: "/apple/orange", Rank: 5, Time: now},
+	}
+	if err := store.SaveEntries(entries); err != nil {
+		t.Fatal(err)
+	}
+
+	tests := []struct {
+		name   string
+		query  []string
+		script string
+		ok     bool
+		want   string
+	}{
+		// fzf --tac shows the last line first, so the best match goes last.
+		{"best last", nil, `[ "$1" = --tac ] && tail -n 1`, true, "/foo/bar"},
+		{"first", nil, "head -n 1", true, "/apple/orange"},
+		{"query", []string{"foo"}, "head -n 1", true, "/foo/bar"},
+		{"no matches", []string{"nope"}, "echo /should/not/run", false, ""},
+		{"cancelled", nil, "cat >/dev/null; exit 130", false, ""},
+		{"nothing selected", nil, "cat >/dev/null", false, ""},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			fakeFzf(t, tt.script)
+
+			oldStdout := os.Stdout
+			r, w, _ := os.Pipe()
+			os.Stdout = w
+
+			ok := runPick(store, tt.query)
+
+			w.Close()
+			os.Stdout = oldStdout
+
+			var buf bytes.Buffer
+			io.Copy(&buf, r)
+
+			if ok != tt.ok || buf.String() != tt.want {
+				t.Errorf("runPick() = %v, printed %q; want %v, %q", ok, buf.String(), tt.ok, tt.want)
+			}
+		})
+	}
+}
+
+func TestRunPickEmpty(t *testing.T) {
+	store := &Store{Path: filepath.Join(t.TempDir(), "zzz.db"), Stderr: os.Stderr}
+	fakeFzf(t, "echo /should/not/run")
+	if runPick(store, nil) {
+		t.Error("runPick() with no entries = true, want false")
 	}
 }

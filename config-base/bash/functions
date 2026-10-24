@@ -536,7 +536,8 @@ alias ur="cdr"
 
 z() {
   if [[ -z "$*" ]]; then
-    cd "$(zzz -lp | fzf --tac)"
+    local dir
+    dir=$(zzz -pick) && cd "$dir"
   else
     case $1 in
       s)
