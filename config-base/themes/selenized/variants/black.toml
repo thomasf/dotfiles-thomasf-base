@@ -1,0 +1,37 @@
+mode = "dark"
+
+# Selenized black, from the upstream values (jan-warchol/selenized, the-values.md).
+[colors]
+bg_0  = "#181818"
+bg_1  = "#252525"
+bg_2  = "#3b3b3b"
+dim_0 = "#777777"
+fg_0  = "#b9b9b9"
+fg_1  = "#dedede"
+
+yellow  = "#dbb32d"
+orange  = "#e67f43"
+red     = "#ed4a46"
+magenta = "#eb6eb7"
+violet  = "#a580e2"
+blue    = "#368aeb"
+cyan    = "#3fc5b7"
+green   = "#70b433"
+
+br_red     = "#ff5e56"
+br_green   = "#83c746"
+br_yellow  = "#efc541"
+br_blue    = "#4f9cfe"
+br_magenta = "#ff81ca"
+br_cyan    = "#56d8c9"
+br_orange  = "#fa9153"
+br_violet  = "#b891f5"
+
+[apps]
+emacs        = "solarized-selenized-black"
+color_scheme = "prefer-dark"
+
+# The root window background, a file in the theme directory, and how
+# hsetroot draws it: tile, center, full, fill, cover or extend.
+background      = "assets/background-black.png"
+background_mode = "tile"

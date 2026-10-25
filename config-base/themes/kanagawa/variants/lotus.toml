@@ -1,0 +1,31 @@
+mode = "light"
+
+# Kanagawa lotus (rebelot/kanagawa.nvim): ui bg, bg_p1, bg_p2, the comment color,
+# ui fg and terminal white; the accents are its terminal colors, with lotusPink
+# as magenta, lotusOrange as orange and lotusViolet4 as violet.
+[colors]
+bg_0  = "#f2ecbc"
+bg_1  = "#e7dba0"
+bg_2  = "#e4d794"
+dim_0 = "#8a8980"
+fg_0  = "#545464"
+fg_1  = "#43436c"
+
+yellow  = "#77713f"
+orange  = "#cc6d00"
+red     = "#c84053"
+magenta = "#b35b79"
+violet  = "#624c83"
+blue    = "#4d699b"
+cyan    = "#597b75"
+green   = "#6f894e"
+
+br_red     = "#d7474b"
+br_green   = "#6e915f"
+br_yellow  = "#836f4a"
+br_blue    = "#6693bf"
+br_magenta = "#624c83"
+br_cyan    = "#5e857a"
+
+[apps]
+color_scheme = "prefer-light"

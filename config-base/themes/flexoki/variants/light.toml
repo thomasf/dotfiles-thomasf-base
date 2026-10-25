@@ -1,0 +1,23 @@
+mode = "light"
+
+# Flexoki light (kepano/flexoki, stephango.com/flexoki): bg, bg-2, ui-2 (hovered
+# borders), tx-3 (comments) and tx (also fg_1); the 600 accents; purple is violet.
+[colors]
+bg_0  = "#fffcf0"
+bg_1  = "#f2f0e5"
+bg_2  = "#dad8ce"
+dim_0 = "#b7b5ac"
+fg_0  = "#100f0f"
+fg_1  = "#100f0f"
+
+yellow  = "#ad8301"
+orange  = "#bc5215"
+red     = "#af3029"
+magenta = "#a02f6f"
+violet  = "#5e409d"
+blue    = "#205ea6"
+cyan    = "#24837b"
+green   = "#66800b"
+
+[apps]
+color_scheme = "prefer-light"

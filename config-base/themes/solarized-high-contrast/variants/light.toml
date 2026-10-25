@@ -1,0 +1,25 @@
+mode = "light"
+
+# From solarized-light-high-contrast-palette-alist,
+# drawn as light by solarized-emacs. bg_2 is not in it: it is bg_1 moved
+# 0.165 of the way toward fg_0 in OKLab, Selenized's step, chosen once.
+[colors]
+bg_0  = "#fffce9"
+bg_1  = "#f4eedb"
+bg_2  = "#d9d8ca"
+dim_0 = "#98a6a6"
+fg_0  = "#596e76"
+fg_1  = "#5d737a"
+
+yellow  = "#a67c00"
+orange  = "#bb3e06"
+red     = "#cc1f24"
+magenta = "#c42475"
+violet  = "#5e65b6"
+blue    = "#007ec4"
+cyan    = "#11948b"
+green   = "#778c00"
+
+[apps]
+emacs        = "solarized-light-high-contrast"
+color_scheme = "prefer-light"

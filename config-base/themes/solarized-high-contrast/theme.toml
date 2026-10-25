@@ -1,0 +1,25 @@
+# Solarized high contrast, as solarized-emacs has it (https://ethanschoonover.com/solarized)
+#
+# Ported from the solarized-emacs palettes (github.com/bbatsov/solarized-emacs,
+# 9df935b). Solarized-style palettes have no bright colors: the terminal's
+# bright red and magenta are orange and violet, as in Solarized, and the
+# other bright colors are the normal ones.
+
+[ansi]
+color0 = "bg_1"
+color1 = "red"
+color2 = "green"
+color3 = "yellow"
+color4 = "blue"
+color5 = "magenta"
+color6 = "cyan"
+color7 = "dim_0"
+
+color8  = "bg_2"
+color9  = "orange"
+color10 = "green"
+color11 = "yellow"
+color12 = "blue"
+color13 = "violet"
+color14 = "cyan"
+color15 = "fg_1"

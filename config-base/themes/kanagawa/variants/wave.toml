@@ -1,0 +1,31 @@
+mode = "dark"
+
+# Kanagawa wave (rebelot/kanagawa.nvim): ui bg, bg_p1, bg_p2, the comment color,
+# ui fg and terminal white; the accents are its terminal colors, with sakuraPink
+# as magenta, surimiOrange as orange and oniViolet as violet.
+[colors]
+bg_0  = "#1f1f28"
+bg_1  = "#2a2a37"
+bg_2  = "#363646"
+dim_0 = "#727169"
+fg_0  = "#dcd7ba"
+fg_1  = "#dcd7ba"
+
+yellow  = "#c0a36e"
+orange  = "#ffa066"
+red     = "#c34043"
+magenta = "#d27e99"
+violet  = "#957fb8"
+blue    = "#7e9cd8"
+cyan    = "#6a9589"
+green   = "#76946a"
+
+br_red     = "#e82424"
+br_green   = "#98bb6c"
+br_yellow  = "#e6c384"
+br_blue    = "#7fb4ca"
+br_magenta = "#938aa9"
+br_cyan    = "#68ad99"
+
+[apps]
+color_scheme = "prefer-dark"

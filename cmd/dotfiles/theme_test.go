@@ -217,6 +217,33 @@ func TestSelenizedTheme(t *testing.T) {
 	}
 }
 
+// TestRepositoryThemes loads every theme in base, so that a broken palette
+// fails the tests.
+func TestRepositoryThemes(t *testing.T) {
+	t.Parallel()
+	dirs, err := filepath.Glob(filepath.Join("..", "..", "config-base", "themes", "*", "theme.toml"))
+	if err != nil {
+		t.Fatal(err)
+	}
+	if len(dirs) < 5 {
+		t.Fatalf("found %d themes, want at least 5", len(dirs))
+	}
+	for _, f := range dirs {
+		theme, err := loadTheme(filepath.Dir(f))
+		if err != nil {
+			t.Error(err)
+			continue
+		}
+		modes := map[string]bool{}
+		for _, v := range theme.Variants {
+			modes[v.Mode] = true
+		}
+		if !modes["dark"] {
+			t.Errorf("%s has no dark variant", theme.Name)
+		}
+	}
+}
+
 func TestLoadThemeName(t *testing.T) {
 	t.Parallel()
 	dir := filepath.Join(t.TempDir(), "Bad Name")

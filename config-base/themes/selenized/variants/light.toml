@@ -23,6 +23,8 @@ br_yellow  = "#a78300"
 br_blue    = "#006dce"
 br_magenta = "#c44392"
 br_cyan    = "#00978a"
+br_orange  = "#bc5819"
+br_violet  = "#825dc0"
 
 [apps]
 emacs        = "my-solarized-selenized-light"

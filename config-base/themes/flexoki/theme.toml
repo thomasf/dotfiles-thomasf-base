@@ -1,0 +1,24 @@
+# Flexoki, https://stephango.com/flexoki
+#
+# Ported from kepano/flexoki (README palette and the documented roles).
+# It has no bright colors: the terminal's bright red and magenta are orange and
+# violet, and the other bright colors are the normal ones.
+
+[ansi]
+color0 = "bg_1"
+color1 = "red"
+color2 = "green"
+color3 = "yellow"
+color4 = "blue"
+color5 = "magenta"
+color6 = "cyan"
+color7 = "dim_0"
+
+color8  = "bg_2"
+color9  = "orange"
+color10 = "green"
+color11 = "yellow"
+color12 = "blue"
+color13 = "violet"
+color14 = "cyan"
+color15 = "fg_1"

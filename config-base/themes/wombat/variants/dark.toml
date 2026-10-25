@@ -1,0 +1,25 @@
+mode = "dark"
+
+# From the wombat palette (grays as solarized-emacs blends them),
+# drawn as dark by solarized-emacs. bg_2 is not in it: it is bg_1 moved
+# 0.165 of the way toward fg_0 in OKLab, Selenized's step, chosen once.
+[colors]
+bg_0  = "#2a2a29"
+bg_1  = "#2f2f2e"
+bg_2  = "#3d3d3b"
+dim_0 = "#6a6a65"
+fg_0  = "#8d8b86"
+fg_1  = "#999891"
+
+yellow  = "#e5c06d"
+orange  = "#ddaa6f"
+red     = "#ffb4ac"
+magenta = "#e5786d"
+violet  = "#834c98"
+blue    = "#a4b5e6"
+cyan    = "#7ec98f"
+green   = "#8ac6f2"
+
+[apps]
+emacs        = "solarized-wombat-dark"
+color_scheme = "prefer-dark"

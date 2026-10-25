@@ -1,0 +1,35 @@
+mode = "dark"
+
+# Upstream gruvbox (morhetz/gruvbox, colors/gruvbox.vim), medium contrast:
+# bg0, bg1 and bg2, gray (comments) as dim_0, fg1 (Normal) as fg_0 and fg0 as
+# fg_1; bright_* accents, as gruvbox does on a dark background. Gruvbox has one purple: magenta is it and
+# violet is neutral_purple. The neutral_* colors are the terminal's normal
+# colors (see theme.toml).
+[colors]
+bg_0  = "#282828"
+bg_1  = "#3c3836"
+bg_2  = "#504945"
+dim_0 = "#928374"
+fg_0  = "#ebdbb2"
+fg_1  = "#fbf1c7"
+
+yellow  = "#fabd2f"
+orange  = "#fe8019"
+red     = "#fb4934"
+magenta = "#d3869b"
+violet  = "#b16286"
+blue    = "#83a598"
+cyan    = "#8ec07c"
+green   = "#b8bb26"
+
+neutral_red    = "#cc241d"
+neutral_green  = "#98971a"
+neutral_yellow = "#d79921"
+neutral_blue   = "#458588"
+neutral_purple = "#b16286"
+neutral_aqua   = "#689d6a"
+
+[apps]
+# solarized-emacs's gruvbox is dimmer than this one (its text is fg4).
+emacs        = "solarized-gruvbox-dark"
+color_scheme = "prefer-dark"

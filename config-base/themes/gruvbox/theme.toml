@@ -1,0 +1,25 @@
+# Gruvbox, https://github.com/morhetz/gruvbox
+#
+# The terminal colors as gruvbox's own terminal palettes have them: the
+# neutral colors as normal colors and the accents as bright ones (on a light
+# background the faded colors, which are darker). Black, white and their
+# bright versions are on the background and text sides, as in Selenized.
+
+[ansi]
+color0 = "bg_1"
+color1 = "neutral_red"
+color2 = "neutral_green"
+color3 = "neutral_yellow"
+color4 = "neutral_blue"
+color5 = "neutral_purple"
+color6 = "neutral_aqua"
+color7 = "dim_0"
+
+color8  = "bg_2"
+color9  = "red"
+color10 = "green"
+color11 = "yellow"
+color12 = "blue"
+color13 = "magenta"
+color14 = "cyan"
+color15 = "fg_1"

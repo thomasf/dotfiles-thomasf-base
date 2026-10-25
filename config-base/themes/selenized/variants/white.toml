@@ -1,0 +1,37 @@
+mode = "light"
+
+# Selenized white, from the upstream values (jan-warchol/selenized, the-values.md).
+[colors]
+bg_0  = "#ffffff"
+bg_1  = "#ebebeb"
+bg_2  = "#cdcdcd"
+dim_0 = "#878787"
+fg_0  = "#474747"
+fg_1  = "#282828"
+
+yellow  = "#c49700"
+orange  = "#d04a00"
+red     = "#d6000c"
+magenta = "#dd0f9d"
+violet  = "#7f51d6"
+blue    = "#0064e4"
+cyan    = "#00ad9c"
+green   = "#1d9700"
+
+br_red     = "#bf0000"
+br_green   = "#008400"
+br_yellow  = "#af8500"
+br_blue    = "#0054cf"
+br_magenta = "#c7008b"
+br_cyan    = "#009a8a"
+br_orange  = "#ba3700"
+br_violet  = "#6b40c3"
+
+[apps]
+emacs        = "solarized-selenized-white"
+color_scheme = "prefer-light"
+
+# The root window background, a file in the theme directory, and how
+# hsetroot draws it: tile, center, full, fill, cover or extend.
+background      = "assets/background-white.png"
+background_mode = "tile"

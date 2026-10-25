@@ -1,0 +1,25 @@
+mode = "dark"
+
+# From solarized-zenburn-color-palette-alist,
+# drawn as dark by solarized-emacs. bg_2 is not in it: it is zenburn-bg+2
+# of upstream zenburn-emacs, the level after bg_1 (zenburn-bg+1).
+[colors]
+bg_0  = "#3f3f3f"
+bg_1  = "#4f4f4f"
+bg_2  = "#5f5f5f"
+dim_0 = "#878777"
+fg_0  = "#dcdccc"
+fg_1  = "#ffffef"
+
+yellow  = "#f0dfaf"
+orange  = "#dfaf8f"
+red     = "#cc9393"
+magenta = "#dc8cc3"
+violet  = "#bbb0cb"
+blue    = "#8cd0d3"
+cyan    = "#93e0e3"
+green   = "#7f9f7f"
+
+[apps]
+emacs        = "solarized-zenburn"
+color_scheme = "prefer-dark"

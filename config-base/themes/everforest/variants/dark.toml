@@ -1,0 +1,23 @@
+mode = "dark"
+
+# Everforest dark (sainnhe/everforest, medium): bg0, bg1, bg2, grey1 (comments) and
+# fg (also fg_1); aqua is cyan; it has one purple, magenta and violet.
+[colors]
+bg_0  = "#2d353b"
+bg_1  = "#343f44"
+bg_2  = "#3d484d"
+dim_0 = "#859289"
+fg_0  = "#d3c6aa"
+fg_1  = "#d3c6aa"
+
+yellow  = "#dbbc7f"
+orange  = "#e69875"
+red     = "#e67e80"
+magenta = "#d699b6"
+violet  = "#d699b6"
+blue    = "#7fbbb3"
+cyan    = "#83c092"
+green   = "#a7c080"
+
+[apps]
+color_scheme = "prefer-dark"

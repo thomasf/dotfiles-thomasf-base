@@ -1,0 +1,31 @@
+mode = "dark"
+
+# Kanagawa dragon (rebelot/kanagawa.nvim): ui bg, bg_p1, bg_p2, the comment color,
+# ui fg and terminal white; the accents are its terminal colors, with dragonPink
+# as magenta, dragonOrange as orange and dragonViolet as violet.
+[colors]
+bg_0  = "#181616"
+bg_1  = "#282727"
+bg_2  = "#393836"
+dim_0 = "#737c73"
+fg_0  = "#c5c9c5"
+fg_1  = "#c5c9c5"
+
+yellow  = "#c4b28a"
+orange  = "#b6927b"
+red     = "#c4746e"
+magenta = "#a292a3"
+violet  = "#8992a7"
+blue    = "#8ba4b0"
+cyan    = "#8ea4a2"
+green   = "#8a9a7b"
+
+br_red     = "#e46876"
+br_green   = "#87a987"
+br_yellow  = "#e6c384"
+br_blue    = "#7fb4ca"
+br_magenta = "#938aa9"
+br_cyan    = "#68ad99"
+
+[apps]
+color_scheme = "prefer-dark"
