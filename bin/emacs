@@ -1,141 +1,167 @@
 #!/bin/bash
 #
-run=""
-run_background=''
-window_argument=''
-editor_argument=''
-server_argument=''
-emacs_bin=''
-emacsclient_bin=''
-cmd="$(basename "${0}")"
+# Run emacs or emacsclient. The name it is called by picks what it does:
+#
+#   emacs        run emacs itself
+#   emacsclient  plain emacsclient, for scripts (-e and the like)
+#   e            open in a new frame without waiting
+#   o            open in the selected frame without waiting
+#   editor       open in a new frame and wait, for $EDITOR
+#   ee           open in the terminal, only if emacs is already running
+#
+# e, o and editor start emacs when no server is running. Without a
+# GUI all but emacsclient open in the terminal and wait.
+#
+# On X the server is named after the workspace prefix, as server-name
+# is in init-packages.el. With WS_LAUNCH set, as xmonad M-o e does, a
+# new emacs starts in the workspace directory with its environment (ws
+# dir, ws env). Wayland has no workspaces yet.
+#
 
-ppath() {
- [ -d "${1}" ] && PATH="${1}:${PATH}"
+cmd=$(basename "$0")
+
+die() {
+  echo "${cmd}: $*" >&2
+  exit 1
 }
 
-[ -d node_modules/.bin ] &&
-  ppath "${PWD}/node_modules/.bin"
+# First executable $1 on PATH that is not this script.
+find_in_path() {
+  local dir dirs
+  IFS=: read -ra dirs <<< "$PATH"
+  for dir in "${dirs[@]}"; do
+    if [ -x "${dir}/$1" ] && ! [ "${dir}/$1" -ef "$0" ]; then
+      echo "${dir}/$1"
+      return
+    fi
+  done
+  return 1
+}
 
-export PATH
+# Whether the server emacsclient would connect to is running.
+server_running() {
+  local args=(-a false -e nil)
+  [ -n "$server" ] && args=(-s "$server" "${args[@]}")
+  [ -n "$client_bin" ] && "$client_bin" "${args[@]}" >/dev/null 2>&1
+}
 
-
-if [ "${OSTYPE:0:6}" = "darwin" ] \
-     && [ -x "${HOME}/Applications/Emacs.app/Contents/MacOS/bin/emacsclient" ]; then
-  emacsclient_bin="${HOME}/Applications/Emacs.app/Contents/MacOS/bin/emacsclient"
-elif [ "${OSTYPE:0:6}" = "darwin" ] \
-       && [ -x /Applications/Emacs.app/Contents/MacOS/bin/emacsclient ]; then
-  emacsclient_bin=/Applications/Emacs.app/Contents/MacOS/bin/emacsclient
-elif [ -x ~/.opt/emacs/lib-src/emacsclient ]; then
-  emacsclient_bin=~/.opt/emacs/lib-src/emacsclient
-elif [ -x /usr/bin/emacsclient ]; then
-  emacsclient_bin=/usr/bin/emacsclient
-else
-  case $cmd in
-    e|ee|editor)
-      cmd=emacs
-      ;;
-  esac
+# Started from a graphical launcher no shell has set up the
+# environment, so load what a login shell would. The interactive part
+# of the bash init is skipped, as this is no interactive shell.
+shell_init=''
+if [ -z "$__SHCOMMON" ] && [ -f ~/.bash_profile ]; then
+  . ~/.bash_profile
+  shell_init=yes
 fi
 
-if [ "${OSTYPE:0:6}" = "darwin" ] \
-     && [ -x /Applications/Emacs.app/Contents/MacOS/Emacs ]; then
-  emacs_bin=/Applications/Emacs.app/Contents/MacOS/Emacs
-elif [ "${OSTYPE:0:6}" = "darwin" ] \
-       && [ -x ${HOME}/Applications/Emacs.app/Contents/MacOS/Emacs ]; then
-  emacs_bin=${HOME}/Applications/Emacs.app/Contents/MacOS/Emacs
-elif [ -x ~/.opt/emacs/src/emacs ]; then
+# Take emacs and emacsclient from the same build.
+emacs_bin=''
+client_bin=''
+if [[ $OSTYPE == darwin* ]]; then
+  for app in ~/Applications/Emacs.app /Applications/Emacs.app; do
+    if [ -x "${app}/Contents/MacOS/Emacs" ]; then
+      emacs_bin=${app}/Contents/MacOS/Emacs
+      client_bin=${app}/Contents/MacOS/bin/emacsclient
+      break
+    fi
+  done
+fi
+if [ -z "$emacs_bin" ] && [ -x ~/.opt/emacs/src/emacs ]; then
   emacs_bin=~/.opt/emacs/src/emacs
-elif [ -x /usr/bin/emacs ]; then
-  emacs_bin=/usr/bin/emacs
-else
-  echo 'cannot find emacs'
-  exit 1
+  client_bin=~/.opt/emacs/lib-src/emacsclient
+fi
+[ -n "$emacs_bin" ] || emacs_bin=$(find_in_path emacs) || die 'cannot find emacs'
+[ -x "$client_bin" ] || client_bin=$(find_in_path emacsclient)
+
+gui=''
+server=''
+if [ -n "$WAYLAND_DISPLAY" ]; then
+  gui=yes
+elif [ -n "$DISPLAY" ]; then
+  gui=yes
+  server=$(ws name -p 2>/dev/null)
+  # From xmonad a new emacs starts in the workspace directory with its
+  # environment. A running one keeps its own, so then skip ws env,
+  # which may ask for passwords. Unset, so that nothing started from
+  # emacs sees it.
+  launch=$WS_LAUNCH
+  unset WS_LAUNCH
+  if [ -n "$launch" ] && ! server_running \
+       && dir=$(ws dir 2>/dev/null) && cd "$dir" 2>/dev/null \
+       && wsenv=$(ws env 2>/dev/null); then
+    # Environments use bash init functions such as workon, which are
+    # not inherited from the shell that loaded the init before.
+    [ -n "$shell_init" ] || [ ! -f ~/.bashrc ] || . ~/.bashrc
+    eval "$wsenv" >/dev/null 2>&1
+  fi
+elif [[ $OSTYPE == darwin* ]] && [ -z "$SSH_CONNECTION" ]; then
+  gui=yes
 fi
 
-case $cmd in
-  emacsclient|e|ee|editor|o)
-    if [ -x "$emacsclient_bin" ]; then
-      run="${emacsclient_bin} -q"
-    else
-      echo 'cannot find emacsclient'
-      exit 1
-    fi
-
-    # editor argument
-    case $cmd in
-      editor|e|o)
-        editor_argument='-a emacs'
-        ;;
-      ee)
-        editor_argument='-a false'
-        ;;
-    esac
-    
-    # window argument
-    if [ -n "$DISPLAY" ]; then
-      case $cmd in
-        editor)
-          window_argument='-c'
-          ;;
-        o)
-          window_argument='-n'
-          ;;
-        e)
-          run_background='yes'
-          if [ -n "$DISPLAY" ] || [ "${OSTYPE:0:6}" = "darwin" ]; then
-            window_argument='-c -n'
-          else
-            window_argument='-nw'
-          fi
-          ;;
-      esac
-    else
-      window_argument="-nw"
-    fi 
-
-    # server argument
-    if [ -n "$DISPLAY" ] && [ "$(wsname -p)" ]; then
-      server_argument="-s $(wsname -p)"
-    fi
-    ;;
-  emacs|sumacs)
-    run=$emacs_bin
-    case $cmd in
-      sumacs)
-        run="gksudo ${run}"        
-        ;;
-    esac
-    ;;
-  *)
-    exit 1
-    ;;
-esac
-
-case $cmd in
-  ee)
-    window_argument="-nw"
-    ;;
-esac      
+# Project tools for a newly started emacs.
+[ -d node_modules/.bin ] && PATH="${PWD}/node_modules/.bin:${PATH}"
+export PATH
 
 case $TERM in
   alacritty)
-    export COLORTERM="truecolor"
+    export COLORTERM=truecolor
     ;;
 esac
 
-if [ "${OSTYPE:0:6}" = "darwin" ]; then
-  case $cmd in
-    emacs)
-      exec ${run} ${server_argument} ${window_argument} ${editor_argument} "$@"
-      ;;
-    *)
-      exec nohup ${run} ${server_argument} ${window_argument} ${editor_argument} "$@" >/dev/null 2>&1 &
-      ;;
-  esac
-else
-  if [ -n "$run_background" ]; then
-    exec ${run} ${server_argument} ${window_argument} ${editor_argument} "$@" 2>/dev/null &
-  else
-    exec ${run} ${server_argument} ${window_argument} ${editor_argument} "$@"
+alternate=''
+gui_args=()
+background=''
+case $cmd in
+  emacs)
+    exec "$emacs_bin" "$@"
+    ;;
+  emacsclient)
+    ;;
+  e)
+    alternate=$emacs_bin
+    gui_args=(-c -n)
+    background=yes
+    ;;
+  o)
+    alternate=$emacs_bin
+    gui_args=(-n)
+    background=yes
+    ;;
+  editor)
+    alternate=$emacs_bin
+    gui_args=(-c)
+    ;;
+  ee)
+    alternate=false
+    gui=''
+    ;;
+  *)
+    die "unknown command name"
+    ;;
+esac
+
+if [ -n "$client_bin" ]; then
+  run=("$client_bin" -q)
+  [ -n "$server" ] && run+=(-s "$server")
+  [ -n "$alternate" ] && run+=(-a "$alternate")
+  if [ "$cmd" != emacsclient ]; then
+    if [ -n "$gui" ]; then
+      run+=("${gui_args[@]}")
+    else
+      run+=(-t)
+    fi
   fi
+elif [ "$alternate" = "$emacs_bin" ]; then
+  run=("$emacs_bin")
+  [ -n "$gui" ] || run+=(-nw)
+else
+  die 'cannot find emacsclient'
 fi
+
+# With -n emacsclient returns at once, but a newly started emacs would
+# hold the terminal.
+if [ -n "$gui" ] && [ -n "$background" ]; then
+  nohup "${run[@]}" "$@" >/dev/null 2>&1 &
+  exit 0
+fi
+exec "${run[@]}" "$@"
