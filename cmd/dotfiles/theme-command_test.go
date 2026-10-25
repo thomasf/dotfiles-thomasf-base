@@ -13,8 +13,8 @@ import (
 )
 
 // themeCommandRepo writes a repository with the theme test, whose variants
-// are dark, light and black, a second dark one, and a destination without
-// the darkmode file. The config has [theme], a template that writes the
+// are dark, light and black, a second dark one, and an empty destination.
+// The config has [theme], a template that writes the
 // variant in use to theme.txt, and scripts that append to scripts.txt in the
 // destination: one for install, one for theme, and one for both.
 func themeCommandRepo(t *testing.T) (*Dotfiles, string) {
@@ -99,7 +99,6 @@ func TestThemeCommand(t *testing.T) {
 		return out.String()
 	}
 	state := func() string { return readOr(t, filepath.Join(dst, themeStatePath)) }
-	darkmode := func() bool { _, err := os.Stat(filepath.Join(dst, darkmodePath)); return err == nil }
 	scripts := func() string {
 		s := readOr(t, filepath.Join(dst, "scripts.txt"))
 		os.Remove(filepath.Join(dst, "scripts.txt"))
@@ -117,9 +116,6 @@ func TestThemeCommand(t *testing.T) {
 	run("set", "dark")
 	if got := state(); got != "mode = 'dark'\n" {
 		t.Errorf("state after set dark = %q", got)
-	}
-	if !darkmode() {
-		t.Error("set dark did not create the darkmode file")
 	}
 	if got := readOr(t, filepath.Join(dst, "theme.txt")); got != "test:dark\n" {
 		t.Errorf("theme.txt after set dark = %q", got)
@@ -140,9 +136,6 @@ func TestThemeCommand(t *testing.T) {
 	run("toggle")
 	if got := state(); got != "mode = 'light'\n" {
 		t.Errorf("state after toggle = %q, want light mode without the theme", got)
-	}
-	if darkmode() {
-		t.Error("toggle to light did not remove the darkmode file")
 	}
 	if got := readOr(t, filepath.Join(dst, "theme.txt")); got != "test:light\n" {
 		t.Errorf("theme.txt after toggle = %q", got)
@@ -268,3 +261,32 @@ func TestStarlarkReadThemeDir(t *testing.T) {
 
 func newStarlarkDict() *starlark.Dict     { return starlark.NewDict(1) }
 func newStarlarkThread() *starlark.Thread { return &starlark.Thread{} }
+
+func TestThemePreview(t *testing.T) {
+	t.Parallel()
+	d, _ := themeCommandRepo(t)
+	out := &bytes.Buffer{}
+	d.Stdout = out
+	if err := d.ThemeCommand([]string{"preview", ":black"}); err != nil {
+		t.Fatal(err)
+	}
+	got := out.String()
+	for _, want := range []string{
+		"test:black (dark mode)\n",
+		"  bg_0     #000000  ",      // names padded to the longest, magenta
+		"br_red   #000001",          // extras after the required colors
+		"\x1b[38;2;0;0;1m",          // br_red as a 24-bit color
+		"\nTerminal colors:\n   0 ", // then the 16 terminal colors
+		" 1.0\n",                    // bg_0 on itself
+	} {
+		if !strings.Contains(got, want) {
+			t.Errorf("preview does not contain %q:\n%s", want, got)
+		}
+	}
+	if strings.Contains(got, "color0 ") {
+		t.Error("color0 is listed with the colors, not only with the terminal colors")
+	}
+	if err := d.ThemeCommand([]string{"preview", ":dim"}); err == nil || !strings.Contains(err.Error(), "no variant dim") {
+		t.Errorf("preview :dim: err = %v", err)
+	}
+}

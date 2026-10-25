@@ -478,9 +478,8 @@ another variant of the theme that would be chosen otherwise, e.g.
 dotfiles -theme :dark plan;
 2. theme in the state file ~/.local/state/dotfiles/theme.toml, which
 dotfiles theme writes;
-3. [theme] dark or light, for the mode of the state file; without a
-state file, dark if ~/.config/darkmode exists, else [theme] mode,
-else light.
+3. [theme] dark or light, for the mode of the state file, else
+[theme] mode, else light.
 
 Without [theme] dark and light and without the option, there is no
 theme, and using theme is an error.
@@ -521,6 +520,10 @@ dotfiles theme shows and switches the theme:
  dotfiles theme                 | Shows the theme variant in use and its mode.
  dotfiles theme list            | Lists every variant of every theme, marking the one in use
                                 | with *.
+ dotfiles theme preview         | Shows the colors of the variant in use in a terminal with 24-
+                                | bit colors: swatches, text on bg_0 with its contrast ratio,
+                                | and the terminal colors. preview dark, preview
+                                | selenized:light and preview :black show another variant.
  dotfiles theme set dark        | Switches to dark mode, with [theme] dark; set light likewise.
  dotfiles theme set selenized:x | Switches to a variant, and to its mode; set :x keeps the
                                 | theme in use.
@@ -531,9 +534,7 @@ A switch writes the state file, then installs the files of every repository
 as dotfiles install does, with the new theme, and runs the [[script]]
 entries with on = "theme" instead of the usual ones. [[go]] packages are
 not installed. Files whose content does not change are not written, so only
-what depends on the theme changes. The switch also creates
-~/.config/darkmode in dark mode and removes it in light mode, for programs
-that still read it.
+what depends on the theme changes.
 
 ### [vars] and [default_vars]
 

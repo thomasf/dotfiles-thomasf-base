@@ -7,6 +7,8 @@ import (
 	"maps"
 	"slices"
 	"strings"
+
+	"github.com/lucasb-eyer/go-colorful"
 )
 
 // ThemeCommand runs dotfiles theme: it shows the theme variant in use, lists
@@ -15,10 +17,11 @@ func (d *Dotfiles) ThemeCommand(args []string) error {
 	fs := flag.NewFlagSet("dotfiles theme", flag.ContinueOnError)
 	fs.SetOutput(d.Stderr)
 	fs.Usage = func() {
-		fmt.Fprintf(d.Stderr, "Usage: dotfiles theme [show | list | set <variant> | toggle]\n\n")
-		fmt.Fprintf(d.Stderr, "Show the theme variant in use, list the themes and their variants, or\n")
-		fmt.Fprintf(d.Stderr, "switch the theme. set takes dark or light, theme:variant, or :variant of\n")
-		fmt.Fprintf(d.Stderr, "the theme in use; toggle switches between dark and light mode.\n\n")
+		fmt.Fprintf(d.Stderr, "Usage: dotfiles theme [show | list | preview [<variant>] | set <variant> | toggle]\n\n")
+		fmt.Fprintf(d.Stderr, "Show the theme variant in use, list the themes and their variants, show\n")
+		fmt.Fprintf(d.Stderr, "the colors of a variant in the terminal, or switch the theme. preview and\n")
+		fmt.Fprintf(d.Stderr, "set take dark or light, theme:variant, or :variant of the theme in use;\n")
+		fmt.Fprintf(d.Stderr, "toggle switches between dark and light mode.\n\n")
 		fmt.Fprintf(d.Stderr, "A switch saves the choice in ~/%s,\n", themeStatePath)
 		fmt.Fprintf(d.Stderr, "installs the files of every repository (not [[go]] packages) and runs\n")
 		fmt.Fprintf(d.Stderr, "the [[script]] entries with on = \"theme\". See dotfiles doc theme.\n")
@@ -36,12 +39,12 @@ func (d *Dotfiles) ThemeCommand(args []string) error {
 	if len(args) > 0 {
 		sub, args = args[0], args[1:]
 	}
-	wantArgs := map[string]int{"show": 0, "list": 0, "set": 1, "toggle": 0}
+	wantArgs := map[string]int{"show": 0, "list": 0, "preview": 1, "set": 1, "toggle": 0}
 	n, ok := wantArgs[sub]
 	switch {
 	case !ok:
 		return usage("unknown command " + sub)
-	case len(args) != n:
+	case sub == "preview" && len(args) > n, sub != "preview" && len(args) != n:
 		return usage(fmt.Sprintf("%s takes %d arguments", sub, n))
 	case (sub == "set" || sub == "toggle") && d.Theme != "":
 		return usage("-theme can not be used with " + sub)
@@ -60,6 +63,12 @@ func (d *Dotfiles) ThemeCommand(args []string) error {
 		fmt.Fprintf(d.Stdout, "%s (%s mode)\n", d.active.ref(), d.active.mode())
 	case "list":
 		d.listThemes()
+	case "preview":
+		ref := ""
+		if len(args) > 0 {
+			ref = args[0]
+		}
+		return d.previewTheme(ref)
 	case "set", "toggle":
 		st, err := d.nextThemeState(sub, args)
 		if err != nil {
@@ -153,4 +162,100 @@ func (d *Dotfiles) listThemes() {
 		line := fmt.Sprintf("%s %-*s  %-5s  %s", mark, width, ref, d.themes.themes[name].Variants[variant].Mode, strings.Join(uses, ", "))
 		fmt.Fprintln(d.Stdout, strings.TrimRight(line, " "))
 	}
+}
+
+// previewTheme prints the colors of the variant ref, given as set takes it,
+// or of the one in use if ref is "": each color as a swatch, its name and
+// value, and text in it on bg_0 with the contrast ratio, then the terminal
+// colors.
+func (d *Dotfiles) previewTheme(ref string) error {
+	switch {
+	case ref == "":
+		if d.active == nil {
+			return errors.New("theme preview: no theme is configured")
+		}
+		ref = d.active.ref()
+	case ref == "dark":
+		ref = d.themes.dark
+	case ref == "light":
+		ref = d.themes.light
+	case strings.HasPrefix(ref, ":"):
+		if d.active == nil {
+			return errors.New("theme preview: no theme is selected to take the variant of")
+		}
+		ref = d.active.theme.Name + ref
+	}
+	name, variant, err := parseThemeRef(ref)
+	if err != nil {
+		return fmt.Errorf("theme preview: %w", err)
+	}
+	t, ok := d.themes.themes[name]
+	if !ok {
+		return fmt.Errorf("theme preview: no theme %s", name)
+	}
+	v, ok := t.Variants[variant]
+	if !ok {
+		return fmt.Errorf("theme preview: theme %s has no variant %s", name, variant)
+	}
+
+	w := d.Stdout
+	bg := v.Colors["bg_0"]
+	fmt.Fprintf(w, "%s (%s mode)\n\n", ref, v.Mode)
+	names := slices.Clone(requiredColors)
+	for _, n := range slices.Sorted(maps.Keys(v.Colors)) {
+		if !slices.Contains(names, n) && !slices.Contains(ansiColors, n) {
+			names = append(names, n)
+		}
+	}
+	width := 0
+	for _, n := range names {
+		width = max(width, len(n))
+	}
+	for _, n := range names {
+		c := v.Colors[n]
+		fmt.Fprintf(w, "  %s  %-*s  %s  %s %4.1f\n", swatch(c), width, n, c,
+			onBackground(c, bg, " Text on bg_0 "), contrast(c, bg))
+	}
+	fmt.Fprintf(w, "\nTerminal colors:\n")
+	for row := range 2 {
+		fmt.Fprint(w, " ")
+		for i := row * 8; i < row*8+8; i++ {
+			fmt.Fprintf(w, " %2d %s", i, swatch(v.Colors[ansiColors[i]]))
+		}
+		fmt.Fprintln(w)
+	}
+	return nil
+}
+
+// swatch returns a block in the #rrggbb color c, for a terminal with 24-bit
+// colors.
+func swatch(c string) string {
+	r, g, b := rgb8(c)
+	return fmt.Sprintf("\x1b[38;2;%d;%d;%dm████\x1b[0m", r, g, b)
+}
+
+// onBackground returns text in the color fg on the color bg, for a terminal
+// with 24-bit colors.
+func onBackground(fg, bg, text string) string {
+	fr, fg8, fb := rgb8(fg)
+	br, bg8, bb := rgb8(bg)
+	return fmt.Sprintf("\x1b[38;2;%d;%d;%dm\x1b[48;2;%d;%d;%dm%s\x1b[0m", fr, fg8, fb, br, bg8, bb, text)
+}
+
+// rgb8 returns the components of the #rrggbb color c.
+func rgb8(c string) (r, g, b uint8) {
+	col, _ := colorful.Hex(c) // checked when the theme was loaded
+	return col.RGB255()
+}
+
+// contrast returns the WCAG contrast ratio of the #rrggbb colors a and b,
+// from 1 to 21.
+func contrast(a, b string) float64 {
+	lum := func(c string) float64 {
+		col, _ := colorful.Hex(c)
+		r, g, b := col.LinearRgb()
+		return 0.2126*r + 0.7152*g + 0.0722*b
+	}
+	la, lb := lum(a), lum(b)
+	return (max(la, lb) + 0.05) / (min(la, lb) + 0.05)
 }

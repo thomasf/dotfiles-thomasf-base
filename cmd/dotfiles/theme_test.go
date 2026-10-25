@@ -411,30 +411,28 @@ func testThemeSet(t *testing.T) *themeSet {
 func TestSelectTheme(t *testing.T) {
 	t.Parallel()
 	tests := []struct {
-		name     string
-		state    string // the state file, if not empty
-		darkmode bool   // whether the darkmode file exists
-		mode     string // [theme] mode
-		unset    string // dark or light to unset in [theme]
-		option   string
-		want     string // the variant, or "" for none
-		wantErr  string
+		name    string
+		state   string // the state file, if not empty
+		mode    string // [theme] mode
+		unset   string // dark or light to unset in [theme]
+		option  string
+		want    string // the variant, or "" for none
+		wantErr string
 	}{
 		{name: "light by default", want: "light"},
 		{name: "[theme] mode", mode: "dark", want: "dark"},
-		{name: "darkmode file", darkmode: true, want: "dark"},
 		{name: "state file", state: `mode = "dark"`, mode: "light", want: "dark"},
-		{name: "state file over darkmode file", state: `mode = "light"`, darkmode: true, want: "light"},
+		{name: "state file over [theme] mode", state: `mode = "light"`, mode: "dark", want: "light"},
 		{name: "state file theme", state: "mode = \"dark\"\ntheme = \"test:black\"", want: "black"},
-		{name: "option", darkmode: true, option: "test:light", want: "light"},
+		{name: "option", state: `mode = "dark"`, option: "test:light", want: "light"},
 		{name: "option variant", option: ":black", want: "black"},
 		{name: "option no variant", option: ":dim", wantErr: "theme test has no variant dim"},
 		{name: "option no theme", option: "nope:dark", wantErr: "nope:dark: no such theme"},
 		{name: "option form", option: "test", wantErr: `-theme: invalid "test"`},
 		{name: "state file mode", state: `mode = "dim"`, wantErr: `mode: invalid "dim"`},
 		{name: "state file key", state: `colour = "red"`, wantErr: "theme.toml"},
-		{name: "no theme for the mode", darkmode: true, unset: "dark", wantErr: "no theme for dark mode"},
-		{name: "option without a theme for the mode", darkmode: true, unset: "dark", option: ":light", wantErr: "no theme is selected"},
+		{name: "no theme for the mode", state: `mode = "dark"`, unset: "dark", wantErr: "no theme for dark mode"},
+		{name: "option without a theme for the mode", state: `mode = "dark"`, unset: "dark", option: ":light", wantErr: "no theme is selected"},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
@@ -451,9 +449,6 @@ func TestSelectTheme(t *testing.T) {
 			files := fstest.MapFS{}
 			if tt.state != "" {
 				files[themeStatePath] = tomlFile(tt.state)
-			}
-			if tt.darkmode {
-				files[darkmodePath] = tomlFile("")
 			}
 			if err := os.CopyFS(dst, files); err != nil {
 				t.Fatal(err)
@@ -485,7 +480,8 @@ func TestSelectThemeNone(t *testing.T) {
 }
 
 // themeConfigRepo writes a repository with the theme test in themes/ and
-// config after its [theme], and a destination with the darkmode file. It
+// config after its [theme], and a destination whose state file chooses dark
+// mode. It
 // returns their paths.
 func themeConfigRepo(t *testing.T, config string) (repo, dst string) {
 	t.Helper()
@@ -503,7 +499,7 @@ light = "test:light"
 		t.Fatal(err)
 	}
 	dst = t.TempDir()
-	if err := os.CopyFS(dst, fstest.MapFS{darkmodePath: tomlFile("")}); err != nil {
+	if err := os.CopyFS(dst, fstest.MapFS{themeStatePath: tomlFile(`mode = "dark"`)}); err != nil {
 		t.Fatal(err)
 	}
 	return repo, dst

@@ -389,11 +389,6 @@ func anyMap(m map[string]string) map[string]any {
 // the chosen mode and theme.
 const themeStatePath = ".local/state/dotfiles/theme.toml"
 
-// darkmodePath is the file, relative to the destination path, that the
-// darkmode script creates while dark mode is on. Until the state file
-// exists, it decides the mode.
-const darkmodePath = ".config/darkmode"
-
 // themeState is the content of the state file.
 type themeState struct {
 	Mode  string `toml:"mode"`
@@ -401,15 +396,12 @@ type themeState struct {
 }
 
 // readThemeState reads the state file in dstRoot. Without one, the mode is
-// dark if the darkmode file exists, and otherwise unset.
+// unset.
 func readThemeState(dstRoot string) (themeState, error) {
 	var st themeState
 	path := filepath.Join(dstRoot, themeStatePath)
 	data, err := os.ReadFile(path)
 	if errors.Is(err, os.ErrNotExist) {
-		if _, err := os.Stat(filepath.Join(dstRoot, darkmodePath)); err == nil {
-			st.Mode = "dark"
-		}
 		return st, nil
 	}
 	if err != nil {
@@ -511,8 +503,7 @@ func (a *activeTheme) mode() string {
 }
 
 // writeThemeState writes st to the state file in dstRoot, replacing it
-// atomically. It also creates the darkmode file in dark mode and removes it
-// in light mode, for the programs that still read it.
+// atomically.
 func writeThemeState(dstRoot string, st themeState) error {
 	data, err := toml.Marshal(st)
 	if err != nil {
@@ -541,20 +532,6 @@ func writeThemeState(dstRoot string, st themeState) error {
 		return err
 	}
 
-	darkmode := filepath.Join(dstRoot, darkmodePath)
-	if st.Mode == "dark" {
-		if err := os.MkdirAll(filepath.Dir(darkmode), 0o755); err != nil {
-			return err
-		}
-		f, err := os.OpenFile(darkmode, os.O_CREATE|os.O_WRONLY, 0o644)
-		if err != nil {
-			return err
-		}
-		return f.Close()
-	}
-	if err := os.Remove(darkmode); err != nil && !errors.Is(err, os.ErrNotExist) {
-		return err
-	}
 	return nil
 }
 
