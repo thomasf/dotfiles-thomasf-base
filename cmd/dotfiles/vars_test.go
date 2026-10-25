@@ -109,7 +109,7 @@ func TestResolveVarsErrors(t *testing.T) {
 
 func TestEvalExprVars(t *testing.T) {
 	t.Parallel()
-	env := exprEnv(t.TempDir(), map[string]string{"size": "11", "gui": "true", "empty": ""})
+	env := exprEnv(evalContext{dstRoot: t.TempDir(), vars: map[string]string{"size": "11", "gui": "true", "empty": ""}})
 	tests := []struct {
 		src     string
 		want    any

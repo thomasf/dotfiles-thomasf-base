@@ -54,7 +54,7 @@ func TestEvalExpr(t *testing.T) {
 		{src: `os ===`, wantErr: true},
 	}
 	for _, tt := range tests {
-		got, err := evalExpr(exprEnv(dstRoot, nil), tt.src, expr.AsBool())
+		got, err := evalExpr(exprEnv(evalContext{dstRoot: dstRoot}), tt.src, expr.AsBool())
 		if tt.wantErr {
 			if err == nil {
 				t.Errorf("%s: expected error, got %v", tt.src, got)
@@ -88,7 +88,7 @@ func TestResolvePath(t *testing.T) {
 // the environment of conditions.
 func TestExprFeatures(t *testing.T) {
 	t.Parallel()
-	env := exprEnv(t.TempDir(), map[string]string{"font_size": "11"})
+	env := exprEnv(evalContext{dstRoot: t.TempDir(), vars: map[string]string{"font_size": "11"}})
 	tests := []struct {
 		src  string
 		want any

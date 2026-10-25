@@ -12,7 +12,7 @@ import (
 	"github.com/pelletier/go-toml/v2"
 )
 
-// TemplateAction renders the template Src, with the resolved [vars] Vars, and
+// TemplateAction renders the template Src, evaluated with Eval, and
 // writes the result to Dst. Dst gets the permission bits Mode, or those of Src
 // if Mode is 0. Existing says what happens when Dst exists with different
 // content; Force turns ExistingError into ExistingOverwrite.
@@ -24,7 +24,7 @@ type TemplateAction struct {
 	Mode     fs.FileMode
 	Existing ExistingAction
 	Force    bool
-	Vars     map[string]string
+	Eval     evalContext
 }
 
 func (t *TemplateAction) DstAbsolutePath() string {
@@ -62,7 +62,7 @@ func (t *TemplateAction) Run() error {
 		}
 		perm = info.Mode().Perm()
 	}
-	out, err := renderTemplate(t.Src, string(text), t.DstRoot, t.Vars)
+	out, err := renderTemplate(t.Src, string(text), t.Eval)
 	if err != nil {
 		return err
 	}

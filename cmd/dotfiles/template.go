@@ -10,27 +10,27 @@ import (
 
 // renderTemplate executes text as a Go text/template (see parseTemplate). The
 // data is the variables from exprVars.
-func renderTemplate(name, text, dstRoot string, vars map[string]string) ([]byte, error) {
-	t, err := parseTemplate(name, text, dstRoot, vars)
+func renderTemplate(name, text string, ec evalContext) ([]byte, error) {
+	t, err := parseTemplate(name, text, ec)
 	if err != nil {
 		return nil, err
 	}
-	return executeTemplate(t, vars)
+	return executeTemplate(t, ec)
 }
 
 // parseTemplate parses text as a Go text/template, with the funcs from
 // templateFuncs.
-func parseTemplate(name, text, dstRoot string, vars map[string]string) (*template.Template, error) {
-	return template.New(name).Option("missingkey=error").Funcs(templateFuncs(dstRoot, vars)).Parse(text)
+func parseTemplate(name, text string, ec evalContext) (*template.Template, error) {
+	return template.New(name).Option("missingkey=error").Funcs(templateFuncs(ec)).Parse(text)
 }
 
 // templateFuncs returns the funcs of templates: those from exprFuncs plus
 // expr, which evaluates an expr expression like a condition, with the content
-// vars has when it is called, and shellQuote.
-func templateFuncs(dstRoot string, vars map[string]string) template.FuncMap {
-	funcs := exprFuncs(dstRoot)
+// ec.vars has when it is called, and shellQuote.
+func templateFuncs(ec evalContext) template.FuncMap {
+	funcs := exprFuncs(ec.dstRoot)
 	funcs["expr"] = func(src string) (any, error) {
-		return evalExpr(exprEnv(dstRoot, vars), src)
+		return evalExpr(exprEnv(ec), src)
 	}
 	funcs["shellQuote"] = shellQuote
 	return funcs
@@ -43,10 +43,10 @@ var templateBuiltins = []string{
 	"ne", "not", "or", "print", "printf", "println", "slice", "urlquery",
 }
 
-// executeTemplate executes t, parsed by parseTemplate with the same vars.
-func executeTemplate(t *template.Template, vars map[string]string) ([]byte, error) {
+// executeTemplate executes t, parsed by parseTemplate with the same ec.
+func executeTemplate(t *template.Template, ec evalContext) ([]byte, error) {
 	var buf bytes.Buffer
-	if err := t.Execute(&buf, exprVars(vars)); err != nil {
+	if err := t.Execute(&buf, exprVars(ec)); err != nil {
 		return nil, err
 	}
 	return buf.Bytes(), nil
@@ -70,10 +70,10 @@ var shellSafeRe = regexp.MustCompile(`^[A-Za-z0-9@%+=:,./_-]+$`)
 
 // renderValue renders a config value, such as a src or dst path, with
 // renderTemplate. A value without "{{" is returned as is.
-func renderValue(name, value, dstRoot string, vars map[string]string) (string, error) {
+func renderValue(name, value string, ec evalContext) (string, error) {
 	if !strings.Contains(value, "{{") {
 		return value, nil
 	}
-	out, err := renderTemplate(name, value, dstRoot, vars)
+	out, err := renderTemplate(name, value, ec)
 	return string(out), err
 }

@@ -233,7 +233,7 @@ func builtinsAppendix() string {
 		b.WriteString(wrap(strings.Join(names, " "), 4))
 	}
 
-	vars := slices.Sorted(maps.Keys(exprVars(nil)))
+	vars := slices.Sorted(maps.Keys(exprVars(evalContext{})))
 	exprBuiltins := make([]string, len(builtin.Builtins))
 	for i, f := range builtin.Builtins {
 		exprBuiltins[i] = f.Name
@@ -251,10 +251,10 @@ func builtinsAppendix() string {
 	section("Template Names", "In [vars] values, templated paths, [git] values, [[script]] code and "+
 		"[[template]] files. The section Templates describes the ones that come up most.")
 	list("Fields from dotfiles", fields)
-	list("Functions from dotfiles", slices.Sorted(maps.Keys(templateFuncs("", nil))))
+	list("Functions from dotfiles", slices.Sorted(maps.Keys(templateFuncs(evalContext{}))))
 	list("Functions from Go", templateBuiltins)
 
-	starlarkNames := starlarkPredeclared("", "", "", nil, starlark.NewDict(0))
+	starlarkNames := starlarkPredeclared("", "", evalContext{}, starlark.NewDict(0))
 	section("Starlark Names", "In [[starlark]] code. The sections Names in Scripts and Useful "+
 		"Starlark Built-ins describe the ones that come up most.")
 	list("Values from dotfiles", starlarkValues(starlarkNames, false))

@@ -17,7 +17,8 @@ func newTemplateAction(t *testing.T, src, dst string) *TemplateAction {
 	if err := os.WriteFile(filepath.Join(repoDir, "t.tmpl"), []byte(src), 0o644); err != nil {
 		t.Fatal(err)
 	}
-	return &TemplateAction{SrcRoot: repoDir, Src: "t.tmpl", DstRoot: t.TempDir(), Dst: dst}
+	dstRoot := t.TempDir()
+	return &TemplateAction{SrcRoot: repoDir, Src: "t.tmpl", DstRoot: dstRoot, Dst: dst, Eval: evalContext{dstRoot: dstRoot}}
 }
 
 func TestTemplateActionWrite(t *testing.T) {

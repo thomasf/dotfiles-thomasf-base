@@ -264,15 +264,21 @@ func (r *Repository) resolve(raw map[string]string) error {
 		return fmt.Errorf("%s: %w", r.configPath, err)
 	}
 	r.vars = vars
-	if err := r.config.render(r.dstRoot, vars); err != nil {
+	if err := r.config.render(r.evalContext()); err != nil {
 		return fmt.Errorf("%s: %w", r.configPath, err)
 	}
 	return nil
 }
 
+// evalContext returns the context that the repository's conditions,
+// templates and [[starlark]] code are evaluated with.
+func (r *Repository) evalContext() evalContext {
+	return evalContext{dstRoot: r.dstRoot, vars: r.vars}
+}
+
 // exprEnv returns the environment of the repository's conditions.
 func (r *Repository) exprEnv() map[string]any {
-	return exprEnv(r.dstRoot, r.vars)
+	return exprEnv(r.evalContext())
 }
 
 func (c *Config) validate() error {
@@ -357,13 +363,13 @@ func parseFileMode(s string) (fs.FileMode, error) {
 
 // render renders every src and dst of mounts, go packages and templates, the
 // src of scripts, every [git] value and every dst of [[starlark]] entries as
-// a template (see renderTemplate) with the resolved [vars] vars. An entry with a src or dst
+// a template (see renderTemplate) with ec. An entry with a src or dst
 // that renders to an empty string is dropped; for templates and [[starlark]]
 // entries, only that dst is dropped.
-func (c *Config) render(dstRoot string, vars map[string]string) error {
+func (c *Config) render(ec evalContext) error {
 	var errs []error
 	render := func(name, value string) string {
-		out, err := renderValue(name, value, dstRoot, vars)
+		out, err := renderValue(name, value, ec)
 		errs = append(errs, err)
 		return out
 	}

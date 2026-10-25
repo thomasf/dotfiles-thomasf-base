@@ -104,7 +104,7 @@ func starlarkMessage(src string, pos syntax.Position, msg string) string {
 // starlarkNames returns the names predeclared in [[starlark]] code.
 var starlarkNames = sync.OnceValue(func() map[string]bool {
 	names := map[string]bool{}
-	for name := range starlarkPredeclared("", "", "", nil, starlark.NewDict(0)) {
+	for name := range starlarkPredeclared("", "", evalContext{}, starlark.NewDict(0)) {
 		names[name] = true
 	}
 	return names
@@ -114,21 +114,21 @@ var starlarkNames = sync.OnceValue(func() map[string]bool {
 // on dst with the document doc: the variables from exprVars and the
 // functions from exprFuncs, as in conditions and templates, plus merge and
 // read.
-func starlarkPredeclared(srcRoot, dstRoot, dst string, vars map[string]string, doc *starlark.Dict) starlark.StringDict {
+func starlarkPredeclared(srcRoot, dst string, ec evalContext, doc *starlark.Dict) starlark.StringDict {
 	predeclared := starlark.StringDict{
 		"doc":   doc,
 		"dst":   starlark.String(dst),
 		"merge": mergeBuiltin,
 		"read":  readBuiltin(srcRoot),
 	}
-	for name, v := range exprVars(vars) {
+	for name, v := range exprVars(ec) {
 		sv, err := fromGo(v, name)
 		if err != nil {
 			panic(err) // exprVars only has strings and maps of strings
 		}
 		predeclared[name] = sv
 	}
-	funcs := exprFuncs(dstRoot)
+	funcs := exprFuncs(ec.dstRoot)
 	for _, name := range slices.Sorted(maps.Keys(funcs)) {
 		predeclared[name] = starlarkFunc(name, funcs[name])
 	}

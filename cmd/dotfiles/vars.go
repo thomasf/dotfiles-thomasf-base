@@ -16,6 +16,7 @@ import (
 // var may refer to other vars; they are resolved first.
 func resolveVars(raw map[string]string, dstRoot string) (map[string]string, error) {
 	vars := make(map[string]string, len(raw))
+	ec := evalContext{dstRoot: dstRoot, vars: vars}
 	const (
 		resolving = iota + 1
 		done
@@ -52,7 +53,7 @@ func resolveVars(raw map[string]string, dstRoot string) (map[string]string, erro
 			state[name] = failed
 			return false
 		}
-		t, err := parseTemplate("vars."+name, value, dstRoot, vars)
+		t, err := parseTemplate("vars."+name, value, ec)
 		if err != nil {
 			return fail(err)
 		}
@@ -66,7 +67,7 @@ func resolveVars(raw map[string]string, dstRoot string) (map[string]string, erro
 				return false
 			}
 		}
-		out, err := executeTemplate(t, vars)
+		out, err := executeTemplate(t, ec)
 		if err != nil {
 			return fail(err)
 		}

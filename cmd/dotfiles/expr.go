@@ -16,14 +16,21 @@ import (
 	"github.com/expr-lang/expr/parser"
 )
 
+// An evalContext is what conditions, templates and [[starlark]] code are
+// evaluated with.
+type evalContext struct {
+	dstRoot string            // relative paths in functions are relative to it
+	vars    map[string]string // the resolved [vars] of a repository
+}
+
 // exprVars returns the variables available in condition expressions and
-// templates. vars, the resolved [vars] of a repository, is available as vars.
-// Its values are copied into a map[string]any, so that a missing var is nil
-// rather than "", which ?? needs.
-func exprVars(vars map[string]string) map[string]any {
+// templates. ec.vars is available as vars. Its values are copied into a
+// map[string]any, so that a missing var is nil rather than "", which ??
+// needs.
+func exprVars(ec evalContext) map[string]any {
 	hostname, _ := os.Hostname()
-	m := make(map[string]any, len(vars))
-	for name, v := range vars {
+	m := make(map[string]any, len(ec.vars))
+	for name, v := range ec.vars {
 		m[name] = v
 	}
 	return map[string]any{
@@ -93,9 +100,9 @@ func resolvePath(dstRoot, path string) string {
 
 // exprEnv returns the expr environment: the variables from exprVars and the
 // functions from exprFuncs.
-func exprEnv(dstRoot string, vars map[string]string) map[string]any {
-	env := exprVars(vars)
-	maps.Copy(env, exprFuncs(dstRoot))
+func exprEnv(ec evalContext) map[string]any {
+	env := exprVars(ec)
+	maps.Copy(env, exprFuncs(ec.dstRoot))
 	return env
 }
 

@@ -18,7 +18,7 @@ import (
 // Missing says what to do when Dst does not exist; a created file gets the
 // permission bits Mode, or 0o644. Format, when set, overrides the format
 // implied by the extension of Dst. Src, the code Program was compiled from,
-// is shown in error messages.
+// is shown in error messages. The code runs with the names from Eval.
 type StarlarkAction struct {
 	SrcRoot string
 	DstRoot string
@@ -29,7 +29,7 @@ type StarlarkAction struct {
 	Format  string
 	Indent  int
 	Mode    fs.FileMode
-	Vars    map[string]string
+	Eval    evalContext
 }
 
 // Paths returns only Dst, since Src is code rather than a file.
@@ -156,7 +156,7 @@ func (t *StarlarkAction) apply(dst, format string, data []byte) ([]byte, error) 
 		},
 	}
 	thread.SetMaxExecutionSteps(maxStarlarkSteps)
-	globals, err := t.Program.Init(thread, starlarkPredeclared(t.SrcRoot, t.DstRoot, dst, t.Vars, doc))
+	globals, err := t.Program.Init(thread, starlarkPredeclared(t.SrcRoot, dst, t.Eval, doc))
 	if err != nil {
 		return nil, starlarkError(t.Src, err)
 	}

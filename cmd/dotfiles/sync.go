@@ -147,7 +147,7 @@ func (r *Repository) Sync() ([]Action, error) {
 				Mode:     mode,
 				Existing: t.Existing,
 				Force:    r.force,
-				Vars:     r.vars,
+				Eval:     r.evalContext(),
 			})
 		}
 	}
@@ -168,7 +168,7 @@ func (r *Repository) Sync() ([]Action, error) {
 				Format:  t.Format,
 				Indent:  t.Indent,
 				Mode:    mode,
-				Vars:    r.vars,
+				Eval:    r.evalContext(),
 			})
 		}
 	}

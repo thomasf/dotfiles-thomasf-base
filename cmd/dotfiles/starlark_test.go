@@ -233,7 +233,7 @@ d.clear()
 	if err != nil {
 		t.Fatal(err)
 	}
-	if _, err := prog.Init(&starlark.Thread{}, starlarkPredeclared("", "", "", nil, starlark.NewDict(0))); err != nil {
+	if _, err := prog.Init(&starlark.Thread{}, starlarkPredeclared("", "", evalContext{}, starlark.NewDict(0))); err != nil {
 		t.Fatal(err)
 	}
 	if _, err := compileStarlark("test", "while True:\n    pass\n"); err == nil {
@@ -267,7 +267,7 @@ s:3:13: undefined: sizes
 	if err != nil {
 		t.Fatal(err)
 	}
-	_, err = prog.Init(&starlark.Thread{}, starlarkPredeclared("", "", "", nil, starlark.NewDict(0)))
+	_, err = prog.Init(&starlark.Thread{}, starlarkPredeclared("", "", evalContext{}, starlark.NewDict(0)))
 	want = `s:2:15: int: invalid literal with base 10: a
   1 | def f(x):
   2 |     return int(x)
