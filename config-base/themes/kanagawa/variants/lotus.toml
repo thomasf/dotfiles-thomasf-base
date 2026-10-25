@@ -8,6 +8,7 @@ bg_0  = "#f2ecbc"
 bg_1  = "#e7dba0"
 bg_2  = "#e4d794"
 dim_0 = "#8a8980"
+dim_1 = "#716e61" # lotusGray2
 fg_0  = "#545464"
 fg_1  = "#43436c"
 

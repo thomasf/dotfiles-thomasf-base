@@ -456,7 +456,8 @@ such as the name of an editor theme:
 Every variant must have the colors bg_0, bg_1, bg_2 (backgrounds),
 dim_0 (dim text), fg_0, fg_1 (text) and the accents yellow, orange,
 red, magenta, violet, blue, cyan and green. A higher number is
-further from bg_0. A theme can add other colors, such as br_red; every
+further from bg_0. A theme can add other colors, such as br_red, or
+dim_1, dim text that reads better than dim_0 on bg_1; every
 variant of a theme must have the same colors and the same apps. Colors are
 written #rrggbb; names are lower case letters, digits and _.
 

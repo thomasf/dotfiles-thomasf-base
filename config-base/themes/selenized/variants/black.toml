@@ -6,6 +6,7 @@ bg_0  = "#181818"
 bg_1  = "#252525"
 bg_2  = "#3b3b3b"
 dim_0 = "#777777"
+dim_1 = "#979797" # dim_0 and fg_0 mixed half and half in OKLab, chosen once
 fg_0  = "#b9b9b9"
 fg_1  = "#dedede"
 

@@ -8,6 +8,7 @@ bg_0  = "#3f3f3f"
 bg_1  = "#4f4f4f"
 bg_2  = "#5f5f5f"
 dim_0 = "#878777"
+dim_1 = "#989890" # zenburn-fg-05
 fg_0  = "#dcdccc"
 fg_1  = "#ffffef"
 

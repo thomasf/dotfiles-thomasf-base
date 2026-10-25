@@ -8,6 +8,7 @@ bg_0  = "#fdf6e3"
 bg_1  = "#eee8d5"
 bg_2  = "#d6d5c7"
 dim_0 = "#93a1a1"
+dim_1 = "#839496" # base0, as drawn light
 fg_0  = "#657b83"
 fg_1  = "#586e75"
 

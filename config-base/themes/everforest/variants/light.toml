@@ -7,6 +7,7 @@ bg_0  = "#fdf6e3"
 bg_1  = "#f4f0d9"
 bg_2  = "#efebd4"
 dim_0 = "#939f91"
+dim_1 = "#829181" # grey2
 fg_0  = "#5c6a72"
 fg_1  = "#5c6a72"
 

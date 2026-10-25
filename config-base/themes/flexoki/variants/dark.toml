@@ -7,6 +7,7 @@ bg_0  = "#100f0f"
 bg_1  = "#1c1b1a"
 bg_2  = "#343331"
 dim_0 = "#575653"
+dim_1 = "#878580" # tx-2, muted text
 fg_0  = "#cecdc3"
 fg_1  = "#cecdc3"
 
