@@ -119,7 +119,7 @@ func starlarkPredeclared(srcRoot, dst string, ec evalContext, doc *starlark.Dict
 		"doc":   doc,
 		"dst":   starlark.String(dst),
 		"merge": mergeBuiltin,
-		"read":  readBuiltin(srcRoot),
+		"read":  readBuiltin(srcRoot, ec.theme.dir()),
 	}
 	for name, v := range exprVars(ec) {
 		sv, err := fromGo(v, name)
@@ -248,24 +248,31 @@ func deepCopy(v starlark.Value) starlark.Value {
 }
 
 // readBuiltin returns read(path, default=...) for [[starlark]] code of the
-// repository at srcRoot. It returns the file path, relative to srcRoot,
-// decoded in the format of its extension. With default, a missing file
-// returns default instead of failing.
-func readBuiltin(srcRoot string) *starlark.Builtin {
+// repository at srcRoot. It returns the file path, relative to srcRoot or an
+// absolute path inside themeDir, the directory of the theme in use, decoded
+// in the format of its extension. With default, a missing file returns
+// default instead of failing.
+func readBuiltin(srcRoot, themeDir string) *starlark.Builtin {
 	return starlark.NewBuiltin("read", func(_ *starlark.Thread, b *starlark.Builtin, args starlark.Tuple, kwargs []starlark.Tuple) (starlark.Value, error) {
 		var path string
 		var def starlark.Value
 		if err := starlark.UnpackArgs(b.Name(), args, kwargs, "path", &path, "default?", &def); err != nil {
 			return nil, err
 		}
-		if !filepath.IsLocal(path) {
-			return nil, fmt.Errorf("read: %s: path must be relative and inside the repository", path)
+		file := filepath.Join(srcRoot, path)
+		if filepath.IsAbs(path) && themeDir != "" {
+			file = path
+			if rel, err := filepath.Rel(themeDir, path); err != nil || !filepath.IsLocal(rel) {
+				return nil, fmt.Errorf("read: %s: an absolute path must be inside the theme directory %s", path, themeDir)
+			}
+		} else if !filepath.IsLocal(path) {
+			return nil, fmt.Errorf("read: %s: path must be relative and inside the repository, or inside theme[\"dir\"]", path)
 		}
 		format, err := formatOf(path)
 		if err != nil {
 			return nil, fmt.Errorf("read: %w", err)
 		}
-		data, err := os.ReadFile(filepath.Join(srcRoot, path))
+		data, err := os.ReadFile(file)
 		if errors.Is(err, fs.ErrNotExist) && def != nil {
 			return def, nil
 		}

@@ -3,6 +3,7 @@ package main
 import (
 	"bytes"
 	"errors"
+	"fmt"
 	"regexp"
 	"strings"
 	"text/template"
@@ -43,10 +44,14 @@ var templateBuiltins = []string{
 	"ne", "not", "or", "print", "printf", "println", "slice", "urlquery",
 }
 
-// executeTemplate executes t, parsed by parseTemplate with the same ec.
+// executeTemplate executes t, parsed by parseTemplate with the same ec. If
+// no theme is selected, an error about .theme says so.
 func executeTemplate(t *template.Template, ec evalContext) ([]byte, error) {
 	var buf bytes.Buffer
 	if err := t.Execute(&buf, exprVars(ec)); err != nil {
+		if ec.theme == nil && strings.Contains(err.Error(), ".theme") {
+			return nil, fmt.Errorf("no theme is selected (set [theme] dark and light): %w", err)
+		}
 		return nil, err
 	}
 	return buf.Bytes(), nil

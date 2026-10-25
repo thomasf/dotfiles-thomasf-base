@@ -263,5 +263,6 @@ func (d *Dotfiles) selectTheme(repos []*Repository) *activeTheme {
 		fmt.Fprintf(d.Stderr, "error selecting the theme: %v\n", err)
 		d.collectErr(fmt.Errorf("theme: %w", err))
 	}
+	d.themes, d.active = ts, theme
 	return theme
 }

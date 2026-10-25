@@ -60,6 +60,7 @@ func ignoredFilesAppendix() string {
 // stands for the key of a table.
 var configKeyValues = map[string]string{
 	"script.phase":                    "pre, post or default (the default)",
+	"script.on":                       "install (the default), theme, or a list of them",
 	"template.mode":                   `octal permissions, such as "0644"`,
 	"template.existing":               fmt.Sprintf("%s (the default), %s or %s", ExistingOverwrite, ExistingSkip, ExistingError),
 	"starlark.missing":                fmt.Sprintf("%s (the default), %s or %s", MissingSkip, MissingCreate, MissingError),

@@ -15,7 +15,7 @@ func (d *Dotfiles) InstallCommand(args []string) error {
 	if err != nil {
 		return err
 	}
-	d.sync(false, sel)
+	d.sync(false, sel, eventInstall)
 	return nil
 }
 
@@ -44,7 +44,10 @@ func (d *Dotfiles) parseSyncArgs(name, desc string, args []string) (selection, e
 	return sel, nil
 }
 
-func (d *Dotfiles) sync(isPlan bool, sel selection) {
+// sync runs the actions of every repository that sel selects, or prints
+// them if isPlan. On eventTheme, [[go]] packages are not installed and the
+// [[script]] entries of eventTheme run instead of those of eventInstall.
+func (d *Dotfiles) sync(isPlan bool, sel selection, event string) {
 	var (
 		allActions     []Action
 		allGoInstall   []Action
@@ -52,7 +55,7 @@ func (d *Dotfiles) sync(isPlan bool, sel selection) {
 		allPostScripts []Action
 	)
 
-	for _, r := range d.loadRepos(WithForce(d.Force), WithCopy(d.Copy)) {
+	for _, r := range d.loadRepos(WithForce(d.Force), WithCopy(d.Copy), WithEvent(event)) {
 		name := filepath.Base(r.srcRoot)
 		actions, err := r.Sync()
 		if err != nil {
@@ -64,7 +67,9 @@ func (d *Dotfiles) sync(isPlan bool, sel selection) {
 
 		allPreScripts = append(allPreScripts, sel.filter(r, r.PreScript())...)
 		allPostScripts = append(allPostScripts, sel.filter(r, r.PostScript())...)
-		allGoInstall = append(allGoInstall, sel.filter(r, r.GoInstall())...)
+		if event != eventTheme {
+			allGoInstall = append(allGoInstall, sel.filter(r, r.GoInstall())...)
+		}
 	}
 	if args := sel.unmatched(); len(args) > 0 {
 		d.fail(fmt.Errorf("nothing selected by %s", strings.Join(args, ", ")))

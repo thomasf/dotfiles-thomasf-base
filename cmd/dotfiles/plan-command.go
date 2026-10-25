@@ -7,6 +7,6 @@ func (d *Dotfiles) PlanCommand(args []string) error {
 	if err != nil {
 		return err
 	}
-	d.sync(true, sel)
+	d.sync(true, sel, eventInstall)
 	return nil
 }

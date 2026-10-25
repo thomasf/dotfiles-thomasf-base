@@ -32,9 +32,25 @@ func (m Mount) ShouldRun(r *Repository) bool {
 }
 
 type Script struct {
-	Condition string `toml:"condition,omitempty"`
-	Phase     string `toml:"phase,omitempty"` // pre, post or default empty/not set
-	Src       string `toml:"src"`
+	Condition string     `toml:"condition,omitempty"`
+	Phase     string     `toml:"phase,omitempty"` // pre, post or default empty/not set
+	On        StringList `toml:"on,omitempty"`    // events: install (the default) and theme
+	Src       string     `toml:"src"`
+}
+
+// The events that [[script]] entries run on: dotfiles install, and switching
+// the theme with dotfiles theme.
+const (
+	eventInstall = "install"
+	eventTheme   = "theme"
+)
+
+// runsOn reports whether the script runs on event.
+func (s Script) runsOn(event string) bool {
+	if len(s.On) == 0 {
+		return event == eventInstall
+	}
+	return slices.Contains(s.On, event)
 }
 
 func (s Script) ShouldRun(r *Repository) bool {
@@ -189,6 +205,7 @@ type Repository struct {
 	config     Config
 	vars       map[string]string // resolved [vars] (see resolveVars)
 	theme      *activeTheme      // the theme variant in use, or nil (see selectTheme)
+	event      string            // eventInstall or eventTheme: the [[script]] entries to run
 }
 
 type Option func(*Repository)
@@ -196,6 +213,14 @@ type Option func(*Repository)
 func WithForce(force bool) Option {
 	return func(r *Repository) {
 		r.force = force
+	}
+}
+
+// WithEvent makes the repository plan the [[script]] entries of event
+// rather than those of eventInstall.
+func WithEvent(event string) Option {
+	return func(r *Repository) {
+		r.event = event
 	}
 }
 
@@ -209,6 +234,7 @@ func NewRepository(srcRoot, dstRoot string, opts ...Option) *Repository {
 	r := &Repository{
 		srcRoot: srcRoot,
 		dstRoot: dstRoot,
+		event:   eventInstall,
 	}
 	for _, opt := range opts {
 		opt(r)
@@ -341,6 +367,13 @@ func (c *Config) validate() error {
 	case "", "dark", "light":
 	default:
 		errs = append(errs, fmt.Errorf("theme.mode: invalid %q: want dark or light", c.Theme.Mode))
+	}
+	for i, s := range c.Script {
+		for _, event := range s.On {
+			if event != eventInstall && event != eventTheme {
+				errs = append(errs, fmt.Errorf("script %d: invalid on %q: want install or theme", i, event))
+			}
+		}
 	}
 	for i, t := range c.Template {
 		if t.Src == "" {

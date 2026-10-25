@@ -174,7 +174,7 @@ func (r *Repository) Sync() ([]Action, error) {
 	}
 
 	for _, s := range r.config.Script {
-		if (s.Phase == "" || s.Phase == "default") && s.ShouldRun(r) {
+		if (s.Phase == "" || s.Phase == "default") && s.runsOn(r.event) && s.ShouldRun(r) {
 			actions = append(actions, &ScriptAction{
 				SrcRoot: r.srcRoot,
 				Script:  s.Src,
@@ -226,7 +226,7 @@ func (r *Repository) GoInstall() []Action {
 func (r *Repository) PreScript() []Action {
 	var actions []Action
 	for _, s := range r.config.Script {
-		if s.Phase == "pre" && s.ShouldRun(r) {
+		if s.Phase == "pre" && s.runsOn(r.event) && s.ShouldRun(r) {
 			actions = append(actions, &ScriptAction{
 				SrcRoot: r.srcRoot,
 				Script:  s.Src,
@@ -239,7 +239,7 @@ func (r *Repository) PreScript() []Action {
 func (r *Repository) PostScript() []Action {
 	var actions []Action
 	for _, s := range r.config.Script {
-		if s.Phase == "post" && s.ShouldRun(r) {
+		if s.Phase == "post" && s.runsOn(r.event) && s.ShouldRun(r) {
 			actions = append(actions, &ScriptAction{
 				SrcRoot: r.srcRoot,
 				Script:  s.Src,

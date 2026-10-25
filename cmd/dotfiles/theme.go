@@ -11,6 +11,8 @@ import (
 	"slices"
 	"strconv"
 	"strings"
+
+	"github.com/pelletier/go-toml/v2"
 )
 
 // A Theme is a set of color palettes, one for each variant, read from a theme
@@ -426,17 +428,22 @@ func readThemeState(dstRoot string) (themeState, error) {
 	return st, nil
 }
 
-// selectTheme returns the theme variant in use, or nil if none is
-// configured. The mode is that of the state file in dstRoot (see
-// readThemeState), else [theme] mode, else light. The variant is the state
-// file's theme, else [theme] dark or light for the mode. option, the -theme
-// option, overrides that: theme:variant replaces it, and :variant only
-// replaces the variant.
+// selectTheme returns the theme variant in use, with the state file in
+// dstRoot (see readThemeState and chooseTheme).
 func selectTheme(ts *themeSet, option, dstRoot string) (*activeTheme, error) {
 	st, err := readThemeState(dstRoot)
 	if err != nil {
 		return nil, err
 	}
+	return chooseTheme(ts, option, st)
+}
+
+// chooseTheme returns the theme variant that the state st chooses, or nil if
+// none is configured. The mode is that of st, else [theme] mode, else light.
+// The variant is st's theme, else [theme] dark or light for the mode.
+// option, the -theme option, overrides that: theme:variant replaces it, and
+// :variant only replaces the variant.
+func chooseTheme(ts *themeSet, option string, st themeState) (*activeTheme, error) {
 	mode := cmp.Or(st.Mode, ts.mode, "light")
 	ref := st.Theme
 	if ref == "" {
@@ -490,4 +497,70 @@ func colorFunc(name string, format func(hex string) string) func(string) (string
 		}
 		return format(color[1:]), nil
 	}
+}
+
+// ref returns the theme variant as theme:variant.
+func (a *activeTheme) ref() string {
+	return a.theme.Name + ":" + a.variant
+}
+
+// mode returns the mode of the theme variant.
+func (a *activeTheme) mode() string {
+	return a.theme.Variants[a.variant].Mode
+}
+
+// writeThemeState writes st to the state file in dstRoot, replacing it
+// atomically. It also creates the darkmode file in dark mode and removes it
+// in light mode, for the programs that still read it.
+func writeThemeState(dstRoot string, st themeState) error {
+	data, err := toml.Marshal(st)
+	if err != nil {
+		return err
+	}
+	path := filepath.Join(dstRoot, themeStatePath)
+	if err := os.MkdirAll(filepath.Dir(path), 0o755); err != nil {
+		return err
+	}
+	tmp, err := os.CreateTemp(filepath.Dir(path), ".theme-*.toml")
+	if err != nil {
+		return err
+	}
+	defer os.Remove(tmp.Name())
+	if _, err := tmp.Write(data); err != nil {
+		tmp.Close()
+		return err
+	}
+	if err := tmp.Close(); err != nil {
+		return err
+	}
+	if err := os.Chmod(tmp.Name(), 0o644); err != nil {
+		return err
+	}
+	if err := os.Rename(tmp.Name(), path); err != nil {
+		return err
+	}
+
+	darkmode := filepath.Join(dstRoot, darkmodePath)
+	if st.Mode == "dark" {
+		if err := os.MkdirAll(filepath.Dir(darkmode), 0o755); err != nil {
+			return err
+		}
+		f, err := os.OpenFile(darkmode, os.O_CREATE|os.O_WRONLY, 0o644)
+		if err != nil {
+			return err
+		}
+		return f.Close()
+	}
+	if err := os.Remove(darkmode); err != nil && !errors.Is(err, os.ErrNotExist) {
+		return err
+	}
+	return nil
+}
+
+// dir returns the directory of the theme, or "" if a is nil.
+func (a *activeTheme) dir() string {
+	if a == nil {
+		return ""
+	}
+	return a.theme.Dir
 }

@@ -448,9 +448,11 @@ The variant in use is chosen by the first of:
 1. the `-theme` option (`DOTFILES_THEME`): `theme:variant`, or `:variant` for
    another variant of the theme that would be chosen otherwise, e.g.
    `dotfiles -theme :dark plan`;
-2. `theme` in the state file `~/.local/state/dotfiles/theme.toml`;
-3. `[theme]` `dark` or `light`, for the mode of the state file, else dark if
-   `~/.config/darkmode` exists, else `[theme]` `mode`, else light.
+2. `theme` in the state file `~/.local/state/dotfiles/theme.toml`, which
+   `dotfiles theme` writes;
+3. `[theme]` `dark` or `light`, for the mode of the state file; without a
+   state file, dark if `~/.config/darkmode` exists, else `[theme]` `mode`,
+   else light.
 
 Without `[theme]` `dark` and `light` and without the option, there is no
 theme, and using `theme` is an error.
@@ -478,7 +480,31 @@ dst = ".config/foo/extra.conf"
 
 Using a color or key that does not exist is an error. To make one optional,
 give a default: `theme.colors.dim_1 ?? theme.colors.dim_0` in an expression,
-`{{or (index .theme.colors "dim_1") .theme.colors.dim_0}}` in a template.
+`{{or (index .theme.colors "dim_1") .theme.colors.dim_0}}` in a template. A
+template can test for a theme with `{{if .theme}}`.
+
+In `[[starlark]]` code, `read` also reads files in the theme directory:
+`read(theme["dir"] + "/extra.toml")`.
+
+#### Switching the Theme
+
+`dotfiles theme` shows and switches the theme:
+
+| Command                          | What it does                                                             |
+|----------------------------------|--------------------------------------------------------------------------|
+| `dotfiles theme`                 | Shows the theme variant in use and its mode.                             |
+| `dotfiles theme list`            | Lists every variant of every theme, marking the one in use with `*`.     |
+| `dotfiles theme set dark`        | Switches to dark mode, with `[theme]` `dark`; `set light` likewise.      |
+| `dotfiles theme set selenized:x` | Switches to a variant, and to its mode; `set :x` keeps the theme in use. |
+| `dotfiles theme toggle`          | Switches between dark and light mode, with `[theme]` `dark` and `light`. |
+
+A switch writes the state file, then installs the files of every repository
+as `dotfiles install` does, with the new theme, and runs the `[[script]]`
+entries with `on = "theme"` instead of the usual ones. `[[go]]` packages are
+not installed. Files whose content does not change are not written, so only
+what depends on the theme changes. The switch also creates
+`~/.config/darkmode` in dark mode and removes it in light mode, for programs
+that still read it.
 
 ### `[vars]` and `[default_vars]`
 
@@ -869,6 +895,20 @@ are executed using an embedded shell interpreter.
 - **phase = "post"**: Runs after every repository has been set up.
 
 See Order of Execution for the full order.
+
+`on` says when a script runs: `"install"` (the default) when `dotfiles
+install` runs, `"theme"` when `dotfiles theme` switches the theme (see
+Switching the Theme), or `["install", "theme"]` for both. Scripts that reload
+programs after a theme switch use `on = "theme"`:
+
+```toml
+[[script]]
+on  = "theme"
+src = '''
+gsettings set org.gnome.desktop.interface color-scheme {{shellQuote .theme.apps.color_scheme}}
+xmonad --restart
+'''
+```
 
 ```toml
 [[script]]

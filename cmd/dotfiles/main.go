@@ -35,6 +35,8 @@ type Dotfiles struct {
 	runErrors        []error
 	errMu            sync.Mutex
 	hostCheckTimeout time.Duration // of checkSSHHosts; zero means defaultHostCheckTimeout
+	themes           *themeSet     // set by loadRepos
+	active           *activeTheme  // the theme variant in use, or nil; set by loadRepos
 	interrupted      atomic.Bool   // SIGINT or SIGTERM stopped runRemotes
 }
 
@@ -78,6 +80,7 @@ func (d *Dotfiles) Run(stdout, stderr io.Writer, args []string) error {
 		fmt.Fprintf(stderr, "  repos [status]  Show known repos and the state of their remotes\n")
 		fmt.Fprintf(stderr, "  repos fix       Add missing remotes, correct remote URLs and create missing local backup repos\n")
 		fmt.Fprintf(stderr, "  repos clone [name...]  Clone missing known repos (all, or the named ones) from the upstream remote, then run repos fix\n")
+		fmt.Fprintf(stderr, "  theme [show|list|set <variant>|toggle]  Show, list or switch the theme (see theme -h)\n")
 		fmt.Fprintf(stderr, "  doc [topic]     Print the manual, or only the sections whose heading or number matches topic; doc toc lists them\n")
 		fmt.Fprintf(stderr, "\nOptions:\n")
 		fs.PrintDefaults()
@@ -131,6 +134,13 @@ func (d *Dotfiles) Run(stdout, stderr io.Writer, args []string) error {
 		if err := d.ReposCommand(remainingArgs[1:]); err != nil {
 			fmt.Fprintln(stderr, err)
 			fs.Usage()
+			return err
+		}
+	case "theme":
+		if err := d.ThemeCommand(remainingArgs[1:]); err != nil {
+			if errors.Is(err, flag.ErrHelp) {
+				return nil
+			}
 			return err
 		}
 	case "install", "i", "plan":
