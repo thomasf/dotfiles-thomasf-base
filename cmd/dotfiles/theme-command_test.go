@@ -112,6 +112,43 @@ func TestThemeCommand(t *testing.T) {
 	if got := run("list"); got != want {
 		t.Errorf("list =\n%s\nwant\n%s", got, want)
 	}
+	wantNames := "test:black\ntest:dark\ntest:light\n"
+	if got := run("list", "-names"); got != wantNames {
+		t.Errorf("list -names =\n%s\nwant\n%s", got, wantNames)
+	}
+	wantJSON := `[
+  {
+    "name": "test:black",
+    "theme": "test",
+    "variant": "black",
+    "mode": "dark",
+    "active": false,
+    "dark": false,
+    "light": false
+  },
+  {
+    "name": "test:dark",
+    "theme": "test",
+    "variant": "dark",
+    "mode": "dark",
+    "active": false,
+    "dark": true,
+    "light": false
+  },
+  {
+    "name": "test:light",
+    "theme": "test",
+    "variant": "light",
+    "mode": "light",
+    "active": true,
+    "dark": false,
+    "light": true
+  }
+]
+`
+	if got := run("list", "-json"); got != wantJSON {
+		t.Errorf("list -json =\n%s\nwant\n%s", got, wantJSON)
+	}
 
 	run("set", "dark")
 	if got := state(); got != "mode = 'dark'\n" {
@@ -169,6 +206,8 @@ func TestThemeCommandErrors(t *testing.T) {
 		{args: []string{"set", "nope:dark"}, want: "no theme nope"},
 		{args: []string{"set", ":dim"}, want: "theme test has no variant dim"},
 		{args: []string{"toggle"}, option: ":dark", want: "-theme can not be used with toggle"},
+		{args: []string{"list", "-names", "-json"}, want: "-names and -json cannot be combined"},
+		{args: []string{"list", "extra"}, want: "unexpected arguments: extra"},
 	} {
 		d, dst := themeCommandRepo(t)
 		d.Theme = tt.option

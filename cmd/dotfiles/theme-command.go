@@ -1,6 +1,7 @@
 package main
 
 import (
+	"encoding/json"
 	"errors"
 	"flag"
 	"fmt"
@@ -17,7 +18,7 @@ func (d *Dotfiles) ThemeCommand(args []string) error {
 	fs := flag.NewFlagSet("dotfiles theme", flag.ContinueOnError)
 	fs.SetOutput(d.Stderr)
 	fs.Usage = func() {
-		fmt.Fprintf(d.Stderr, "Usage: dotfiles theme [show | list | preview [<variant>] | set <variant> | toggle]\n\n")
+		fmt.Fprintf(d.Stderr, "Usage: dotfiles theme [show | list [-names | -json] | preview [<variant>] | set <variant> | toggle]\n\n")
 		fmt.Fprintf(d.Stderr, "Show the theme variant in use, list the themes and their variants, show\n")
 		fmt.Fprintf(d.Stderr, "the colors of a variant in the terminal, or switch the theme. preview and\n")
 		fmt.Fprintf(d.Stderr, "set take dark or light, theme:variant, or :variant of the theme in use;\n")
@@ -39,12 +40,12 @@ func (d *Dotfiles) ThemeCommand(args []string) error {
 	if len(args) > 0 {
 		sub, args = args[0], args[1:]
 	}
-	wantArgs := map[string]int{"show": 0, "list": 0, "preview": 1, "set": 1, "toggle": 0}
+	wantArgs := map[string]int{"show": 0, "preview": 1, "set": 1, "toggle": 0}
 	n, ok := wantArgs[sub]
 	switch {
-	case !ok:
+	case sub != "list" && !ok:
 		return usage("unknown command " + sub)
-	case sub == "preview" && len(args) > n, sub != "preview" && len(args) != n:
+	case sub == "preview" && len(args) > n, sub != "preview" && sub != "list" && len(args) != n:
 		return usage(fmt.Sprintf("%s takes %d arguments", sub, n))
 	case (sub == "set" || sub == "toggle") && d.Theme != "":
 		return usage("-theme can not be used with " + sub)
@@ -62,7 +63,7 @@ func (d *Dotfiles) ThemeCommand(args []string) error {
 		}
 		fmt.Fprintf(d.Stdout, "%s (%s mode)\n", d.active.ref(), d.active.mode())
 	case "list":
-		d.listThemes()
+		return d.listThemes(args)
 	case "preview":
 		ref := ""
 		if len(args) > 0 {
@@ -133,15 +134,78 @@ func (d *Dotfiles) nextThemeState(sub string, args []string) (themeState, error)
 	return st, nil
 }
 
-// listThemes prints every variant of every theme, marking the one in use with
-// * and naming the modes that [theme] dark and light use it for.
-func (d *Dotfiles) listThemes() {
+// listThemes prints every variant of every theme. With -names, it prints only
+// their names (theme:variant); with -json, it prints them as a JSON array.
+// Otherwise it prints a table marking the one in use with * and naming the
+// modes that [theme] dark and light use it for.
+func (d *Dotfiles) listThemes(args []string) error {
+	fs := flag.NewFlagSet("dotfiles theme list", flag.ContinueOnError)
+	fs.SetOutput(d.Stderr)
+	fs.Usage = func() {
+		fmt.Fprintf(d.Stderr, "Usage: dotfiles theme list [-names | -json]\n\n")
+		fmt.Fprintf(d.Stderr, "List every variant of every theme.\n\n")
+		fmt.Fprintf(d.Stderr, "Options:\n")
+		fs.PrintDefaults()
+	}
+	names := fs.Bool("names", false, "only list the theme:variant names")
+	asJSON := fs.Bool("json", false, "output as JSON")
+	if err := fs.Parse(args); err != nil {
+		return err
+	}
+	if fs.NArg() > 0 {
+		fs.Usage()
+		return fmt.Errorf("theme list: unexpected arguments: %s", strings.Join(fs.Args(), " "))
+	}
+	if *names && *asJSON {
+		fs.Usage()
+		return errors.New("theme list: -names and -json cannot be combined")
+	}
+
 	var refs []string
 	for _, name := range slices.Sorted(maps.Keys(d.themes.themes)) {
 		for _, variant := range slices.Sorted(maps.Keys(d.themes.themes[name].Variants)) {
 			refs = append(refs, name+":"+variant)
 		}
 	}
+
+	if *names {
+		for _, ref := range refs {
+			fmt.Fprintln(d.Stdout, ref)
+		}
+		return nil
+	}
+
+	if *asJSON {
+		type variantJSON struct {
+			Name    string `json:"name"`
+			Theme   string `json:"theme"`
+			Variant string `json:"variant"`
+			Mode    string `json:"mode"`
+			Active  bool   `json:"active"`
+			Dark    bool   `json:"dark"`
+			Light   bool   `json:"light"`
+		}
+		entries := make([]variantJSON, len(refs))
+		for i, ref := range refs {
+			name, variant, _ := strings.Cut(ref, ":")
+			entries[i] = variantJSON{
+				Name:    ref,
+				Theme:   name,
+				Variant: variant,
+				Mode:    d.themes.themes[name].Variants[variant].Mode,
+				Active:  d.active != nil && d.active.ref() == ref,
+				Dark:    d.themes.dark == ref,
+				Light:   d.themes.light == ref,
+			}
+		}
+		data, err := json.MarshalIndent(entries, "", "  ")
+		if err != nil {
+			return err
+		}
+		fmt.Fprintf(d.Stdout, "%s\n", data)
+		return nil
+	}
+
 	width := 0
 	for _, ref := range refs {
 		width = max(width, len(ref))
@@ -162,6 +226,7 @@ func (d *Dotfiles) listThemes() {
 		line := fmt.Sprintf("%s %-*s  %-5s  %s", mark, width, ref, d.themes.themes[name].Variants[variant].Mode, strings.Join(uses, ", "))
 		fmt.Fprintln(d.Stdout, strings.TrimRight(line, " "))
 	}
+	return nil
 }
 
 // previewTheme prints the colors of the variant ref, given as set takes it,
