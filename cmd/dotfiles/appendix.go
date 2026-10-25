@@ -67,6 +67,9 @@ var configKeyValues = map[string]string{
 	"starlark.indent":                 fmt.Sprintf("integer (default %d)", defaultIndent),
 	"starlark.mode":                   `octal permissions, such as "0644"`,
 	"repositories.remote.<name>.kind": fmt.Sprintf("%s, %s or %s", RemoteKindPrivate, RemoteKindBackup, RemoteKindPublish),
+	"theme.dark":                      "theme:variant",
+	"theme.light":                     "theme:variant",
+	"theme.mode":                      "dark or light",
 }
 
 func configKeysAppendix() string {

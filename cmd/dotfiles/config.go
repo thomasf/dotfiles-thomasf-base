@@ -156,6 +156,15 @@ type Repositories struct {
 	Remote map[string]Remote `toml:"remote"`
 }
 
+// ThemeConfig is [theme]: the directories that contain theme directories,
+// and the theme variants of dark and light mode.
+type ThemeConfig struct {
+	Dirs  []string `toml:"dirs"`
+	Dark  string   `toml:"dark,omitempty"`  // theme:variant
+	Light string   `toml:"light,omitempty"` // theme:variant
+	Mode  string   `toml:"mode,omitempty"`  // until a mode is chosen
+}
+
 type Config struct {
 	Public       bool              `toml:"public,omitempty,omitzero"`
 	Ignore       []Ignore          `toml:"ignore"`
@@ -168,6 +177,7 @@ type Config struct {
 	Repositories Repositories      `toml:"repositories"`
 	Vars         map[string]string `toml:"vars"`
 	DefaultVars  map[string]string `toml:"default_vars"` // only for this repository
+	Theme        ThemeConfig       `toml:"theme"`
 }
 
 type Repository struct {
@@ -237,14 +247,7 @@ func (r *Repository) readConfig() error {
 	r.configPath = configPath
 
 	var config Config
-	dec := toml.NewDecoder(bytes.NewReader(data))
-	dec.DisallowUnknownFields()
-	if err := dec.Decode(&config); err != nil {
-		var derr *toml.DecodeError
-		if errors.As(err, &derr) {
-			row, col := derr.Position()
-			return fmt.Errorf("%s:%d:%d: %s: %w", configPath, row, col, strings.Join(derr.Key(), "."), err)
-		}
+	if err := decodeTOML(configPath, data, &config); err != nil {
 		return err
 	}
 	if err := config.validate(); err != nil {
@@ -253,6 +256,23 @@ func (r *Repository) readConfig() error {
 
 	r.config = config
 
+	return nil
+}
+
+// decodeTOML decodes data, the content of the file path, into v. A key that v
+// has no field for is an error. Errors start with path and the position in
+// the file.
+func decodeTOML(path string, data []byte, v any) error {
+	dec := toml.NewDecoder(bytes.NewReader(data))
+	dec.DisallowUnknownFields()
+	if err := dec.Decode(v); err != nil {
+		var derr *toml.DecodeError
+		if errors.As(err, &derr) {
+			row, col := derr.Position()
+			return fmt.Errorf("%s:%d:%d: %s: %w", path, row, col, strings.Join(derr.Key(), "."), err)
+		}
+		return fmt.Errorf("%s: %w", path, err)
+	}
 	return nil
 }
 
@@ -295,6 +315,24 @@ func (c *Config) validate() error {
 		if _, ok := c.Vars[name]; ok {
 			errs = append(errs, fmt.Errorf("default_vars.%s: also defined in [vars]", name))
 		}
+	}
+	for i, dir := range c.Theme.Dirs {
+		if dir == "" {
+			errs = append(errs, fmt.Errorf("theme.dirs[%d] is empty", i))
+		}
+	}
+	for _, s := range []struct{ key, ref string }{{"dark", c.Theme.Dark}, {"light", c.Theme.Light}} {
+		if s.ref == "" {
+			continue
+		}
+		if _, _, err := parseThemeRef(s.ref); err != nil {
+			errs = append(errs, fmt.Errorf("theme.%s: %w", s.key, err))
+		}
+	}
+	switch c.Theme.Mode {
+	case "", "dark", "light":
+	default:
+		errs = append(errs, fmt.Errorf("theme.mode: invalid %q: want dark or light", c.Theme.Mode))
 	}
 	for i, t := range c.Template {
 		if t.Src == "" {

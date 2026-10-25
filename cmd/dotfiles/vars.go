@@ -168,16 +168,10 @@ type varSource struct {
 	value string
 }
 
-// mergeVars returns the [vars] each of repos sees: its own vars, and for vars
-// it does not define, the definition of the first repository in order. The
-// order is that of the names in the merged [repositories] sections, then the
-// path of the repositories not named there. Its own [default_vars] fill in
-// what no repository defines; they are not seen by other repositories.
-//
-// It also returns a warning for every var that is defined differently by
-// several repositories and used by one that does not define it, because that
-// repository gets only the first definition.
-func mergeVars(repos []*Repository) (map[*Repository]map[string]string, []string) {
+// orderRepos returns repos in the order in which their settings take
+// precedence: that of the names in the merged [repositories] sections, then
+// the path of the repositories not named there.
+func orderRepos(repos []*Repository) []*Repository {
 	var names []string
 	for _, r := range repos {
 		for _, name := range r.config.Repositories.Names {
@@ -196,9 +190,20 @@ func mergeVars(repos []*Repository) (map[*Repository]map[string]string, []string
 	slices.SortStableFunc(ordered, func(a, b *Repository) int {
 		return cmp.Or(cmp.Compare(rank(a), rank(b)), cmp.Compare(a.srcRoot, b.srcRoot))
 	})
+	return ordered
+}
 
+// mergeVars returns the [vars] each of repos sees: its own vars, and for vars
+// it does not define, the definition of the first repository in the order of
+// orderRepos. Its own [default_vars] fill in
+// what no repository defines; they are not seen by other repositories.
+//
+// It also returns a warning for every var that is defined differently by
+// several repositories and used by one that does not define it, because that
+// repository gets only the first definition.
+func mergeVars(repos []*Repository) (map[*Repository]map[string]string, []string) {
 	sources := map[string][]varSource{}
-	for _, r := range ordered {
+	for _, r := range orderRepos(repos) {
 		for name, value := range r.config.Vars {
 			sources[name] = append(sources[name], varSource{r, value})
 		}

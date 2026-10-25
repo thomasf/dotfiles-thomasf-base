@@ -1,0 +1,348 @@
+package main
+
+import (
+	"errors"
+	"fmt"
+	"maps"
+	"os"
+	"path/filepath"
+	"regexp"
+	"slices"
+	"strconv"
+	"strings"
+)
+
+// A Theme is a set of color palettes, one for each variant, read from a theme
+// directory:
+//
+//	theme.toml            [ansi]: the terminal colors
+//	variants/<name>.toml  mode, [colors] and [apps] of the variant <name>
+type Theme struct {
+	Name     string              // the name of the directory
+	Dir      string              // the directory
+	Variants map[string]*Variant // by name
+}
+
+// A Variant is one palette of a [Theme].
+type Variant struct {
+	Mode   string            // "dark" or "light"
+	Colors map[string]string // [colors], and color0 to color15 from [ansi]
+	Apps   map[string]string // [apps]: names of app themes and other settings
+}
+
+// themeFile is the content of theme.toml.
+type themeFile struct {
+	Ansi map[string]string `toml:"ansi"`
+}
+
+// variantFile is the content of a file in variants/.
+type variantFile struct {
+	Mode   string            `toml:"mode"`
+	Colors map[string]string `toml:"colors"`
+	Apps   map[string]string `toml:"apps"`
+}
+
+// requiredColors are the colors that every variant defines: the neutral
+// colors, with their Selenized names, and the accents.
+var requiredColors = []string{
+	"bg_0", "bg_1", "bg_2", "dim_0", "fg_0", "fg_1",
+	"yellow", "orange", "red", "magenta", "violet", "blue", "cyan", "green",
+}
+
+// ansiColors are the names of the 16 terminal colors, color0 to color15.
+var ansiColors = func() []string {
+	names := make([]string, 16)
+	for i := range names {
+		names[i] = "color" + strconv.Itoa(i)
+	}
+	return names
+}()
+
+var (
+	// themeNameRe matches the names of themes and variants, which can be
+	// written as theme:variant.
+	themeNameRe = regexp.MustCompile(`^[a-z0-9][a-z0-9_-]*$`)
+	// colorNameRe matches the names of colors and apps, which templates
+	// can use as fields, as in {{.theme.colors.bg_0}}.
+	colorNameRe = regexp.MustCompile(`^[a-z][a-z0-9_]*$`)
+	hexColorRe  = regexp.MustCompile(`^#[0-9a-fA-F]{6}$`)
+)
+
+// loadTheme reads the theme in dir. Every variant must define the
+// requiredColors, every variant must have the same colors and apps as the
+// others, and [ansi] must map each of color0 to color15 to a color name.
+// All problems are reported, not only the first.
+func loadTheme(dir string) (*Theme, error) {
+	t := &Theme{Name: filepath.Base(dir), Dir: dir, Variants: map[string]*Variant{}}
+	if !themeNameRe.MatchString(t.Name) {
+		return nil, fmt.Errorf("%s: theme name %q is not lower case letters, digits, _ and -", dir, t.Name)
+	}
+
+	var tf themeFile
+	themePath := filepath.Join(dir, "theme.toml")
+	data, err := os.ReadFile(themePath)
+	if err != nil {
+		return nil, err
+	}
+	if err := decodeTOML(themePath, data, &tf); err != nil {
+		return nil, err
+	}
+
+	paths, err := filepath.Glob(filepath.Join(dir, "variants", "*.toml"))
+	if err != nil {
+		return nil, err
+	}
+	if len(paths) == 0 {
+		return nil, fmt.Errorf("%s: no variants/*.toml", dir)
+	}
+
+	var errs []error
+	files := map[string]variantFile{}
+	for _, path := range paths {
+		name := strings.TrimSuffix(filepath.Base(path), ".toml")
+		vf, err := readVariant(path)
+		if err == nil && !themeNameRe.MatchString(name) {
+			err = fmt.Errorf("%s: variant name %q is not lower case letters, digits, _ and -", path, name)
+		}
+		if err != nil {
+			errs = append(errs, err)
+			continue
+		}
+		files[name] = vf
+	}
+	if len(errs) > 0 {
+		return nil, errors.Join(errs...)
+	}
+
+	errs = append(errs, sameKeys(dir, "colors", files, func(vf variantFile) map[string]string { return vf.Colors })...)
+	errs = append(errs, sameKeys(dir, "apps", files, func(vf variantFile) map[string]string { return vf.Apps })...)
+
+	// sameKeys reports the colors that only some variants have, so [ansi] is
+	// checked against the colors of all of them.
+	known := map[string]bool{}
+	for _, vf := range files {
+		for name := range vf.Colors {
+			known[name] = true
+		}
+	}
+	for _, name := range ansiColors {
+		ref, ok := tf.Ansi[name]
+		switch {
+		case !ok:
+			errs = append(errs, fmt.Errorf("%s: ansi.%s is missing", themePath, name))
+		case !known[ref]:
+			errs = append(errs, fmt.Errorf("%s: ansi.%s: %q is not a color of the variants", themePath, name, ref))
+		}
+	}
+	for _, name := range slices.Sorted(maps.Keys(tf.Ansi)) {
+		if !slices.Contains(ansiColors, name) {
+			errs = append(errs, fmt.Errorf("%s: ansi.%s: only color0 to color15 can be set", themePath, name))
+		}
+	}
+	if len(errs) > 0 {
+		return nil, errors.Join(errs...)
+	}
+
+	for name, vf := range files {
+		v := &Variant{Mode: vf.Mode, Colors: maps.Clone(vf.Colors), Apps: vf.Apps}
+		if v.Apps == nil {
+			v.Apps = map[string]string{}
+		}
+		for _, ansi := range ansiColors {
+			v.Colors[ansi] = vf.Colors[tf.Ansi[ansi]]
+		}
+		t.Variants[name] = v
+	}
+	return t, nil
+}
+
+// readVariant reads and checks the variant file path on its own: its mode,
+// the names and values of its colors and apps, and the requiredColors.
+func readVariant(path string) (variantFile, error) {
+	var vf variantFile
+	data, err := os.ReadFile(path)
+	if err != nil {
+		return vf, err
+	}
+	if err := decodeTOML(path, data, &vf); err != nil {
+		return vf, err
+	}
+
+	var errs []error
+	if vf.Mode != "dark" && vf.Mode != "light" {
+		errs = append(errs, fmt.Errorf("%s: mode is %q, not \"dark\" or \"light\"", path, vf.Mode))
+	}
+	var missing []string
+	for _, name := range requiredColors {
+		if _, ok := vf.Colors[name]; !ok {
+			missing = append(missing, name)
+		}
+	}
+	if len(missing) > 0 {
+		errs = append(errs, fmt.Errorf("%s: missing colors: %s", path, strings.Join(missing, ", ")))
+	}
+	for _, name := range slices.Sorted(maps.Keys(vf.Colors)) {
+		switch value := vf.Colors[name]; {
+		case slices.Contains(ansiColors, name):
+			errs = append(errs, fmt.Errorf("%s: colors.%s: color0 to color15 are set in [ansi] of theme.toml", path, name))
+		case !colorNameRe.MatchString(name):
+			errs = append(errs, fmt.Errorf("%s: colors.%s: a name is lower case letters, digits and _, starting with a letter", path, name))
+		case !hexColorRe.MatchString(value):
+			errs = append(errs, fmt.Errorf("%s: colors.%s: %q is not a #rrggbb color", path, name, value))
+		}
+	}
+	for _, name := range slices.Sorted(maps.Keys(vf.Apps)) {
+		if !colorNameRe.MatchString(name) {
+			errs = append(errs, fmt.Errorf("%s: apps.%s: a name is lower case letters, digits and _, starting with a letter", path, name))
+		}
+	}
+	return vf, errors.Join(errs...)
+}
+
+// sameKeys reports the keys of the table section that some variants in files
+// have and others do not. keys returns the table of a variant.
+func sameKeys(dir, section string, files map[string]variantFile, keys func(variantFile) map[string]string) []error {
+	all := map[string]bool{}
+	for _, vf := range files {
+		for k := range keys(vf) {
+			all[k] = true
+		}
+	}
+	var errs []error
+	for _, k := range slices.Sorted(maps.Keys(all)) {
+		var missing []string
+		for _, name := range slices.Sorted(maps.Keys(files)) {
+			if _, ok := keys(files[name])[k]; !ok {
+				missing = append(missing, name)
+			}
+		}
+		if len(missing) > 0 {
+			errs = append(errs, fmt.Errorf("%s: %s.%s is missing in variants %s", dir, section, k, strings.Join(missing, ", ")))
+		}
+	}
+	return errs
+}
+
+// parseThemeRef splits ref, written theme:variant, into its parts.
+func parseThemeRef(ref string) (theme, variant string, err error) {
+	theme, variant, ok := strings.Cut(ref, ":")
+	if !ok || !themeNameRe.MatchString(theme) || !themeNameRe.MatchString(variant) {
+		return "", "", fmt.Errorf("invalid %q: want theme:variant", ref)
+	}
+	return theme, variant, nil
+}
+
+// A themeSet is the themes of all repositories, and the [theme] settings
+// that choose between them.
+type themeSet struct {
+	themes map[string]*Theme // by name
+	dark   string            // theme:variant of dark mode, or ""
+	light  string            // theme:variant of light mode, or ""
+	mode   string            // the mode until one is chosen, or ""
+}
+
+// mergeThemes loads the themes in the [theme] dirs of repos. Each
+// subdirectory of a dir, except hidden ones, is a theme. dark, light and
+// mode are taken from the first repository, in the order of orderRepos,
+// that sets them; unlike [vars], every repository gets the same ones.
+//
+// It returns a warning for each of dark, light and mode that repositories
+// set differently, and an error for each theme that fails to load, each
+// theme name that is used twice, and each of dark and light that names no
+// variant of that mode. A theme that fails to load is left out.
+func mergeThemes(repos []*Repository) (*themeSet, []string, error) {
+	ts := &themeSet{themes: map[string]*Theme{}}
+	var warnings []string
+	var errs []error
+	failed := map[string]bool{}
+
+	type setting struct {
+		key    string
+		get    func(ThemeConfig) string
+		target *string
+	}
+	settings := []setting{
+		{"dark", func(c ThemeConfig) string { return c.Dark }, &ts.dark},
+		{"light", func(c ThemeConfig) string { return c.Light }, &ts.light},
+		{"mode", func(c ThemeConfig) string { return c.Mode }, &ts.mode},
+	}
+	setBy := map[string][]*Repository{}
+
+	for _, r := range orderRepos(repos) {
+		for _, s := range settings {
+			if v := s.get(r.config.Theme); v != "" {
+				if *s.target == "" {
+					*s.target = v
+				}
+				setBy[s.key] = append(setBy[s.key], r)
+			}
+		}
+		for _, dir := range r.config.Theme.Dirs {
+			dir = filepath.Join(r.srcRoot, dir)
+			entries, err := os.ReadDir(dir)
+			if err != nil {
+				errs = append(errs, fmt.Errorf("%s: theme.dirs: %w", r.configPath, err))
+				continue
+			}
+			for _, e := range entries {
+				if !e.IsDir() || strings.HasPrefix(e.Name(), ".") {
+					continue
+				}
+				path, err := filepath.Abs(filepath.Join(dir, e.Name()))
+				if err != nil {
+					errs = append(errs, err)
+					continue
+				}
+				if prev, ok := ts.themes[e.Name()]; ok {
+					errs = append(errs, fmt.Errorf("theme %s is in both %s and %s", e.Name(), prev.Dir, path))
+					continue
+				}
+				t, err := loadTheme(path)
+				if err != nil {
+					errs = append(errs, err)
+					failed[e.Name()] = true
+					continue
+				}
+				ts.themes[t.Name] = t
+			}
+		}
+	}
+
+	for _, s := range settings {
+		rs := setBy[s.key]
+		if !slices.ContainsFunc(rs, func(r *Repository) bool { return s.get(r.config.Theme) != *s.target }) {
+			continue
+		}
+		var paths []string
+		for _, r := range rs {
+			paths = append(paths, r.configPath)
+		}
+		warnings = append(warnings, fmt.Sprintf("theme.%s is set differently in %s; using %s",
+			s.key, strings.Join(paths, ", "), rs[0].configPath))
+	}
+
+	for _, s := range settings[:2] {
+		ref := *s.target
+		if ref == "" {
+			continue
+		}
+		name, variant, err := parseThemeRef(ref) // checked by validate
+		if err != nil || failed[name] {
+			continue
+		}
+		t, ok := ts.themes[name]
+		if !ok {
+			errs = append(errs, fmt.Errorf("theme.%s: no theme %s", s.key, name))
+			continue
+		}
+		v, ok := t.Variants[variant]
+		if !ok {
+			errs = append(errs, fmt.Errorf("theme.%s: theme %s has no variant %s", s.key, name, variant))
+			continue
+		}
+		if v.Mode != s.key {
+			errs = append(errs, fmt.Errorf("theme.%s: %s is a %s variant", s.key, ref, v.Mode))
+		}
+	}
+	return ts, warnings, errors.Join(errs...)
+}
