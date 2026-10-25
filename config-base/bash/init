@@ -38,6 +38,28 @@ fi
 
 
 # ------------------------------------------------------------------------------
+# super minimal virtualenvwrapper replacement
+#
+# Defined for non-interactive shells too, since workspace environments
+# (ws env) use it and bin/emacs sources those.
+
+workon() {
+  local name="${1}"
+  if [ -z "${name}" ]; then
+    name=$(lsvirtualenvs | fzf)
+  fi
+
+  local activate="${HOME}/.virtualenvs/${name}/bin/activate"
+  if [ -f "${activate}" ]; then
+    source "${activate}"
+  else
+    echo "script not found: ${activate}"
+    return 1
+  fi
+}
+
+
+# ------------------------------------------------------------------------------
 # NON INTERACTIVE RETURN POINT
 #
 [ -z "$PS1" ] \
@@ -191,24 +213,6 @@ if [ -x /usr/bin/dircolors ]; then
 fi
 
 export LSCOLORS=gxfxbEaEBxxEhEhBaDaCaD
-
-# ------------------------------------------------------------------------------
-# super minimal virtualenvwrapper replacement
-
-workon() {
-  local name="${1}"
-  if [ -z "${name}" ]; then
-    name=$(lsvirtualenvs | fzf)
-  fi
-
-  local activate="${HOME}/.virtualenvs/${name}/bin/activate"
-  if [ -f "${activate}" ]; then
-    source "${activate}"
-  else
-    echo "script not found: ${activate}"
-    return 1
-  fi
-}
 
 cdsitepackages() {
   cd $(python3 -c "import sysconfig; print(sysconfig.get_path('platlib'))")
