@@ -1,0 +1,29 @@
+mode = "dark"
+
+[colors]
+bg_0  = "#103c48"
+bg_1  = "#184956"
+bg_2  = "#2d5b69"
+dim_0 = "#72898f"
+fg_0  = "#adbcbc"
+fg_1  = "#cad8d9"
+
+yellow  = "#dbb32d"
+orange  = "#ed8649"
+red     = "#fa5750"
+magenta = "#f275be"
+violet  = "#af88eb"
+blue    = "#4695f7"
+cyan    = "#41c7b9"
+green   = "#75b938"
+
+br_red     = "#ff665c"
+br_green   = "#84c747"
+br_yellow  = "#ebc13d"
+br_blue    = "#58a3ff"
+br_magenta = "#ff84cd"
+br_cyan    = "#53d6c7"
+
+[apps]
+emacs        = "my-solarized-selenized-dark"
+color_scheme = "prefer-dark"

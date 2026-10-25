@@ -1,0 +1,29 @@
+mode = "light"
+
+[colors]
+bg_0  = "#fbf3db"
+bg_1  = "#ece3cc"
+bg_2  = "#d5cdb6"
+dim_0 = "#909995"
+fg_0  = "#53676d"
+fg_1  = "#3a4d53"
+
+yellow  = "#ad8900"
+orange  = "#c25d1e"
+red     = "#d2212d"
+magenta = "#ca4898"
+violet  = "#8762c6"
+blue    = "#0072d4"
+cyan    = "#009c8f"
+green   = "#489100"
+
+br_red     = "#cc1729"
+br_green   = "#428b00"
+br_yellow  = "#a78300"
+br_blue    = "#006dce"
+br_magenta = "#c44392"
+br_cyan    = "#00978a"
+
+[apps]
+emacs        = "my-solarized-selenized-light"
+color_scheme = "prefer-light"

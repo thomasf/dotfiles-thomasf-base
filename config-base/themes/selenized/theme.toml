@@ -1,0 +1,24 @@
+# Selenized, https://github.com/jan-warchol/selenized
+#
+# The terminal colors, as Selenized maps them. color0 and color8 are on the
+# background side and color7 and color15 on the text side in both modes.
+# Orange and violet have no terminal color.
+
+[ansi]
+color0 = "bg_1"
+color1 = "red"
+color2 = "green"
+color3 = "yellow"
+color4 = "blue"
+color5 = "magenta"
+color6 = "cyan"
+color7 = "dim_0"
+
+color8  = "bg_2"
+color9  = "br_red"
+color10 = "br_green"
+color11 = "br_yellow"
+color12 = "br_blue"
+color13 = "br_magenta"
+color14 = "br_cyan"
+color15 = "fg_1"
