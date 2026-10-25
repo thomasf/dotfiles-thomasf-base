@@ -532,6 +532,8 @@ dotfiles theme shows and switches the theme:
                                 | theme in use.
  dotfiles theme toggle          | Switches between dark and light mode, with [theme] dark and
                                 | light.
+ dotfiles theme apply           | Applies the theme variant in use: installs files and runs
+                                | [[script]] entries with on = "theme".
 
 A switch writes the state file, then installs the files of every repository
 as dotfiles install does, with the new theme, and runs the [[script]]

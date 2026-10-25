@@ -500,6 +500,7 @@ In `[[starlark]]` code, `read` also reads files in the theme directory:
 | `dotfiles theme set dark`        | Switches to dark mode, with `[theme]` `dark`; `set light` likewise.                                                                                                                                                                      |
 | `dotfiles theme set selenized:x` | Switches to a variant, and to its mode; `set :x` keeps the theme in use.                                                                                                                                                                 |
 | `dotfiles theme toggle`          | Switches between dark and light mode, with `[theme]` `dark` and `light`.                                                                                                                                                                 |
+| `dotfiles theme apply`           | Applies the theme variant in use: installs files and runs `[[script]]` entries with `on = "theme"`.                                                                                                       |
 
 A switch writes the state file, then installs the files of every repository
 as `dotfiles install` does, with the new theme, and runs the `[[script]]`

@@ -18,12 +18,13 @@ func (d *Dotfiles) ThemeCommand(args []string) error {
 	fs := flag.NewFlagSet("dotfiles theme", flag.ContinueOnError)
 	fs.SetOutput(d.Stderr)
 	fs.Usage = func() {
-		fmt.Fprintf(d.Stderr, "Usage: dotfiles theme [show | list [-names | -json] | preview [<variant>] | color [options] <color> | set <variant> | toggle]\n\n")
+		fmt.Fprintf(d.Stderr, "Usage: dotfiles theme [show | list [-names | -json] | preview [<variant>] | color [options] <color> | set <variant> | toggle | apply]\n\n")
 		fmt.Fprintf(d.Stderr, "Show the theme variant in use, list the themes and their variants, show\n")
-		fmt.Fprintf(d.Stderr, "the colors of a variant in the terminal, print a single color, or switch the\n")
-		fmt.Fprintf(d.Stderr, "theme. color prints a single named color in the specified format (default hex).\n")
+		fmt.Fprintf(d.Stderr, "the colors of a variant in the terminal, print a single color, switch the\n")
+		fmt.Fprintf(d.Stderr, "theme, or apply the currently selected theme. color prints a single named color\n")
+		fmt.Fprintf(d.Stderr, "in the specified format (default hex).\n")
 		fmt.Fprintf(d.Stderr, "preview, color and set take dark or light, theme:variant, or :variant of the theme\n")
-		fmt.Fprintf(d.Stderr, "in use; toggle switches between dark and light mode.\n\n")
+		fmt.Fprintf(d.Stderr, "in use; toggle switches between dark and light mode; apply applies the active theme.\n\n")
 		fmt.Fprintf(d.Stderr, "A switch saves the choice in ~/%s,\n", themeStatePath)
 		fmt.Fprintf(d.Stderr, "installs the files of every repository (not [[go]] packages) and runs\n")
 		fmt.Fprintf(d.Stderr, "the [[script]] entries with on = \"theme\". See dotfiles doc theme.\n")
@@ -41,7 +42,7 @@ func (d *Dotfiles) ThemeCommand(args []string) error {
 	if len(args) > 0 {
 		sub, args = args[0], args[1:]
 	}
-	wantArgs := map[string]int{"show": 0, "preview": 1, "set": 1, "toggle": 0}
+	wantArgs := map[string]int{"show": 0, "preview": 1, "set": 1, "toggle": 0, "apply": 0}
 	n, ok := wantArgs[sub]
 	switch {
 	case sub != "list" && sub != "color" && !ok:
@@ -89,6 +90,12 @@ func (d *Dotfiles) ThemeCommand(args []string) error {
 			return err
 		}
 		fmt.Fprintf(d.Stdout, "theme: %s (%s mode)\n", next.ref(), next.mode())
+		d.sync(false, nil, eventTheme)
+	case "apply":
+		if d.active == nil {
+			return errors.New("theme: no theme is configured")
+		}
+		fmt.Fprintf(d.Stdout, "theme: %s (%s mode)\n", d.active.ref(), d.active.mode())
 		d.sync(false, nil, eventTheme)
 	}
 	return nil

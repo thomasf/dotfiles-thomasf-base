@@ -185,6 +185,33 @@ func TestThemeCommand(t *testing.T) {
 	}
 	scripts()
 
+	if got := run("apply"); got != "theme: test:dark (dark mode)\n" {
+		t.Errorf("apply = %q, want theme: test:dark (dark mode)\n", got)
+	}
+	if got := state(); got != "mode = 'dark'\n" {
+		t.Errorf("state after apply = %q, want mode = 'dark'\n", got)
+	}
+	if got := readOr(t, filepath.Join(dst, "theme.txt")); got != "test:dark\n" {
+		t.Errorf("theme.txt after apply = %q", got)
+	}
+	if got := scripts(); got != "theme dark\nboth\n" {
+		t.Errorf("scripts run by apply = %q, want theme dark and both", got)
+	}
+
+	d.Theme = "test:black"
+	out := &bytes.Buffer{}
+	d.Stdout, d.runErrors = out, nil
+	if err := d.ThemeCommand([]string{"apply"}); err != nil {
+		t.Fatal(err)
+	}
+	d.Theme = ""
+	if got := out.String(); got != "theme: test:black (dark mode)\n" {
+		t.Errorf("apply with -theme = %q, want theme: test:black (dark mode)\n", got)
+	}
+	if got := scripts(); got != "theme black\nboth\n" {
+		t.Errorf("scripts run by apply with -theme = %q, want theme black and both", got)
+	}
+
 	if err := d.InstallCommand(nil); err != nil {
 		t.Fatal(err)
 	}
@@ -208,6 +235,7 @@ func TestThemeCommandErrors(t *testing.T) {
 		{args: []string{"toggle"}, option: ":dark", want: "-theme can not be used with toggle"},
 		{args: []string{"list", "-names", "-json"}, want: "-names and -json cannot be combined"},
 		{args: []string{"list", "extra"}, want: "unexpected arguments: extra"},
+		{args: []string{"apply", "extra"}, want: "apply takes 0 arguments"},
 	} {
 		d, dst := themeCommandRepo(t)
 		d.Theme = tt.option
@@ -218,6 +246,19 @@ func TestThemeCommandErrors(t *testing.T) {
 		if _, err := os.Stat(filepath.Join(dst, themeStatePath)); err == nil {
 			t.Errorf("theme %v: the state file was written", tt.args)
 		}
+	}
+}
+
+func TestThemeApplyNoTheme(t *testing.T) {
+	t.Parallel()
+	repo := t.TempDir()
+	if err := os.WriteFile(filepath.Join(repo, "dotfiles.toml"), []byte("public = true\n"), 0o644); err != nil {
+		t.Fatal(err)
+	}
+	d := &Dotfiles{Stdout: &bytes.Buffer{}, Stderr: &bytes.Buffer{}, DstPath: t.TempDir(), repos: []string{repo}}
+	err := d.ThemeCommand([]string{"apply"})
+	if err == nil || !strings.Contains(err.Error(), "no theme is configured") {
+		t.Errorf("apply with no theme: err = %v, want no theme is configured", err)
 	}
 }
 
