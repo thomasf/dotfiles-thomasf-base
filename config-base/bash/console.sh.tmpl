@@ -1,0 +1,20 @@
+# The colors of the theme in use, {{.theme.name}}:{{.theme.variant}}, for the Linux
+# console; bash/init sources this file when TERM is linux. The console has no
+# separate background and text colors, so color0 is bg_0 and color7 fg_0; the
+# others are the theme's terminal colors.
+printf '\033]P0%s' {{hexDigits .theme.colors.bg_0}}
+printf '\033]P1%s' {{hexDigits .theme.colors.color1}}
+printf '\033]P2%s' {{hexDigits .theme.colors.color2}}
+printf '\033]P3%s' {{hexDigits .theme.colors.color3}}
+printf '\033]P4%s' {{hexDigits .theme.colors.color4}}
+printf '\033]P5%s' {{hexDigits .theme.colors.color5}}
+printf '\033]P6%s' {{hexDigits .theme.colors.color6}}
+printf '\033]P7%s' {{hexDigits .theme.colors.fg_0}}
+printf '\033]P8%s' {{hexDigits .theme.colors.color8}}
+printf '\033]P9%s' {{hexDigits .theme.colors.color9}}
+printf '\033]PA%s' {{hexDigits .theme.colors.color10}}
+printf '\033]PB%s' {{hexDigits .theme.colors.color11}}
+printf '\033]PC%s' {{hexDigits .theme.colors.color12}}
+printf '\033]PD%s' {{hexDigits .theme.colors.color13}}
+printf '\033]PE%s' {{hexDigits .theme.colors.color14}}
+printf '\033]PF%s' {{hexDigits .theme.colors.color15}}

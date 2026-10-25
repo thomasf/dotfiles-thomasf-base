@@ -104,6 +104,12 @@ dark  = 'selenized:dark'
 light = 'selenized:light'
 mode  = 'light'
 
+# The colors of the theme in use for the Linux console (see bash/init).
+[[template]]
+condition = "os == 'linux'"
+src = 'config-base/bash/console.sh.tmpl'
+dst = '.config/theme/console.sh'
+
 # The theme in use, for programs that read their colors themselves, such as
 # ws and panels in xmonad.
 [[starlark]]

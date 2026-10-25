@@ -89,24 +89,10 @@ source ~/.config-base/bash/interactive
   && . "${HOME}/.bashrc-local" \
   && log "loaded .bashrc-local"
 
-# Selenized dark for console terminal
+# The colors of the theme in use on the console, written by dotfiles
 if [ "$TERM" = "linux" ]; then
-  echo -en "\e]P0103c48"
-  echo -en "\e]P8a7b0ab"
-  echo -en "\e]P1fa5750"
-  echo -en "\e]P9ed8649"
-  echo -en "\e]P275b938"
-  echo -en "\e]PA72898f"
-  echo -en "\e]P3dbb32d"
-  echo -en "\e]PBadbcbc"
-  echo -en "\e]P44695f7"
-  echo -en "\e]PCadbcbc"
-  echo -en "\e]P5f275be"
-  echo -en "\e]PDaf88eb"
-  echo -en "\e]P641c7b9"
-  echo -en "\e]PEcad8d9"
-  echo -en "\e]P7adbcbc"
-  echo -en "\e]PFfbf3db"
+  [ -e "${HOME}/.config/theme/console.sh" ] \
+    && . "${HOME}/.config/theme/console.sh"
   clear
   (
     [ -e /tmp/.X11-unix ] &&
