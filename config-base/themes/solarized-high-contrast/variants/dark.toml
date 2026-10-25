@@ -21,5 +21,5 @@ cyan    = "#3cafa5"
 green   = "#93a61a"
 
 [apps]
-emacs        = "solarized-dark-high-contrast"
+emacs        = "my-solarized-dark-high-contrast"
 color_scheme = "prefer-dark"

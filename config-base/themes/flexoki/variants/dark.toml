@@ -20,4 +20,5 @@ cyan    = "#3aa99f"
 green   = "#879a39"
 
 [apps]
+emacs        = "my-solarized-flexoki-dark"
 color_scheme = "prefer-dark"

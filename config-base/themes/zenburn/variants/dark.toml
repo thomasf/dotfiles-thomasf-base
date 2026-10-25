@@ -21,5 +21,5 @@ cyan    = "#93e0e3"
 green   = "#7f9f7f"
 
 [apps]
-emacs        = "solarized-zenburn"
+emacs        = "my-solarized-zenburn"
 color_scheme = "prefer-dark"

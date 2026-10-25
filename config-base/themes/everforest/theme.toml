@@ -1,4 +1,5 @@
 # Everforest, https://github.com/sainnhe/everforest
+# The palette is Everforest by sainnhe (MIT License).
 #
 # Ported from sainnhe/everforest (autoload/everforest.vim), medium contrast.
 # It has no bright colors: the terminal's bright red and magenta are orange and

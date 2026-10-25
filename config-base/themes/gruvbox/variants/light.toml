@@ -31,5 +31,5 @@ neutral_aqua   = "#689d6a"
 
 [apps]
 # solarized-emacs's gruvbox is dimmer than this one (its text is fg4).
-emacs        = "solarized-gruvbox-light"
+emacs        = "my-solarized-gruvbox-light"
 color_scheme = "prefer-light"

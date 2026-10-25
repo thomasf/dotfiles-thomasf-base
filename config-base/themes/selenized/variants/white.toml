@@ -28,7 +28,7 @@ br_orange  = "#ba3700"
 br_violet  = "#6b40c3"
 
 [apps]
-emacs        = "solarized-selenized-white"
+emacs        = "my-solarized-selenized-white"
 color_scheme = "prefer-light"
 
 # The root window background, a file in the theme directory, and how

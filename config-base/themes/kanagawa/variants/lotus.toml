@@ -28,4 +28,5 @@ br_magenta = "#624c83"
 br_cyan    = "#5e857a"
 
 [apps]
+emacs        = "my-solarized-kanagawa-lotus"
 color_scheme = "prefer-light"

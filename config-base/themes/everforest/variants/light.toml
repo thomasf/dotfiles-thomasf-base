@@ -20,4 +20,5 @@ cyan    = "#35a77c"
 green   = "#8da101"
 
 [apps]
+emacs        = "my-solarized-everforest-light"
 color_scheme = "prefer-light"

@@ -28,4 +28,5 @@ br_magenta = "#938aa9"
 br_cyan    = "#68ad99"
 
 [apps]
+emacs        = "my-solarized-kanagawa-dragon"
 color_scheme = "prefer-dark"
