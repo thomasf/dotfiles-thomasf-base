@@ -57,6 +57,7 @@ func exprVars(ec evalContext) map[string]any {
 //   - parseBool: strconv.ParseBool, to use a var as a bool.
 //   - hexDigits, rgb, hex0x: a #rrggbb color written as rrggbb, as r,g,b in
 //     decimal, or as 0xrrggbb (see colorFunc).
+//   - mix: two colors mixed (see mixColors).
 //
 // Paths are resolved by resolvePath, never against the working directory. Not
 // finding something is a value, not an error, so that conditions and
@@ -75,6 +76,7 @@ func exprFuncs(dstRoot string) map[string]any {
 			return fmt.Sprintf("%d,%d,%d", n>>16, n>>8&0xff, n&0xff)
 		}),
 		"hex0x": colorFunc("hex0x", func(hex string) string { return "0x" + hex }),
+		"mix":   mixColors,
 		"lookPath": func(names ...string) string {
 			for _, name := range names {
 				if strings.Contains(name, "/") {

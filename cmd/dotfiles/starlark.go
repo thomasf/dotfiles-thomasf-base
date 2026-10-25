@@ -138,6 +138,22 @@ func starlarkPredeclared(srcRoot, dst string, ec evalContext, doc *starlark.Dict
 // starlarkFunc wraps fn, one of the functions from exprFuncs, as a Starlark
 // builtin.
 func starlarkFunc(name string, fn any) *starlark.Builtin {
+	if fn, ok := fn.(func(string, string, float64) (string, error)); ok {
+		// mix: two strings and a number, an int or a float.
+		return starlark.NewBuiltin(name, func(_ *starlark.Thread, b *starlark.Builtin, args starlark.Tuple, kwargs []starlark.Tuple) (starlark.Value, error) {
+			var s1, s2 string
+			var n starlark.Value
+			if err := starlark.UnpackPositionalArgs(b.Name(), args, kwargs, 3, &s1, &s2, &n); err != nil {
+				return nil, err
+			}
+			f, ok := starlark.AsFloat(n)
+			if !ok {
+				return nil, fmt.Errorf("%s: argument 3 is a %s, not a number", b.Name(), n.Type())
+			}
+			v, err := fn(s1, s2, f)
+			return starlark.String(v), err
+		})
+	}
 	var impl func(args []string) (starlark.Value, error)
 	nargs := 1
 	switch fn := fn.(type) {

@@ -12,6 +12,7 @@ import (
 	"strconv"
 	"strings"
 
+	"github.com/lucasb-eyer/go-colorful"
 	"github.com/pelletier/go-toml/v2"
 )
 
@@ -563,4 +564,21 @@ func (a *activeTheme) dir() string {
 		return ""
 	}
 	return a.theme.Dir
+}
+
+// mixColors returns the color t of the way from the #rrggbb color a to b,
+// with t between 0 and 1. The colors are mixed in OKLab, a perceptual color
+// space, so that equal steps look equal whatever the hues.
+func mixColors(a, b string, t float64) (string, error) {
+	for _, c := range []string{a, b} {
+		if !hexColorRe.MatchString(c) {
+			return "", fmt.Errorf("mix: %q is not a #rrggbb color", c)
+		}
+	}
+	if t < 0 || t > 1 {
+		return "", fmt.Errorf("mix: %v is not between 0 and 1", t)
+	}
+	ca, _ := colorful.Hex(a) // checked above
+	cb, _ := colorful.Hex(b)
+	return ca.BlendOkLab(cb, t).Clamped().Hex(), nil
 }

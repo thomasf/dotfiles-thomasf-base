@@ -649,3 +649,48 @@ func TestColorFuncs(t *testing.T) {
 		t.Errorf("starlark rgb of red: err = %v", err)
 	}
 }
+
+func TestMix(t *testing.T) {
+	t.Parallel()
+	env := exprEnv(evalContext{})
+	for src, want := range map[string]string{
+		`mix("#103c48", "#dbb32d", 0)`:   "#103c48",
+		`mix("#103c48", "#dbb32d", 1.0)`: "#dbb32d",
+		`mix("#000000", "#ffffff", 0.5)`: "#636363", // OKLab: the middle in lightness, not #808080
+		`mix("#FFFFFF", "#ffffff", 0.3)`: "#ffffff",
+	} {
+		if got, err := evalExpr(env, src); err != nil || got != want {
+			t.Errorf("%s = %v, %v, want %q", src, got, err, want)
+		}
+	}
+	for src, wantErr := range map[string]string{
+		`mix("red", "#ffffff", 0.5)`:     `mix: "red" is not a #rrggbb color`,
+		`mix("#000000", "#ffffff", 1.5)`: "mix: 1.5 is not between 0 and 1",
+	} {
+		if _, err := evalExpr(env, src); err == nil || !strings.Contains(err.Error(), wantErr) {
+			t.Errorf("%s: err = %v, want %q", src, err, wantErr)
+		}
+	}
+
+	out, err := renderTemplate("t", `{{mix "#000000" "#ffffff" 0.5}}`, evalContext{})
+	if err != nil || string(out) != "#636363" {
+		t.Errorf("template = %q, %v", out, err)
+	}
+
+	for code, want := range map[string]string{
+		`doc["c"] = mix("#000000", "#ffffff", 0.5)`: "#636363",
+		`doc["c"] = mix("#000000", "#ffffff", 1)`:   "#ffffff",
+	} {
+		prog, err := compileStarlark("test", code)
+		if err != nil {
+			t.Fatal(err)
+		}
+		doc := starlark.NewDict(1)
+		if _, err := prog.Init(&starlark.Thread{}, starlarkPredeclared("", "x", evalContext{}, doc)); err != nil {
+			t.Fatalf("%s: %v", code, err)
+		}
+		if v, _, _ := doc.Get(starlark.String("c")); v != starlark.String(want) {
+			t.Errorf("%s: doc[c] = %v, want %s", code, v, want)
+		}
+	}
+}

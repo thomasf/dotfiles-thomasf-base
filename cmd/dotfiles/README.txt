@@ -305,9 +305,18 @@ Starlark scripts, written as each expects:
                      | 16,60,72.              |                        |
  hex0x(color)        | A #rrggbb color as     | hex0x(theme.colors.bg_ | {{hex0x
                      | 0xrrggbb.              | 0)                     | .theme.colors.bg_0}}
+ mix(a, b, t)        | The #rrggbb color t of | mix(theme.colors.bg_0, | {{mix
+                     | the way from a to b, t | theme.colors.red, 0.1) | .theme.colors.bg_0
+                     | between 0 and 1, mixed |                        | .theme.colors.red
+                     | in OKLab so that equal |                        | 0.1}}
+                     | steps look equal:      |                        |
+                     | mix(theme.colors.bg_0, |                        |
+                     | theme.colors.green,    |                        |
+                     | 0.1) is bg_0 tinted    |                        |
+                     | green.                 |                        |
 
 Starlark scripts call the functions as conditions do, with single or double
-quotes: lookPath("nvim", "vim").
+quotes: lookPath("nvim", "vim"). mix takes its third argument as a number, 0.1, in all three.
 
 Relative paths are relative to the destination path (the home directory
 unless -dst is given), never to the directory dotfiles runs in. ~ is not
