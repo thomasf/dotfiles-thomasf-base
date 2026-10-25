@@ -97,3 +97,9 @@ names = ["base", "emacs", "xmonad"]
 kind    = "publish"
 url     = "https://github.com/thomasf/dotfiles-thomasf-{name}"
 pushurl = "git@github.com:thomasf/dotfiles-thomasf-{name}"
+
+[theme]
+dirs  = ['config-base/themes']
+dark  = 'selenized:dark'
+light = 'selenized:light'
+mode  = 'light'
