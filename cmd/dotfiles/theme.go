@@ -1,6 +1,7 @@
 package main
 
 import (
+	"cmp"
 	"errors"
 	"fmt"
 	"maps"
@@ -345,4 +346,148 @@ func mergeThemes(repos []*Repository) (*themeSet, []string, error) {
 		}
 	}
 	return ts, warnings, errors.Join(errs...)
+}
+
+// An activeTheme is the theme variant in use.
+type activeTheme struct {
+	theme   *Theme
+	variant string
+}
+
+// value returns the theme value of conditions, templates and Starlark code:
+// a map with name, variant, mode, dir, colors and apps. It returns an untyped
+// nil if a is nil, so that using theme then fails rather than giving empty
+// values.
+func (a *activeTheme) value() any {
+	if a == nil {
+		return nil
+	}
+	v := a.theme.Variants[a.variant]
+	return map[string]any{
+		"name":    a.theme.Name,
+		"variant": a.variant,
+		"mode":    v.Mode,
+		"dir":     a.theme.Dir,
+		"colors":  anyMap(v.Colors),
+		"apps":    anyMap(v.Apps),
+	}
+}
+
+// anyMap returns m as a map[string]any, which Starlark values are made from.
+func anyMap(m map[string]string) map[string]any {
+	am := make(map[string]any, len(m))
+	for k, v := range m {
+		am[k] = v
+	}
+	return am
+}
+
+// themeStatePath is the file, relative to the destination path, that holds
+// the chosen mode and theme.
+const themeStatePath = ".local/state/dotfiles/theme.toml"
+
+// darkmodePath is the file, relative to the destination path, that the
+// darkmode script creates while dark mode is on. Until the state file
+// exists, it decides the mode.
+const darkmodePath = ".config/darkmode"
+
+// themeState is the content of the state file.
+type themeState struct {
+	Mode  string `toml:"mode"`
+	Theme string `toml:"theme,omitempty"` // theme:variant to use instead of [theme] dark or light
+}
+
+// readThemeState reads the state file in dstRoot. Without one, the mode is
+// dark if the darkmode file exists, and otherwise unset.
+func readThemeState(dstRoot string) (themeState, error) {
+	var st themeState
+	path := filepath.Join(dstRoot, themeStatePath)
+	data, err := os.ReadFile(path)
+	if errors.Is(err, os.ErrNotExist) {
+		if _, err := os.Stat(filepath.Join(dstRoot, darkmodePath)); err == nil {
+			st.Mode = "dark"
+		}
+		return st, nil
+	}
+	if err != nil {
+		return st, err
+	}
+	if err := decodeTOML(path, data, &st); err != nil {
+		return st, err
+	}
+	if st.Mode != "" && st.Mode != "dark" && st.Mode != "light" {
+		return st, fmt.Errorf("%s: mode: invalid %q: want dark or light", path, st.Mode)
+	}
+	if st.Theme != "" {
+		if _, _, err := parseThemeRef(st.Theme); err != nil {
+			return st, fmt.Errorf("%s: theme: %w", path, err)
+		}
+	}
+	return st, nil
+}
+
+// selectTheme returns the theme variant in use, or nil if none is
+// configured. The mode is that of the state file in dstRoot (see
+// readThemeState), else [theme] mode, else light. The variant is the state
+// file's theme, else [theme] dark or light for the mode. option, the -theme
+// option, overrides that: theme:variant replaces it, and :variant only
+// replaces the variant.
+func selectTheme(ts *themeSet, option, dstRoot string) (*activeTheme, error) {
+	st, err := readThemeState(dstRoot)
+	if err != nil {
+		return nil, err
+	}
+	mode := cmp.Or(st.Mode, ts.mode, "light")
+	ref := st.Theme
+	if ref == "" {
+		ref = ts.light
+		if mode == "dark" {
+			ref = ts.dark
+		}
+	}
+
+	if option != "" {
+		if variant, ok := strings.CutPrefix(option, ":"); ok {
+			if ref == "" {
+				return nil, fmt.Errorf("-theme %s: no theme is selected to take variant %s of", option, variant)
+			}
+			name, _, _ := strings.Cut(ref, ":")
+			option = name + ":" + variant
+		}
+		if _, _, err := parseThemeRef(option); err != nil {
+			return nil, fmt.Errorf("-theme: %w", err)
+		}
+		ref = option
+	}
+
+	if ref == "" {
+		if ts.dark != "" || ts.light != "" {
+			return nil, fmt.Errorf("no theme for %s mode: set [theme] %[1]s", mode)
+		}
+		return nil, nil
+	}
+	name, variant, err := parseThemeRef(ref)
+	if err != nil {
+		return nil, err
+	}
+	t, ok := ts.themes[name]
+	if !ok {
+		return nil, fmt.Errorf("theme %s: no such theme", ref)
+	}
+	if _, ok := t.Variants[variant]; !ok {
+		return nil, fmt.Errorf("theme %s: theme %s has no variant %s", ref, name, variant)
+	}
+	return &activeTheme{theme: t, variant: variant}, nil
+}
+
+// colorFunc returns the function name of conditions, templates and Starlark
+// code that writes a #rrggbb color in another form: format gets its six hex
+// digits. Anything but a #rrggbb color is an error.
+func colorFunc(name string, format func(hex string) string) func(string) (string, error) {
+	return func(color string) (string, error) {
+		if !hexColorRe.MatchString(color) {
+			return "", fmt.Errorf("%s: %q is not a #rrggbb color", name, color)
+		}
+		return format(color[1:]), nil
+	}
 }

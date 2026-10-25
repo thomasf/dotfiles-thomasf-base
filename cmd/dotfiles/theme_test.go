@@ -2,6 +2,7 @@ package main
 
 import (
 	"fmt"
+	"io"
 	"maps"
 	"os"
 	"path/filepath"
@@ -9,6 +10,8 @@ import (
 	"strings"
 	"testing"
 	"testing/fstest"
+
+	"go.starlark.net/starlark"
 )
 
 // testColors returns a value for each of the requiredColors, all different.
@@ -387,5 +390,262 @@ mode  = "dim"
 	}
 	if err != nil && strings.Contains(err.Error(), "theme.light") {
 		t.Errorf("valid theme.light reported:\n%v", err)
+	}
+}
+
+// testThemeSet returns a themeSet with the theme test, which has the variants
+// dark, light and black, a second dark one.
+func testThemeSet(t *testing.T) *themeSet {
+	t.Helper()
+	files := validTheme()
+	black := testColors()
+	black["br_red"] = "#000001"
+	files["variants/black.toml"] = variantTOML("dark", black, map[string]string{"emacs": "x-black"})
+	theme, err := loadTheme(writeTheme(t, files))
+	if err != nil {
+		t.Fatal(err)
+	}
+	return &themeSet{themes: map[string]*Theme{"test": theme}, dark: "test:dark", light: "test:light"}
+}
+
+func TestSelectTheme(t *testing.T) {
+	t.Parallel()
+	tests := []struct {
+		name     string
+		state    string // the state file, if not empty
+		darkmode bool   // whether the darkmode file exists
+		mode     string // [theme] mode
+		unset    string // dark or light to unset in [theme]
+		option   string
+		want     string // the variant, or "" for none
+		wantErr  string
+	}{
+		{name: "light by default", want: "light"},
+		{name: "[theme] mode", mode: "dark", want: "dark"},
+		{name: "darkmode file", darkmode: true, want: "dark"},
+		{name: "state file", state: `mode = "dark"`, mode: "light", want: "dark"},
+		{name: "state file over darkmode file", state: `mode = "light"`, darkmode: true, want: "light"},
+		{name: "state file theme", state: "mode = \"dark\"\ntheme = \"test:black\"", want: "black"},
+		{name: "option", darkmode: true, option: "test:light", want: "light"},
+		{name: "option variant", option: ":black", want: "black"},
+		{name: "option no variant", option: ":dim", wantErr: "theme test has no variant dim"},
+		{name: "option no theme", option: "nope:dark", wantErr: "nope:dark: no such theme"},
+		{name: "option form", option: "test", wantErr: `-theme: invalid "test"`},
+		{name: "state file mode", state: `mode = "dim"`, wantErr: `mode: invalid "dim"`},
+		{name: "state file key", state: `colour = "red"`, wantErr: "theme.toml"},
+		{name: "no theme for the mode", darkmode: true, unset: "dark", wantErr: "no theme for dark mode"},
+		{name: "option without a theme for the mode", darkmode: true, unset: "dark", option: ":light", wantErr: "no theme is selected"},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			t.Parallel()
+			ts := testThemeSet(t)
+			ts.mode = tt.mode
+			switch tt.unset {
+			case "dark":
+				ts.dark = ""
+			case "light":
+				ts.light = ""
+			}
+			dst := t.TempDir()
+			files := fstest.MapFS{}
+			if tt.state != "" {
+				files[themeStatePath] = tomlFile(tt.state)
+			}
+			if tt.darkmode {
+				files[darkmodePath] = tomlFile("")
+			}
+			if err := os.CopyFS(dst, files); err != nil {
+				t.Fatal(err)
+			}
+
+			got, err := selectTheme(ts, tt.option, dst)
+			if tt.wantErr != "" {
+				if err == nil || !strings.Contains(err.Error(), tt.wantErr) {
+					t.Fatalf("err = %v, want one containing %q", err, tt.wantErr)
+				}
+				return
+			}
+			if err != nil {
+				t.Fatal(err)
+			}
+			if got == nil || got.variant != tt.want || got.theme.Name != "test" {
+				t.Errorf("selected %+v, want test:%s", got, tt.want)
+			}
+		})
+	}
+}
+
+func TestSelectThemeNone(t *testing.T) {
+	t.Parallel()
+	got, err := selectTheme(&themeSet{}, "", t.TempDir())
+	if got != nil || err != nil {
+		t.Errorf("selectTheme without themes = %v, %v, want nil, nil", got, err)
+	}
+}
+
+// themeConfigRepo writes a repository with the theme test in themes/ and
+// config after its [theme], and a destination with the darkmode file. It
+// returns their paths.
+func themeConfigRepo(t *testing.T, config string) (repo, dst string) {
+	t.Helper()
+	repo = filepath.Join(t.TempDir(), "repo")
+	files := fstest.MapFS{"dotfiles.toml": tomlFile(`
+[theme]
+dirs  = ["themes"]
+dark  = "test:dark"
+light = "test:light"
+` + config)}
+	for name, content := range themeFiles("themes/test") {
+		files[name] = tomlFile(content)
+	}
+	if err := os.CopyFS(repo, files); err != nil {
+		t.Fatal(err)
+	}
+	dst = t.TempDir()
+	if err := os.CopyFS(dst, fstest.MapFS{darkmodePath: tomlFile("")}); err != nil {
+		t.Fatal(err)
+	}
+	return repo, dst
+}
+
+// TestThemeEnv checks theme in [vars], conditions, templates and Starlark.
+func TestThemeEnv(t *testing.T) {
+	t.Parallel()
+	repo, dst := themeConfigRepo(t, `
+[vars]
+red  = '{{.theme.colors.br_red}}'
+mode = '{{expr "theme.mode"}}'
+`)
+	r := NewRepository(repo, dst)
+	if err := r.LoadConfig(); err != nil {
+		t.Fatal(err)
+	}
+	if r.vars["red"] != "#ff0000" || r.vars["mode"] != "dark" {
+		t.Errorf("vars red, mode = %q, %q, want #ff0000, dark", r.vars["red"], r.vars["mode"])
+	}
+
+	got, err := evalExpr(r.exprEnv(), `theme.variant + " " + theme.apps.emacs + " " + theme["colors"]["bg_0"]`)
+	if want := "dark x-dark " + testColors()["bg_0"]; err != nil || got != want {
+		t.Errorf("expression = %v, %v, want %q", got, err, want)
+	}
+
+	out, err := renderTemplate("t", `{{.theme.name}} {{.theme.colors.color1}} {{.theme.dir}}`, r.evalContext())
+	if want := "test " + testColors()[testAnsi()["color1"]] + " " + filepath.Join(repo, "themes", "test"); err != nil || string(out) != want {
+		t.Errorf("template = %q, %v, want %q", out, err, want)
+	}
+	if _, err := renderTemplate("t", `{{.theme.colors.nope}}`, r.evalContext()); err == nil {
+		t.Error("template with a missing color: no error")
+	}
+
+	prog, err := compileStarlark("test", `doc["red"] = theme["colors"]["br_red"]`)
+	if err != nil {
+		t.Fatal(err)
+	}
+	doc := starlark.NewDict(1)
+	if _, err := prog.Init(&starlark.Thread{}, starlarkPredeclared("", "x", r.evalContext(), doc)); err != nil {
+		t.Fatal(err)
+	}
+	if v, _, _ := doc.Get(starlark.String("red")); v != starlark.String("#ff0000") {
+		t.Errorf("starlark doc[red] = %v, want #ff0000", v)
+	}
+}
+
+func TestThemeRefs(t *testing.T) {
+	t.Parallel()
+	repo, dst := themeConfigRepo(t, "")
+	r := NewRepository(repo, dst)
+	if err := r.LoadConfig(); err != nil {
+		t.Fatal(err)
+	}
+	tests := []struct {
+		src     string
+		env     map[string]any
+		want    any
+		wantErr string
+	}{
+		{src: `theme.colors.nope`, wantErr: "undefined theme.colors.nope"},
+		{src: `theme["colors"]["nope"]`, wantErr: "undefined theme.colors.nope"},
+		{src: `theme.nope`, wantErr: "undefined theme.nope"},
+		{src: `theme.colors.nope ?? "x"`, want: "x"},
+		{src: `theme.mode`, env: exprEnv(evalContext{}), wantErr: "no theme is selected for theme.mode"},
+	}
+	for _, tt := range tests {
+		env := tt.env
+		if env == nil {
+			env = r.exprEnv()
+		}
+		got, err := evalExpr(env, tt.src)
+		if tt.wantErr != "" {
+			if err == nil || !strings.Contains(err.Error(), tt.wantErr) {
+				t.Errorf("%s: err = %v, want one containing %q", tt.src, err, tt.wantErr)
+			}
+			continue
+		}
+		if err != nil || got != tt.want {
+			t.Errorf("%s = %v, %v, want %v", tt.src, got, err, tt.want)
+		}
+	}
+}
+
+// TestThemeOption checks that -theme is used when loading repositories.
+func TestThemeOption(t *testing.T) {
+	t.Parallel()
+	repo, dst := themeConfigRepo(t, "")
+	var stderr strings.Builder
+	d := &Dotfiles{Stdout: io.Discard, Stderr: &stderr, DstPath: dst, Theme: ":light", repos: []string{repo}}
+	loaded := d.loadRepos()
+	if len(loaded) != 1 || loaded[0].theme == nil || loaded[0].theme.variant != "light" {
+		t.Fatalf("theme = %+v, want test:light; stderr:\n%s", loaded, stderr.String())
+	}
+	if stderr.Len() > 0 {
+		t.Errorf("stderr:\n%s", stderr.String())
+	}
+}
+
+func TestColorFuncs(t *testing.T) {
+	t.Parallel()
+	env := exprEnv(evalContext{})
+	for src, want := range map[string]string{
+		`hexDigits("#103c48")`: "103c48",
+		`rgb("#103c48")`:       "16,60,72",
+		`rgb("#FFFFFF")`:       "255,255,255",
+		`hex0x("#103c48")`:     "0x103c48",
+	} {
+		if got, err := evalExpr(env, src); err != nil || got != want {
+			t.Errorf("%s = %v, %v, want %q", src, got, err, want)
+		}
+	}
+	for _, src := range []string{`rgb("red")`, `hex0x("#103c4")`, `hexDigits("103c48")`} {
+		if _, err := evalExpr(env, src); err == nil || !strings.Contains(err.Error(), "is not a #rrggbb color") {
+			t.Errorf("%s: err = %v, want one about the color", src, err)
+		}
+	}
+
+	out, err := renderTemplate("t", `{{rgb "#103c48"}} {{"#103c48" | hex0x}}`, evalContext{})
+	if err != nil || string(out) != "16,60,72 0x103c48" {
+		t.Errorf("template = %q, %v, want %q", out, err, "16,60,72 0x103c48")
+	}
+	if _, err := renderTemplate("t", `{{rgb "red"}}`, evalContext{}); err == nil {
+		t.Error("template rgb of red: no error")
+	}
+
+	prog, err := compileStarlark("test", `doc["c"] = hexDigits("#103c48")`)
+	if err != nil {
+		t.Fatal(err)
+	}
+	doc := starlark.NewDict(1)
+	if _, err := prog.Init(&starlark.Thread{}, starlarkPredeclared("", "x", evalContext{}, doc)); err != nil {
+		t.Fatal(err)
+	}
+	if v, _, _ := doc.Get(starlark.String("c")); v != starlark.String("103c48") {
+		t.Errorf("starlark hexDigits = %v, want 103c48", v)
+	}
+	prog, err = compileStarlark("test", `rgb("red")`)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if _, err := prog.Init(&starlark.Thread{}, starlarkPredeclared("", "x", evalContext{}, starlark.NewDict(0))); err == nil || !strings.Contains(err.Error(), "is not a #rrggbb color") {
+		t.Errorf("starlark rgb of red: err = %v", err)
 	}
 }

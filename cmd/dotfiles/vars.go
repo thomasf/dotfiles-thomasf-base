@@ -12,11 +12,12 @@ import (
 )
 
 // resolveVars resolves raw, the [vars] seen by one repository, and returns
-// their values. Every value is rendered as a template (see renderValue). A
-// var may refer to other vars; they are resolved first.
-func resolveVars(raw map[string]string, dstRoot string) (map[string]string, error) {
+// their values. Every value is rendered as a template (see renderValue) with
+// ec, whose vars are replaced by the ones resolved so far. A var may refer
+// to other vars; they are resolved first.
+func resolveVars(raw map[string]string, ec evalContext) (map[string]string, error) {
 	vars := make(map[string]string, len(raw))
-	ec := evalContext{dstRoot: dstRoot, vars: vars}
+	ec.vars = vars
 	const (
 		resolving = iota + 1
 		done

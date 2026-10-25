@@ -30,7 +30,7 @@ func TestResolveVars(t *testing.T) {
 		"bool":     "false",
 		"isFalse":  "{{ if parseBool .vars.bool }}yes{{ else }}no{{ end }}",
 	}
-	vars, err := resolveVars(raw, t.TempDir())
+	vars, err := resolveVars(raw, evalContext{dstRoot: t.TempDir()})
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -96,7 +96,7 @@ func TestResolveVarsErrors(t *testing.T) {
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			_, err := resolveVars(tt.raw, t.TempDir())
+			_, err := resolveVars(tt.raw, evalContext{dstRoot: t.TempDir()})
 			if err == nil || !strings.Contains(err.Error(), tt.wantErr) {
 				t.Fatalf("err = %v, want containing %q", err, tt.wantErr)
 			}

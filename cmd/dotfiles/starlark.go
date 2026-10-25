@@ -150,6 +150,11 @@ func starlarkFunc(name string, fn any) *starlark.Builtin {
 			v, err := fn(args[0])
 			return starlark.Bool(v), err
 		}
+	case func(string) (string, error):
+		impl = func(args []string) (starlark.Value, error) {
+			v, err := fn(args[0])
+			return starlark.String(v), err
+		}
 	case func(...string) string:
 		nargs = -1
 		impl = func(args []string) (starlark.Value, error) { return starlark.String(fn(args...)), nil }

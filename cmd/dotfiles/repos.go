@@ -122,6 +122,10 @@ func (d *Dotfiles) loadRepos(opts ...Option) []*Repository {
 		read = append(read, r)
 	}
 
+	theme := d.selectTheme(read)
+	for _, r := range read {
+		r.theme = theme
+	}
 	views, warnings := mergeVars(read)
 	for _, w := range warnings {
 		fmt.Fprintf(d.Stderr, "warning: %s\n", w)
@@ -239,4 +243,25 @@ func localBackupState(url string) backupState {
 func isDir(path string) bool {
 	fi, err := os.Stat(path)
 	return err == nil && fi.IsDir()
+}
+
+// selectTheme loads the themes of repos and returns the theme variant in use
+// (see selectTheme), or nil if there is none. Problems are reported; a theme
+// that fails to load is left out, and if the selected one is not available,
+// there is no theme.
+func (d *Dotfiles) selectTheme(repos []*Repository) *activeTheme {
+	ts, warnings, err := mergeThemes(repos)
+	for _, w := range warnings {
+		fmt.Fprintf(d.Stderr, "warning: %s\n", w)
+	}
+	if err != nil {
+		fmt.Fprintf(d.Stderr, "error loading themes: %v\n", err)
+		d.collectErr(fmt.Errorf("themes: %w", err))
+	}
+	theme, err := selectTheme(ts, d.Theme, d.DstPath)
+	if err != nil {
+		fmt.Fprintf(d.Stderr, "error selecting the theme: %v\n", err)
+		d.collectErr(fmt.Errorf("theme: %w", err))
+	}
+	return theme
 }

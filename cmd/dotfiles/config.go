@@ -188,6 +188,7 @@ type Repository struct {
 	configPath string
 	config     Config
 	vars       map[string]string // resolved [vars] (see resolveVars)
+	theme      *activeTheme      // the theme variant in use, or nil (see selectTheme)
 }
 
 type Option func(*Repository)
@@ -216,10 +217,17 @@ func NewRepository(srcRoot, dstRoot string, opts ...Option) *Repository {
 }
 
 // LoadConfig loads the config of the repository on its own: only its own
-// [vars] and [default_vars] are available. Use loadRepos to load several
-// repositories that share their vars.
+// [vars], [default_vars] and themes are available. Use loadRepos to load
+// several repositories that share them.
 func (r *Repository) LoadConfig() error {
 	if err := r.readConfig(); err != nil {
+		return err
+	}
+	ts, _, err := mergeThemes([]*Repository{r})
+	if err != nil {
+		return err
+	}
+	if r.theme, err = selectTheme(ts, "", r.dstRoot); err != nil {
 		return err
 	}
 	views, _ := mergeVars([]*Repository{r})
@@ -279,7 +287,7 @@ func decodeTOML(path string, data []byte, v any) error {
 // resolve resolves raw, the [vars] the repository sees, and renders the
 // templated paths of its config with them.
 func (r *Repository) resolve(raw map[string]string) error {
-	vars, err := resolveVars(raw, r.dstRoot)
+	vars, err := resolveVars(raw, r.evalContext())
 	if err != nil {
 		return fmt.Errorf("%s: %w", r.configPath, err)
 	}
@@ -293,7 +301,7 @@ func (r *Repository) resolve(raw map[string]string) error {
 // evalContext returns the context that the repository's conditions,
 // templates and [[starlark]] code are evaluated with.
 func (r *Repository) evalContext() evalContext {
-	return evalContext{dstRoot: r.dstRoot, vars: r.vars}
+	return evalContext{dstRoot: r.dstRoot, vars: r.vars, theme: r.theme}
 }
 
 // exprEnv returns the environment of the repository's conditions.

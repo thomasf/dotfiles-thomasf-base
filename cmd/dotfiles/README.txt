@@ -132,16 +132,19 @@ prints the same list, in the same order, without running anything.
 
 Repositories are taken in alphabetical order of their directory names in the
 repositories path, or in the order given with -repository. Planning has
-four steps, each done for all repositories before the next:
+five steps, each done for all repositories before the next:
 
 1. **Read**: the config of every repository is read and checked, and the code
 of [[starlark]] entries is compiled.
-2. **Merge variables**: the variables of all configs are merged, giving each
+2. **Select the theme**: the themes in the [theme] dirs of all
+repositories are loaded, and the theme variant in use is chosen (see
+[theme]).
+3. **Merge variables**: the variables of all configs are merged, giving each
 repository its own view of them (see Precedence).
-3. **Resolve**: each repository's variables are resolved, rendering them as
+4. **Resolve**: each repository's variables are resolved, rendering them as
 templates, and then its templated src and dst paths, [[script]]
 sources and [git] values are rendered with them.
-4. **Plan**: each repository's conditions are evaluated and its actions are
+5. **Plan**: each repository's conditions are evaluated and its actions are
 planned.
 
 The variables of all repositories are known before any of them is resolved,
@@ -236,8 +239,9 @@ conditions, templates, templated paths, and the files that are linked without
 any section.
 
 After it, each section of the file is described in the order in which install
-uses it (see Order of Execution): [vars] first, because variables are
-resolved before anything else, then the entries from [[go]] to [[script]].
+uses it (see Order of Execution): [theme] and [vars] first, because the
+theme is chosen and variables are resolved before anything else, then the
+entries from [[go]] to [[script]].
 [repositories], which only the repos commands use, is described under
 [repositories].
 
@@ -255,15 +259,17 @@ the action is performed, e.g. os == 'linux' && hostname in ['yak', 'flam'].
 The same variables and functions are available in conditions, templates and
 Starlark scripts, written as each expects:
 
- Variable | Value                                   | Condition  | Template        | Starlark
-----------|-----------------------------------------|------------|-----------------|------------
- os       | The operating system (Go's GOOS: linux, | os         | {{.os}}         | os
-          | darwin)                                 |            |                 |
- arch     | The CPU architecture (Go's GOARCH:      | arch       | {{.arch}}       | arch
-          | amd64, arm64)                           |            |                 |
- hostname | The system hostname                     | hostname   | {{.hostname}}   | hostname
- vars     | The variables, all strings              | vars.email | {{.vars.email}} | vars["emai
-          |                                         |            |                 | l"]
+ Variable | Value                                 | Condition  | Template        | Starlark
+----------|---------------------------------------|------------|-----------------|--------------
+ os       | The operating system (Go's GOOS:      | os         | {{.os}}         | os
+          | linux, darwin)                        |            |                 |
+ arch     | The CPU architecture (Go's GOARCH:    | arch       | {{.arch}}       | arch
+          | amd64, arm64)                         |            |                 |
+ hostname | The system hostname                   | hostname   | {{.hostname}}   | hostname
+ vars     | The variables, all strings            | vars.email | {{.vars.email}} | vars["email"
+          |                                       |            |                 | ]
+ theme    | The theme variant in use (see         | theme.mode | {{.theme.mode}} | theme["mode"
+          | [theme])                              |            |                 | ]
 
  Function            | Returns                | Condition              | Template
 ---------------------|------------------------|------------------------|------------------------
@@ -289,6 +295,16 @@ Starlark scripts, written as each expects:
                      | false, 1, 0, t and f   |                        | .vars.gui}}
                      | are accepted, anything |                        |
                      | else is an error.      |                        |
+ hexDigits(color)    | A #rrggbb color as     | hexDigits(theme.colors | {{hexDigits
+                     | rrggbb. Anything but a | .red)                  | .theme.colors.red}}
+                     | #rrggbb color is an    |                        |
+                     | error, here and in rgb |                        |
+                     | and hex0x.             |                        |
+ rgb(color)          | A #rrggbb color as     | rgb(theme.colors.bg_0) | {{rgb
+                     | r,g,b in decimal, e.g. |                        | .theme.colors.bg_0}}
+                     | 16,60,72.              |                        |
+ hex0x(color)        | A #rrggbb color as     | hex0x(theme.colors.bg_ | {{hex0x
+                     | 0xrrggbb.              | 0)                     | .theme.colors.bg_0}}
 
 Starlark scripts call the functions as conditions do, with single or double
 quotes: lookPath("nvim", "vim").
@@ -378,6 +394,109 @@ explicitly mounted are automatically symlinked to the destination path. If a
 file name does not start with a dot, one is prepended (e.g., bashrc becomes
 ~/.bashrc).
 
+### [theme]
+
+A theme is a set of color palettes, one for each of its variants, such as
+the dark and the light variant of Selenized. [theme] says where themes are
+and which variants dark and light mode use; the variant in use is available
+as theme in conditions, templates and Starlark scripts.
+
+  [theme]
+  dirs  = ["config-base/themes"]
+  dark  = "selenized:dark"
+  light = "selenized:light"
+  mode  = "light"
+
+ Key   | Meaning
+-------|----------------------------------------------------------------------------------------
+ dirs  | Directories, relative to the repository, whose subdirectories are themes.
+ dark  | The variant of dark mode, as theme:variant. It must be a variant with mode = "dark".
+ light | The variant of light mode, as theme:variant. It must be a variant with mode = "light".
+ mode  | The mode until one is chosen: dark or light (the default).
+
+The dirs of all repositories are used. A theme name in two of them is an
+error, and a theme that fails to load is reported and left out. Unlike
+[vars], dark, light and mode are the same for every repository: each
+comes from the first repository in repository order (see Precedence) that
+sets it, with a warning if others set it differently.
+
+#### Theme Directories
+
+A theme is a directory; its name is the theme name:
+
+  selenized/
+  ├── theme.toml          [ansi]
+  └── variants/
+      ├── dark.toml       mode, [colors] and [apps] of the variant dark
+      └── light.toml
+
+A variant file has its mode, its colors and, optionally, settings for apps,
+such as the name of an editor theme:
+
+  mode = "dark"
+
+  [colors]
+  bg_0  = "#103c48"
+  bg_1  = "#184956"
+  # ...
+  br_red = "#ff665c"
+
+  [apps]
+  emacs = "my-solarized-selenized-dark"
+
+Every variant must have the colors bg_0, bg_1, bg_2 (backgrounds),
+dim_0 (dim text), fg_0, fg_1 (text) and the accents yellow, orange,
+red, magenta, violet, blue, cyan and green. A higher number is
+further from bg_0. A theme can add other colors, such as br_red; every
+variant of a theme must have the same colors and the same apps. Colors are
+written #rrggbb; names are lower case letters, digits and _.
+
+theme.toml maps the 16 terminal colors, color0 to color15, to colors of
+the variants, all of them:
+
+  [ansi]
+  color0 = "bg_1"
+  color1 = "red"
+  # ...
+  color15 = "fg_1"
+
+#### The Theme in Use
+
+The variant in use is chosen by the first of:
+
+1. the -theme option (DOTFILES_THEME): theme:variant, or :variant for
+another variant of the theme that would be chosen otherwise, e.g.
+dotfiles -theme :dark plan;
+2. theme in the state file ~/.local/state/dotfiles/theme.toml;
+3. [theme] dark or light, for the mode of the state file, else dark if
+~/.config/darkmode exists, else [theme] mode, else light.
+
+Without [theme] dark and light and without the option, there is no
+theme, and using theme is an error.
+
+theme has these keys:
+
+ Key                            | Value
+--------------------------------|---------------------------------------------------------------
+ name                           | The theme, e.g. selenized.
+ variant                        | The variant, e.g. dark.
+ mode                           | dark or light.
+ dir                            | The absolute path of the theme directory.
+ colors                         | The colors of the variant, and color0 to color15 from [ansi].
+ apps                           | The [apps] of the variant.
+
+  [vars]
+  term_bg = '{{.theme.colors.bg_0}}'
+
+  [[mount]]
+  condition = "theme.mode == 'dark'"
+  src = "config/dark-only.conf"
+  dst = ".config/foo/extra.conf"
+
+Using a color or key that does not exist is an error. To make one optional,
+give a default: theme.colors.dim_1 ?? theme.colors.dim_0 in an expression,
+{{or (index .theme.colors "dim_1") .theme.colors.dim_0}} in a template.
+
 ### [vars] and [default_vars]
 
 [vars] defines variables for templates, templated paths, scripts, [git]
@@ -444,13 +563,13 @@ For example, with names = ["base", "work", "games"]:
   # games/dotfiles.toml
   [default_vars]
   font_size = '9'
-  theme     = 'dark'
+  pager     = 'less'
 
  Variable            | base               | work               | games
 ---------------------|--------------------|--------------------|--------------------------------
  font_size           | 11 (1)             | 13 (1)             | 11 (2: base comes before work)
  editor              | vim (1)            | vim (2)            | vim (2)
- theme               | undefined (4)      | undefined (4)      | dark (3)
+ pager               | undefined (4)      | undefined (4)      | less (3)
 
 games gets 11 rather than its own default 9, because a [vars]
 definition in any repository comes before [default_vars]. Because base and
@@ -651,7 +770,10 @@ Scripts have the variables and functions of expressions, and these:
 
 vars is a dict of strings: vars["dpi"] fails if the variable is not
 defined, vars.get("dpi", "96") gives a default, and int(...) or
-parseBool(...) convert the value.
+parseBool(...) convert the value. theme is a dict too, or None if no
+theme is configured: theme["colors"]["bg_0"], or
+theme["colors"].get("dim_1", theme["colors"]["dim_0"]) for an optional
+color.
 
 #### Values
 

@@ -28,6 +28,7 @@ type Dotfiles struct {
 	Copy      bool
 	DryRun    bool
 	Verbose   bool
+	Theme     string
 
 	// Internal state
 	repos            []string
@@ -172,6 +173,7 @@ func (d *Dotfiles) flagSet(home string) *flag.FlagSet {
 	fs.BoolVar(&d.Copy, "copy", runtime.GOOS == "windows", "copy files instead of symlinking")
 	fs.BoolVar(&d.DryRun, "dry-run", false, "dry run (print actions without running them; only for repos fix and repos clone)")
 	fs.BoolVar(&d.Verbose, "v", false, "log more non errors")
+	fs.StringVar(&d.Theme, "theme", "", "theme variant to use instead of the chosen one: theme:variant, or :variant of the chosen theme")
 	return fs
 }
 
