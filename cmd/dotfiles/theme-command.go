@@ -18,11 +18,12 @@ func (d *Dotfiles) ThemeCommand(args []string) error {
 	fs := flag.NewFlagSet("dotfiles theme", flag.ContinueOnError)
 	fs.SetOutput(d.Stderr)
 	fs.Usage = func() {
-		fmt.Fprintf(d.Stderr, "Usage: dotfiles theme [show | list [-names | -json] | preview [<variant>] | set <variant> | toggle]\n\n")
+		fmt.Fprintf(d.Stderr, "Usage: dotfiles theme [show | list [-names | -json] | preview [<variant>] | color [options] <color> | set <variant> | toggle]\n\n")
 		fmt.Fprintf(d.Stderr, "Show the theme variant in use, list the themes and their variants, show\n")
-		fmt.Fprintf(d.Stderr, "the colors of a variant in the terminal, or switch the theme. preview and\n")
-		fmt.Fprintf(d.Stderr, "set take dark or light, theme:variant, or :variant of the theme in use;\n")
-		fmt.Fprintf(d.Stderr, "toggle switches between dark and light mode.\n\n")
+		fmt.Fprintf(d.Stderr, "the colors of a variant in the terminal, print a single color, or switch the\n")
+		fmt.Fprintf(d.Stderr, "theme. color prints a single named color in the specified format (default hex).\n")
+		fmt.Fprintf(d.Stderr, "preview, color and set take dark or light, theme:variant, or :variant of the theme\n")
+		fmt.Fprintf(d.Stderr, "in use; toggle switches between dark and light mode.\n\n")
 		fmt.Fprintf(d.Stderr, "A switch saves the choice in ~/%s,\n", themeStatePath)
 		fmt.Fprintf(d.Stderr, "installs the files of every repository (not [[go]] packages) and runs\n")
 		fmt.Fprintf(d.Stderr, "the [[script]] entries with on = \"theme\". See dotfiles doc theme.\n")
@@ -43,9 +44,9 @@ func (d *Dotfiles) ThemeCommand(args []string) error {
 	wantArgs := map[string]int{"show": 0, "preview": 1, "set": 1, "toggle": 0}
 	n, ok := wantArgs[sub]
 	switch {
-	case sub != "list" && !ok:
+	case sub != "list" && sub != "color" && !ok:
 		return usage("unknown command " + sub)
-	case sub == "preview" && len(args) > n, sub != "preview" && sub != "list" && len(args) != n:
+	case sub == "preview" && len(args) > n, sub != "preview" && sub != "list" && sub != "color" && len(args) != n:
 		return usage(fmt.Sprintf("%s takes %d arguments", sub, n))
 	case (sub == "set" || sub == "toggle") && d.Theme != "":
 		return usage("-theme can not be used with " + sub)
@@ -70,6 +71,8 @@ func (d *Dotfiles) ThemeCommand(args []string) error {
 			ref = args[0]
 		}
 		return d.previewTheme(ref)
+	case "color":
+		return d.colorTheme(args)
 	case "set", "toggle":
 		st, err := d.nextThemeState(sub, args)
 		if err != nil {
@@ -229,38 +232,148 @@ func (d *Dotfiles) listThemes(args []string) error {
 	return nil
 }
 
-// previewTheme prints the colors of the variant ref, given as set takes it,
-// or of the one in use if ref is "": each color as a swatch, its name and
-// value, and text in it on bg_0 with the contrast ratio, then the terminal
-// colors.
-func (d *Dotfiles) previewTheme(ref string) error {
+// resolveVariant returns the variant and theme:variant ref for the given
+// variant specifier (dark, light, theme:variant, or :variant), or the active
+// theme variant if ref is "".
+func (d *Dotfiles) resolveVariant(ref, command string) (*Variant, string, error) {
 	switch {
 	case ref == "":
 		if d.active == nil {
-			return errors.New("theme preview: no theme is configured")
+			return nil, "", fmt.Errorf("theme %s: no theme is configured", command)
 		}
 		ref = d.active.ref()
 	case ref == "dark":
 		ref = d.themes.dark
+		if ref == "" {
+			return nil, "", fmt.Errorf("theme %s: no dark theme is configured", command)
+		}
 	case ref == "light":
 		ref = d.themes.light
+		if ref == "" {
+			return nil, "", fmt.Errorf("theme %s: no light theme is configured", command)
+		}
 	case strings.HasPrefix(ref, ":"):
 		if d.active == nil {
-			return errors.New("theme preview: no theme is selected to take the variant of")
+			return nil, "", fmt.Errorf("theme %s: no theme is selected to take the variant of", command)
 		}
 		ref = d.active.theme.Name + ref
 	}
 	name, variant, err := parseThemeRef(ref)
 	if err != nil {
-		return fmt.Errorf("theme preview: %w", err)
+		return nil, "", fmt.Errorf("theme %s: %w", command, err)
 	}
 	t, ok := d.themes.themes[name]
 	if !ok {
-		return fmt.Errorf("theme preview: no theme %s", name)
+		return nil, "", fmt.Errorf("theme %s: no theme %s", command, name)
 	}
 	v, ok := t.Variants[variant]
 	if !ok {
-		return fmt.Errorf("theme preview: theme %s has no variant %s", name, variant)
+		return nil, "", fmt.Errorf("theme %s: theme %s has no variant %s", command, name, variant)
+	}
+	return v, ref, nil
+}
+
+// colorTheme prints a single named color from a theme variant.
+func (d *Dotfiles) colorTheme(args []string) error {
+	fs := flag.NewFlagSet("dotfiles theme color", flag.ContinueOnError)
+	fs.SetOutput(d.Stderr)
+	fs.Usage = func() {
+		fmt.Fprintf(d.Stderr, "Usage: dotfiles theme color [options] <color>\n\n")
+		fmt.Fprintf(d.Stderr, "Print a single named color from a theme.\n\n")
+		fmt.Fprintf(d.Stderr, "Options:\n")
+		fs.PrintDefaults()
+	}
+	themeOpt := fs.String("theme", "", "theme to use (dark, light, theme:variant, or :variant)")
+	formatOpt := fs.String("format", "hex", "output format: hex, raw, 0x, rgb")
+	rawOpt := fs.Bool("raw", false, "output without leading # (equivalent to -format raw)")
+	rgbOpt := fs.Bool("rgb", false, "output as r,g,b (equivalent to -format rgb)")
+	hex0xOpt := fs.Bool("0x", false, "output with leading 0x (equivalent to -format 0x)")
+	if err := fs.Parse(args); err != nil {
+		return err
+	}
+	if fs.NArg() == 0 {
+		fs.Usage()
+		return errors.New("theme color: missing color name")
+	}
+	if fs.NArg() > 1 {
+		fs.Usage()
+		return fmt.Errorf("theme color: unexpected arguments: %s", strings.Join(fs.Args()[1:], " "))
+	}
+	colorName := fs.Arg(0)
+
+	numShort := 0
+	for _, b := range []bool{*rawOpt, *rgbOpt, *hex0xOpt} {
+		if b {
+			numShort++
+		}
+	}
+	if numShort > 1 {
+		fs.Usage()
+		return errors.New("theme color: only one of -raw, -rgb, and -0x can be specified")
+	}
+
+	format := *formatOpt
+	if *rawOpt {
+		if *formatOpt != "hex" && *formatOpt != "raw" {
+			fs.Usage()
+			return errors.New("theme color: -raw and -format cannot be combined")
+		}
+		format = "raw"
+	} else if *rgbOpt {
+		if *formatOpt != "hex" && *formatOpt != "rgb" {
+			fs.Usage()
+			return errors.New("theme color: -rgb and -format cannot be combined")
+		}
+		format = "rgb"
+	} else if *hex0xOpt {
+		if *formatOpt != "hex" && *formatOpt != "0x" {
+			fs.Usage()
+			return errors.New("theme color: -0x and -format cannot be combined")
+		}
+		format = "0x"
+	}
+
+	ref := *themeOpt
+	if ref == "" {
+		ref = d.Theme
+	}
+	v, refName, err := d.resolveVariant(ref, "color")
+	if err != nil {
+		return err
+	}
+	c, ok := v.Colors[colorName]
+	if !ok {
+		return fmt.Errorf("theme color: theme %s has no color %q", refName, colorName)
+	}
+
+	var out string
+	switch format {
+	case "hex":
+		out = c
+	case "raw", "strip-hash", "hexDigits":
+		out = strings.TrimPrefix(c, "#")
+	case "0x", "hex0x":
+		out = "0x" + strings.TrimPrefix(c, "#")
+	case "rgb":
+		r, g, b := rgb8(c)
+		out = fmt.Sprintf("%d,%d,%d", r, g, b)
+	default:
+		fs.Usage()
+		return fmt.Errorf("theme color: unknown format %q", format)
+	}
+
+	fmt.Fprintln(d.Stdout, out)
+	return nil
+}
+
+// previewTheme prints the colors of the variant ref, given as set takes it,
+// or of the one in use if ref is "": each color as a swatch, its name and
+// value, and text in it on bg_0 with the contrast ratio, then the terminal
+// colors.
+func (d *Dotfiles) previewTheme(ref string) error {
+	v, ref, err := d.resolveVariant(ref, "preview")
+	if err != nil {
+		return err
 	}
 
 	w := d.Stdout

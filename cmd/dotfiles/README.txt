@@ -525,6 +525,8 @@ dotfiles theme shows and switches the theme:
                                 | bit colors: swatches, text on bg_0 with its contrast ratio,
                                 | and the terminal colors. preview dark, preview
                                 | selenized:light and preview :black show another variant.
+ dotfiles theme color <name>    | Prints a single named color in hex format (or -format raw,
+                                | 0x, rgb). -theme specifies another variant.
  dotfiles theme set dark        | Switches to dark mode, with [theme] dark; set light likewise.
  dotfiles theme set selenized:x | Switches to a variant, and to its mode; set :x keeps the
                                 | theme in use.

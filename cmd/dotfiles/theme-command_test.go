@@ -329,3 +329,89 @@ func TestThemePreview(t *testing.T) {
 		t.Errorf("preview :dim: err = %v", err)
 	}
 }
+
+func TestThemeColor(t *testing.T) {
+	t.Parallel()
+	d, _ := themeCommandRepo(t)
+
+	run := func(args ...string) (string, error) {
+		out := &bytes.Buffer{}
+		d.Stdout = out
+		err := d.ThemeCommand(append([]string{"color"}, args...))
+		return out.String(), err
+	}
+
+	// Default active theme color
+	got, err := run("bg_0")
+	if err != nil || got != "#000000\n" {
+		t.Errorf("color bg_0 = %q, %v, want #000000\\n, nil", got, err)
+	}
+
+	// Formats
+	for _, tt := range []struct {
+		args []string
+		want string
+	}{
+		{[]string{"-format", "hex", "bg_0"}, "#000000\n"},
+		{[]string{"-format", "raw", "bg_0"}, "000000\n"},
+		{[]string{"-format", "strip-hash", "bg_0"}, "000000\n"},
+		{[]string{"-format", "0x", "bg_0"}, "0x000000\n"},
+		{[]string{"-format", "rgb", "bg_0"}, "0,0,0\n"},
+		{[]string{"-raw", "bg_0"}, "000000\n"},
+		{[]string{"-rgb", "bg_0"}, "0,0,0\n"},
+		{[]string{"-0x", "bg_0"}, "0x000000\n"},
+	} {
+		got, err := run(tt.args...)
+		if err != nil || got != tt.want {
+			t.Errorf("color %v = %q, %v, want %q, nil", tt.args, got, err, tt.want)
+		}
+	}
+
+	// Terminal colors (ANSI color0-15)
+	got, err = run("color0")
+	if err != nil || got != "#000000\n" {
+		t.Errorf("color color0 = %q, %v, want #000000\\n, nil", got, err)
+	}
+
+	// Specific theme variant
+	got, err = run("-theme", ":black", "br_red")
+	if err != nil || got != "#000001\n" {
+		t.Errorf("color -theme :black br_red = %q, %v, want #000001\\n, nil", got, err)
+	}
+	got, err = run("-theme", "test:black", "-raw", "br_red")
+	if err != nil || got != "000001\n" {
+		t.Errorf("color -theme test:black -raw br_red = %q, %v, want 000001\\n, nil", got, err)
+	}
+	got, err = run("-theme", "dark", "bg_0")
+	if err != nil || got != "#000000\n" {
+		t.Errorf("color -theme dark bg_0 = %q, %v, want #000000\\n, nil", got, err)
+	}
+
+	// Global -theme option
+	d.Theme = "test:black"
+	got, err = run("br_red")
+	d.Theme = ""
+	if err != nil || got != "#000001\n" {
+		t.Errorf("color with global -theme = %q, %v, want #000001\\n, nil", got, err)
+	}
+
+	// Errors
+	for _, tt := range []struct {
+		args    []string
+		wantErr string
+	}{
+		{nil, "missing color name"},
+		{[]string{"bg_0", "extra"}, "unexpected arguments"},
+		{[]string{"-raw", "-rgb", "bg_0"}, "only one of -raw, -rgb, and -0x"},
+		{[]string{"-raw", "-format", "rgb", "bg_0"}, "-raw and -format cannot be combined"},
+		{[]string{"-format", "invalid", "bg_0"}, "unknown format"},
+		{[]string{"nonexistent"}, "has no color"},
+		{[]string{"-theme", ":dim", "bg_0"}, "no variant dim"},
+		{[]string{"-theme", "missing:dark", "bg_0"}, "no theme missing"},
+	} {
+		_, err := run(tt.args...)
+		if err == nil || !strings.Contains(err.Error(), tt.wantErr) {
+			t.Errorf("color %v error = %v, want error containing %q", tt.args, err, tt.wantErr)
+		}
+	}
+}
