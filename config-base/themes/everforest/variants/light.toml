@@ -1,7 +1,8 @@
 mode = "light"
 
 # Everforest light (sainnhe/everforest, medium): bg0, bg1, bg2, grey1 (comments) and
-# fg (also fg_1); aqua is cyan; it has one purple, magenta and violet.
+# fg (also fg_1); aqua is cyan; it has one purple, magenta, and violet is
+# that purple turned toward blue (OKLCH hue 300).
 [colors]
 bg_0  = "#fdf6e3"
 bg_1  = "#f4f0d9"
@@ -15,7 +16,7 @@ yellow  = "#dfa000"
 orange  = "#f57d26"
 red     = "#f85552"
 magenta = "#df69ba"
-violet  = "#df69ba"
+violet  = "#9d79d7"
 blue    = "#3a94c5"
 cyan    = "#35a77c"
 green   = "#8da101"
