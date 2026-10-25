@@ -103,3 +103,19 @@ dirs  = ['config-base/themes']
 dark  = 'selenized:dark'
 light = 'selenized:light'
 mode  = 'light'
+
+# The theme in use, for programs that read their colors themselves, such as
+# ws and panels in xmonad.
+[[starlark]]
+dst = '.config/theme/palette.json'
+missing = 'create'
+src = '''
+doc.clear()
+merge(doc, {
+    "name": theme["name"],
+    "variant": theme["variant"],
+    "mode": theme["mode"],
+    "colors": theme["colors"],
+    "apps": theme["apps"],
+})
+'''

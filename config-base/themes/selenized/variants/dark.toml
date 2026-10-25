@@ -27,3 +27,8 @@ br_cyan    = "#53d6c7"
 [apps]
 emacs        = "my-solarized-selenized-dark"
 color_scheme = "prefer-dark"
+
+# The root window background, a file in the theme directory, and how
+# hsetroot draws it: tile, center, full, fill, cover or extend.
+background      = "assets/background-dark.png"
+background_mode = "tile"
