@@ -98,7 +98,7 @@ upgrader-cargo() {
         csvlens \
         diffr \
         du-dust \
-        exa \
+        eza \
         fblog \
         fd-find \
         gitu \

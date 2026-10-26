@@ -183,11 +183,11 @@ else
 fi
 
 l() {
-  if hash exa 2>/dev/null; then
+  if hash eza 2>/dev/null; then
     if [[ $(tput lines) -lt 13 ]] || [[ $(tput cols) -lt 70 ]]; then
-      exa -G --group-directories-first "$@"
+      eza -G --group-directories-first "$@"
     else
-      exa -l --group-directories-first "$@"
+      eza -l --group-directories-first "$@"
     fi
   else
     ls -l "$@"
@@ -195,8 +195,8 @@ l() {
 }
 
 ll() {
-  if hash exa 2>/dev/null; then
-    exa -l --group-directories-first "$@"
+  if hash eza 2>/dev/null; then
+    eza -l --group-directories-first "$@"
   else
     ls -l "$@"
   fi
