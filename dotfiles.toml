@@ -110,6 +110,11 @@ condition = "os == 'linux'"
 src = 'config-base/bash/console.sh.tmpl'
 dst = '.config/theme/console.sh'
 
+# The theme in use for eza: quiets permissions down to dim_0.
+[[template]]
+src = 'config-base/eza/theme.yml.tmpl'
+dst = '.config/eza/theme.yml'
+
 # The theme in use, for programs that read their colors themselves, such as
 # ws and panels in xmonad.
 [[starlark]]
