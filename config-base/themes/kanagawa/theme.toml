@@ -1,8 +1,11 @@
-# Kanagawa, https://github.com/rebelot/kanagawa.nvim
-# The palette is Kanagawa by Tommaso Laurenzi (MIT License).
-#
-# Ported from rebelot/kanagawa.nvim (lua/kanagawa/colors.lua, themes.lua).
-# Its bright colors are the terminal's bright colors.
+creator = "Tommaso Laurenzi"
+url = "https://github.com/rebelot/kanagawa.nvim"
+license = "MIT"
+description = """
+The palette is Kanagawa by Tommaso Laurenzi.
+
+Ported from rebelot/kanagawa.nvim (lua/kanagawa/colors.lua, themes.lua).
+Its bright colors are the terminal's bright colors."""
 
 [ansi]
 color0 = "bg_1"

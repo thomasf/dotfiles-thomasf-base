@@ -1,0 +1,23 @@
+Solarized Color Palette Specification
+Creator: Ethan Schoonover (https://ethanschoonover.com/solarized)
+License: MIT
+
+Monochromatic Neutral Tones:
+  base03   #002b36   Dark background (primary)
+  base02   #073642   Dark background highlight / statusline
+  base01   #586e75   Dark comments / muted; light optional emphasized content
+  base00   #657b83   Dark body text; light comments
+  base0    #839496   Dark default body text; light dark text
+  base1    #93a1a1   Dark optional emphasized content; light body text
+  base2    #eee8d5   Light background highlight / statusline
+  base3    #fdf6e3   Light background (primary)
+
+Chromatic Accents:
+  yellow   #b58900
+  orange   #cb4b16
+  red      #dc322f
+  magenta  #d33682
+  violet   #6c71c4
+  blue     #268bd2
+  cyan     #2aa198
+  green    #859900

@@ -434,7 +434,7 @@ sets it, with a warning if others set it differently.
 A theme is a directory; its name is the theme name:
 
   selenized/
-  ├── theme.toml          [ansi]
+  ├── theme.toml          metadata (creator, url, license, description) and [ansi]
   └── variants/
       ├── dark.toml       mode, [colors] and [apps] of the variant dark
       └── light.toml
@@ -461,8 +461,26 @@ dim_1, dim text that reads better than dim_0 on bg_1; every
 variant of a theme must have the same colors and the same apps. Colors are
 written #rrggbb; names are lower case letters, digits and _.
 
-theme.toml maps the 16 terminal colors, color0 to color15, to colors of
-the variants, all of them:
+The accent names indicate positions around the color wheel rather than strict
+literal color definitions: they provide an evenly spaced 8-accent spectrum
+(spaced at ~45° intervals: red, orange, yellow, green, cyan, blue, violet,
+magenta) so that templates and syntax highlighters can rely on visually distinct
+hues across all themes. In particular, magenta and violet represent the two
+halves of the purple spectrum: magenta is the warmer, reddish-purple tone
+(~315°), while violet is the cooler, bluish-purple tone (~270°). When adapting
+a palette that only defines a single purple upstream, magenta is assigned to
+that purple, and violet is derived by shifting it toward blue (e.g. in OKLCH
+hue 300) to ensure both remain distinct.
+
+theme.toml contains metadata for the theme (optional creator, url,
+license, and description fields to give credit to the upstream palette) and
+maps the 16 terminal colors, color0 to color15, to colors of the variants:
+
+  creator = "Jan Warchoł"
+  url = "https://github.com/jan-warchol/selenized"
+  license = "MIT"
+  description = """
+  The terminal colors, as Selenized maps them."""
 
   [ansi]
   color0 = "bg_1"
@@ -487,14 +505,27 @@ theme, and using theme is an error.
 
 theme has these keys:
 
- Key                            | Value
---------------------------------|---------------------------------------------------------------
- name                           | The theme, e.g. selenized.
- variant                        | The variant, e.g. dark.
- mode                           | dark or light.
- dir                            | The absolute path of the theme directory.
- colors                         | The colors of the variant, and color0 to color15 from [ansi].
- apps                           | The [apps] of the variant.
+ Key               | Value
+-------------------|----------------------------------------------------------------------------
+ name              | The theme, e.g. selenized.
+ variant           | The variant, e.g. dark.
+ mode              | dark or light.
+ dir               | The absolute path of the theme directory.
+ colors            | The colors of the variant, br_* fallbacks, and color0 to color15.
+ terminal          | The terminal colors: normal and bright (also bright_ansi, bright_accents).
+ terminal_bright   | palette (default) or accents.
+ apps              | The [apps] of the variant.
+
+[theme] terminal_bright controls how terminal bright colors are mapped:
+
+• palette (the default): ANSI color8 through color15 and theme.terminal.bright use the variant's
+[ansi] mapping from theme.toml (e.g. Solarized maps ANSI 9 to orange and 13 to violet).
+• accents: ANSI color8 through color15 and theme.terminal.bright map to br_black, br_red, ...,
+br_white. If a palette does not define a bright variant for an accent, it automatically falls back
+to the base accent (br_black falls back to bg_2, and br_white to fg_1).
+
+theme.terminal provides normal and bright maps with keys black, red, green, yellow, blue, magenta,
+cyan, and white, ready for terminal configurations such as Alacritty.
 
   [vars]
   term_bg = '{{.theme.colors.bg_0}}'
@@ -522,9 +553,15 @@ dotfiles theme shows and switches the theme:
  dotfiles theme list            | Lists every variant of every theme, marking the one in use
                                 | with *.
  dotfiles theme preview         | Shows the colors of the variant in use in a terminal with 24-
-                                | bit colors: swatches, text on bg_0 with its contrast ratio,
-                                | and the terminal colors. preview dark, preview
-                                | selenized:light and preview :black show another variant.
+                                | bit colors: swatches, text on each background with its
+                                | contrast ratio, surface hierarchy, accent spectrum, terminal
+                                | colors, styled terminal text, warnings for invisible text,
+                                | and app metadata. preview dark, preview selenized:light and
+                                | preview :black show another variant, and preview -all shows
+                                | all variants.
+ dotfiles theme lint            | Lints a theme variant or all themes (-all) for contrast and
+                                | styling issues (such as invisible text combinations).
+                                | Defaults to the variant in use; accepts <variant> or -theme.
  dotfiles theme color <name>    | Prints a single named color in hex format (or -format raw,
                                 | 0x, rgb). -theme specifies another variant.
  dotfiles theme set dark        | Switches to dark mode, with [theme] dark; set light likewise.

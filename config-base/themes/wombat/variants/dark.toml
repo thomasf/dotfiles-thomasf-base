@@ -1,25 +1,36 @@
 mode = "dark"
 
-# From the wombat palette (grays as solarized-emacs blends them),
-# drawn as dark by solarized-emacs. bg_2 is not in it: it is bg_1 moved
-# 0.165 of the way toward fg_0 in OKLab, Selenized's step, chosen once.
+# From GNU Emacs built-in theme (/home/t/.opt/emacs/etc/themes/wombat-theme.el)
+# by Kristoffer Grönlund, adapted from the Vim color scheme by Lars H. Nielsen.
+# bg_1 is adjusted from upstream fringe/header #303030 (contrast ratio 1.17:1 on bg_0)
+# to #353535 to achieve 1.25:1 contrast ratio for terminal surface visibility.
 [colors]
-bg_0  = "#2a2a29"
-bg_1  = "#2f2f2e"
-bg_2  = "#3d3d3b"
-dim_0 = "#6a6a65"
-dim_1 = "#74736f" # base00
-fg_0  = "#8d8b86"
-fg_1  = "#999891"
+bg_0  = "#242424" # default background
+bg_1  = "#353535" # adjusted from upstream #303030 (raised for >= 1.22:1 contrast)
+bg_2  = "#444444" # upstream region, mode-line, ansi-color-bright-black
+dim_0 = "#99968b" # font-lock-comment-face
+dim_1 = "#857b6f" # isearch, mode-line-inactive
+fg_0  = "#f6f3e8" # default foreground
+fg_1  = "#ffffff" # highlight, ansi-color-bright-white
 
-yellow  = "#e5c06d"
-orange  = "#ddaa6f"
-red     = "#ffb4ac"
-magenta = "#e5786d"
-violet  = "#834c98"
-blue    = "#a4b5e6"
-cyan    = "#7ec98f"
-green   = "#8ac6f2"
+yellow  = "#ccaa8f" # ansi-color-yellow, font-lock-warning-face
+orange  = "#ddaa6f" # escape-glyph, homoglyph
+red     = "#b85149" # ansi-color-red
+magenta = "#64619a" # ansi-color-magenta
+violet  = "#a6a1de" # ansi-color-bright-magenta
+blue    = "#5b98c2" # ansi-color-blue
+cyan    = "#3f9f9e" # ansi-color-cyan
+green   = "#92a65e" # ansi-color-green, font-lock-type-face
+
+# Wombat official Emacs bright ANSI accents
+br_yellow  = "#edc4a3" # ansi-color-bright-yellow
+br_orange  = "#ddaa6f" # escape-glyph
+br_red     = "#e5786d" # ansi-color-bright-red, font-lock-builtin-face
+br_magenta = "#a6a1de" # ansi-color-bright-magenta
+br_violet  = "#a6a1de" # ansi-color-bright-magenta
+br_blue    = "#8ac6f2" # ansi-color-bright-blue, font-lock-keyword-face
+br_cyan    = "#70cecc" # ansi-color-bright-cyan
+br_green   = "#95e454" # ansi-color-bright-green, font-lock-string-face
 
 [apps]
 emacs        = "my-solarized-wombat-dark"

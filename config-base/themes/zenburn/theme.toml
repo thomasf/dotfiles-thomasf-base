@@ -1,9 +1,11 @@
-# Zenburn, as solarized-emacs has it
-#
-# Ported from the solarized-emacs palettes (github.com/bbatsov/solarized-emacs,
-# 9df935b). Solarized-style palettes have no bright colors: the terminal's
-# bright red and magenta are orange and violet, as in Solarized, and the
-# other bright colors are the normal ones.
+creator = "Jani Nurminen, Bozhidar Batsov"
+url = "https://github.com/bbatsov/zenburn-emacs"
+license = "GPL-3.0-or-later"
+description = """
+Zenburn is a low-contrast color scheme originally created for Vim by Jani
+Nurminen, with the color palette formalized for Emacs by Bozhidar Batsov.
+It has no bright colors: the terminal's bright yellow and magenta
+are orange and violet, and the other bright colors are the normal ones."""
 
 [ansi]
 color0 = "bg_1"
@@ -16,9 +18,9 @@ color6 = "cyan"
 color7 = "dim_0"
 
 color8  = "bg_2"
-color9  = "orange"
+color9  = "br_red"
 color10 = "green"
-color11 = "yellow"
+color11 = "orange"
 color12 = "blue"
 color13 = "violet"
 color14 = "cyan"

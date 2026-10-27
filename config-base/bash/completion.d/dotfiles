@@ -14,6 +14,50 @@ __dotfiles_repos()
     fi
 }
 
+__dotfiles_theme_variants()
+{
+    local rdir="${1:-${DOTFILES_REPOS:-$HOME/src/dotfiles}}"
+    local themes=""
+    if type dotfiles &>/dev/null; then
+        if [[ -n "$1" ]]; then
+            themes="$(dotfiles -repos "$1" theme list -names 2>/dev/null)"
+        else
+            themes="$(dotfiles theme list -names 2>/dev/null)"
+        fi
+    fi
+    if [[ -z "$themes" && -d "$rdir/base/config-base/themes" ]]; then
+        for tdir in "$rdir/base/config-base/themes"/*; do
+            if [[ -d "$tdir/variants" ]]; then
+                local tname="${tdir##*/}"
+                for vfile in "$tdir/variants"/*.toml; do
+                    if [[ -f "$vfile" ]]; then
+                        local vname="${vfile##*/}"
+                        vname="${vname%.toml}"
+                        themes="${themes:+$themes }$tname:$vname"
+                    fi
+                done
+            fi
+        done
+    fi
+    local variants=""
+    for t in $themes; do
+        variants="$variants :${t#*:}"
+    done
+    echo "dark light $themes $variants"
+}
+
+__dotfiles_ltrim_colon()
+{
+    if type __ltrim_colon_completions &>/dev/null; then
+        __ltrim_colon_completions "$1"
+    elif [[ "$1" == *:* && "$COMP_WORDBREAKS" == *:* ]]; then
+        local colon_prefix="${1%"${1##*:}"}"
+        local i
+        for i in "${!COMPREPLY[@]}"; do
+            COMPREPLY[i]="${COMPREPLY[i]#"$colon_prefix"}"
+        done
+    fi
+}
 
 _dotfiles()
 {
@@ -37,7 +81,7 @@ _dotfiles()
         fi
 
         case "$w" in
-            -dst|--dst|-n|--n)
+            -dst|--dst|-n|--n|-format|--format)
                 skip_next=1
                 ;;
             -repos|--repos)
@@ -45,6 +89,9 @@ _dotfiles()
                 skip_next=1
                 ;;
             -repository|--repository)
+                skip_next=1
+                ;;
+            -theme|--theme)
                 skip_next=1
                 ;;
             -*)
@@ -82,6 +129,17 @@ _dotfiles()
             fi
             return 0
             ;;
+        -theme|--theme)
+            local variants
+            variants="$(__dotfiles_theme_variants "$repos_dir_arg")"
+            COMPREPLY=( $(compgen -W "$variants" -- "$cur") )
+            __dotfiles_ltrim_colon "$cur"
+            return 0
+            ;;
+        -format|--format)
+            COMPREPLY=( $(compgen -W "hex raw 0x rgb" -- "$cur") )
+            return 0
+            ;;
         -n|--n)
             return 0
             ;;
@@ -89,10 +147,10 @@ _dotfiles()
 
     if [[ -z "$cmd" ]]; then
         if [[ "$cur" == -* ]]; then
-            local global_opts="-copy --copy -dry-run --dry-run -dst --dst -f -repos --repos -repository --repository -v -h --help"
+            local global_opts="-copy --copy -dry-run --dry-run -dst --dst -f -repos --repos -repository --repository -theme --theme -v -h --help"
             COMPREPLY=( $(compgen -W "${global_opts}" -- "${cur}") )
         else
-            local commands="install plan push publish pull status diff magit log repos doc i s d"
+            local commands="install plan push publish pull status diff magit log repos theme doc i s d"
             COMPREPLY=( $(compgen -W "${commands}" -- "${cur}") )
         fi
         return 0
@@ -127,6 +185,69 @@ _dotfiles()
                     ;;
             esac
             ;;
+        theme)
+            case "$subcmd" in
+                "")
+                    local subcmds="show list preview lint color set toggle apply"
+                    COMPREPLY=( $(compgen -W "${subcmds}" -- "${cur}") )
+                    return 0
+                    ;;
+                list)
+                    local list_opts="-names --names -json --json -h --help"
+                    COMPREPLY=( $(compgen -W "${list_opts}" -- "${cur}") )
+                    return 0
+                    ;;
+                preview)
+                    if [[ "$cur" == -* ]]; then
+                        local preview_opts="-all --all -theme --theme -h --help"
+                        COMPREPLY=( $(compgen -W "${preview_opts}" -- "${cur}") )
+                    else
+                        local variants
+                        variants="$(__dotfiles_theme_variants "$repos_dir_arg")"
+                        COMPREPLY=( $(compgen -W "${variants}" -- "${cur}") )
+                        __dotfiles_ltrim_colon "$cur"
+                    fi
+                    return 0
+                    ;;
+                lint)
+                    if [[ "$cur" == -* ]]; then
+                        local lint_opts="-all --all -theme --theme -h --help"
+                        COMPREPLY=( $(compgen -W "${lint_opts}" -- "${cur}") )
+                    else
+                        local variants
+                        variants="$(__dotfiles_theme_variants "$repos_dir_arg")"
+                        COMPREPLY=( $(compgen -W "${variants}" -- "${cur}") )
+                        __dotfiles_ltrim_colon "$cur"
+                    fi
+                    return 0
+                    ;;
+                color)
+                    if [[ "$cur" == -* ]]; then
+                        local color_opts="-0x -format --format -raw --raw -rgb --rgb -theme --theme -h --help"
+                        COMPREPLY=( $(compgen -W "${color_opts}" -- "${cur}") )
+                    else
+                        local colors="bg_0 bg_1 bg_2 dim_0 dim_1 fg_0 fg_1 yellow orange red magenta violet blue cyan green br_yellow br_orange br_red br_magenta br_violet br_blue br_cyan br_green br_black br_white"
+                        COMPREPLY=( $(compgen -W "${colors}" -- "${cur}") )
+                    fi
+                    return 0
+                    ;;
+                set)
+                    local variants
+                    variants="$(__dotfiles_theme_variants "$repos_dir_arg")"
+                    COMPREPLY=( $(compgen -W "${variants}" -- "${cur}") )
+                    __dotfiles_ltrim_colon "$cur"
+                    return 0
+                    ;;
+                show|toggle|apply)
+                    return 0
+                    ;;
+            esac
+            ;;
+        doc)
+            local topics="toc theme repositories vars git template starlark script appendices options"
+            COMPREPLY=( $(compgen -W "${topics}" -- "${cur}") )
+            return 0
+            ;;
         install|i|plan)
             local repos
             repos="$(__dotfiles_repos "$repos_dir_arg")"
@@ -134,7 +255,7 @@ _dotfiles()
             COMPREPLY=( $(compgen -W "${repos}" -- "${cur}") $(compgen -f -- "${cur}") )
             return 0
             ;;
-        push|publish|status|s|diff|d|magit|doc)
+        push|publish|status|s|diff|d|magit)
             return 0
             ;;
     esac

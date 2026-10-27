@@ -1,12 +1,13 @@
 mode = "light"
 
-# From solarized-light-color-palette-alist,
-# drawn as light by solarized-emacs. bg_2 is not in it: it is bg_1 moved
-# 0.165 of the way toward fg_0 in OKLab, Selenized's step, chosen once.
+# From solarized-light-color-palette-alist, drawn as light by solarized-emacs.
+# All colors match upstream Solarized light, except bg_2 which is not in
+# upstream Solarized (upstream only defines base3 and base2). bg_2 is bg_1
+# moved 0.165 toward fg_0 in OKLab to provide a third background surface.
 [colors]
-bg_0  = "#fdf6e3"
-bg_1  = "#eee8d5"
-bg_2  = "#d6d5c7"
+bg_0  = "#fdf6e3" # base3
+bg_1  = "#eee8d5" # base2
+bg_2  = "#d6d5c7" # generated surface level (upstream has no bg_2)
 dim_0 = "#93a1a1"
 dim_1 = "#839496" # base0, as drawn light
 fg_0  = "#657b83"

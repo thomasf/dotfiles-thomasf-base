@@ -1,0 +1,52 @@
+Everforest Color Palette Specification
+Creator: sainnhe (https://github.com/sainnhe/everforest)
+Source: autoload/everforest.vim
+License: MIT
+
+Everforest Dark (Medium Contrast):
+  Backgrounds:
+    bg_dim      #232a2e
+    bg0         #2d353b   Default background
+    bg1         #343f44   Current line / panel background
+    bg2         #3d484d   Statusline background
+    bg3         #475258   Selection background
+    bg4         #4f585e
+    bg5         #56635f
+  Foregrounds:
+    fg          #d3c6aa   Default foreground
+    statusline1 #fdf6e3   High-contrast statusline foreground
+    grey0       #859289   Comments
+    grey1       #829181
+    grey2       #9da9a0
+  Accents:
+    red         #e67e80
+    orange      #e69875
+    yellow      #dbbc7f
+    green       #a7c080
+    aqua        #83c092
+    blue        #7fbbb3
+    purple      #d699b6
+
+Everforest Light (Medium Contrast):
+  Backgrounds:
+    bg_dim      #efebd4
+    bg0         #fdf6e3   Default background
+    bg1         #f4f0d9   Current line background
+    bg2         #efebd4   Statusline background
+    bg3         #e6e2cc   Selection background
+    bg4         #e0dcc7
+    bg5         #bdbaa3
+  Foregrounds:
+    fg          #5c6a72   Default foreground
+    statusline1 #343f44   Statusline foreground
+    grey0       #939f91   Comments
+    grey1       #829181
+    grey2       #829181
+  Accents:
+    red         #f85552
+    orange      #f57d26
+    yellow      #dfa000
+    green       #8da101
+    aqua        #35a77c
+    blue        #3a94c5
+    purple      #df69ba

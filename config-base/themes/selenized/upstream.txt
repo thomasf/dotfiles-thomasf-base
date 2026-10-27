@@ -1,0 +1,108 @@
+Selenized Color Palette Specification
+Creator: Jan Warchoł (https://github.com/jan-warchol/selenized)
+Source: the-values.md
+License: MIT / Apache 2.0
+
+Selenized Black:
+  bg_0        #181818   Background
+  bg_1        #252525   Background highlight / surface
+  bg_2        #3b3b3b   Raised surface
+  dim_0       #777777   Comments / muted text
+  fg_0        #b9b9b9   Default foreground
+  fg_1        #dedede   Emphasized text
+  Normal Accents:
+    red       #ed4a46
+    green     #70b433
+    yellow    #dbb32d
+    blue      #368aeb
+    magenta   #eb6eb7
+    cyan      #3fc5b7
+    orange    #e67f43
+    violet    #a580e2
+  Bright Accents:
+    br_red    #ff5e56
+    br_green  #83c746
+    br_yellow #efc541
+    br_blue   #4f9cfe
+    br_magenta#ff81ca
+    br_cyan   #56d8c9
+    br_orange #fa9153
+    br_violet #b891f5
+
+Selenized Dark:
+  bg_0        #103c48   Background
+  bg_1        #184956   Background highlight / surface
+  bg_2        #2d5b69   Raised surface
+  dim_0       #72898f   Comments / muted text
+  fg_0        #adbcbc   Default foreground
+  fg_1        #cad8d9   Emphasized text
+  Normal Accents:
+    red       #fa5750
+    green     #75b938
+    yellow    #dbb32d
+    blue      #4695f7
+    magenta   #f275be
+    cyan      #41c7b9
+    orange    #ed8649
+    violet    #af88eb
+  Bright Accents:
+    br_red    #ff665c
+    br_green  #84c747
+    br_yellow #ebc13d
+    br_blue   #58a3ff
+    br_magenta#ff84cd
+    br_cyan   #53d6c7
+    br_orange #fd9456
+    br_violet #bd96fa
+
+Selenized Light:
+  bg_0        #fbf3db   Background
+  bg_1        #ece3cc   Background highlight / surface
+  bg_2        #d5cdb6   Raised surface
+  dim_0       #909995   Comments / muted text
+  fg_0        #53676d   Default foreground
+  fg_1        #3a4d53   Emphasized text
+  Normal Accents:
+    red       #d2212d
+    green     #489100
+    yellow    #ad8900
+    blue      #0072d4
+    magenta   #ca4898
+    cyan      #009c8f
+    orange    #c25d1e
+    violet    #8762c6
+  Bright Accents:
+    br_red    #cc1729
+    br_green  #428b00
+    br_yellow #a78300
+    br_blue   #006dce
+    br_magenta#c44392
+    br_cyan   #00978a
+    br_orange #bc5819
+    br_violet #825dc0
+
+Selenized White:
+  bg_0        #ffffff   Background
+  bg_1        #ebebeb   Background highlight / surface
+  bg_2        #cdcdcd   Raised surface
+  dim_0       #878787   Comments / muted text
+  fg_0        #474747   Default foreground
+  fg_1        #282828   Emphasized text
+  Normal Accents:
+    red       #d6000c
+    green     #1d9700
+    yellow    #c49700
+    blue      #0064e4
+    magenta   #dd0f9d
+    cyan      #00ad9c
+    orange    #d04a00
+    violet    #7f51d6
+  Bright Accents:
+    br_red    #bf0000
+    br_green  #008b00
+    br_yellow #af8500
+    br_blue   #005acc
+    br_magenta#c7008b
+    br_cyan   #009a8a
+    br_orange #ba3700
+    br_violet #6b3ec2

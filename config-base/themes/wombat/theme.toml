@@ -1,9 +1,9 @@
-# Wombat, as solarized-emacs has it
-#
-# Ported from the solarized-emacs palettes (github.com/bbatsov/solarized-emacs,
-# 9df935b). Solarized-style palettes have no bright colors: the terminal's
-# bright red and magenta are orange and violet, as in Solarized, and the
-# other bright colors are the normal ones.
+creator = "Lars H. Nielsen, Kristoffer Grönlund"
+url = "emacs/etc/themes/wombat-theme.el"
+license = "GPL-3.0-or-later"
+description = """
+Wombat is a medium-contrast dark gray theme for GNU Emacs
+by Kristoffer Grönlund, adapted with permission from the Vim color scheme by Lars H. Nielsen."""
 
 [ansi]
 color0 = "bg_1"
@@ -16,10 +16,10 @@ color6 = "cyan"
 color7 = "dim_0"
 
 color8  = "bg_2"
-color9  = "orange"
-color10 = "green"
-color11 = "yellow"
-color12 = "blue"
-color13 = "violet"
-color14 = "cyan"
+color9  = "br_red"
+color10 = "br_green"
+color11 = "orange"
+color12 = "br_blue"
+color13 = "br_magenta"
+color14 = "br_cyan"
 color15 = "fg_1"

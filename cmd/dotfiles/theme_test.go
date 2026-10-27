@@ -66,7 +66,7 @@ func validTheme() map[string]string {
 	dark, light := testColors(), testColors()
 	dark["br_red"], light["br_red"] = "#ff0000", "#aa0000"
 	return map[string]string{
-		"theme.toml":          tomlTable("ansi", testAnsi()),
+		"theme.toml":          "creator = \"Alice\"\nurl = \"https://example.com\"\nlicense = \"MIT\"\ndescription = \"Test description\"\n\n" + tomlTable("ansi", testAnsi()),
 		"variants/dark.toml":  variantTOML("dark", dark, map[string]string{"emacs": "x-dark"}),
 		"variants/light.toml": variantTOML("light", light, map[string]string{"emacs": "x-light"}),
 	}
@@ -81,6 +81,10 @@ func TestLoadTheme(t *testing.T) {
 	}
 	if theme.Name != "test" || theme.Dir != dir {
 		t.Errorf("Name, Dir = %q, %q, want test, %q", theme.Name, theme.Dir, dir)
+	}
+	if theme.Creator != "Alice" || theme.URL != "https://example.com" || theme.License != "MIT" || theme.Description != "Test description" {
+		t.Errorf("Creator, URL, License, Description = %q, %q, %q, %q, want Alice, https://example.com, MIT, Test description",
+			theme.Creator, theme.URL, theme.License, theme.Description)
 	}
 	if got := slices.Sorted(maps.Keys(theme.Variants)); !slices.Equal(got, []string{"dark", "light"}) {
 		t.Fatalf("variants = %v, want [dark light]", got)
@@ -715,5 +719,119 @@ func TestMix(t *testing.T) {
 		if v, _, _ := doc.Get(starlark.String("c")); v != starlark.String(want) {
 			t.Errorf("%s: doc[c] = %v, want %s", code, v, want)
 		}
+	}
+}
+
+func TestTerminalBright(t *testing.T) {
+	t.Parallel()
+
+	// 1. Default (terminal_bright = "palette")
+	repoPal, dstPal := themeConfigRepo(t, `terminal_bright = "palette"`)
+	rPal := NewRepository(repoPal, dstPal)
+	if err := rPal.LoadConfig(); err != nil {
+		t.Fatal(err)
+	}
+
+	valPal := rPal.theme.value().(map[string]any)
+	termPal := valPal["terminal"].(map[string]any)
+	normalPal := termPal["normal"].(map[string]any)
+	brightPal := termPal["bright"].(map[string]any)
+	colorsPal := valPal["colors"].(map[string]any)
+
+	// In testAnsi(), color0 is bg_0 (#000000), color1 is bg_1 (#000001)
+	if normalPal["black"] != testColors()["bg_0"] {
+		t.Errorf("normal black = %v, want %v", normalPal["black"], testColors()["bg_0"])
+	}
+	if normalPal["red"] != testColors()["bg_1"] {
+		t.Errorf("normal red = %v, want %v", normalPal["red"], testColors()["bg_1"])
+	}
+	// Under "palette", bright.red is ANSI color9 (mapped in testAnsi() to magenta #000009)
+	if brightPal["red"] != testColors()["magenta"] {
+		t.Errorf("palette bright red = %v, want %v", brightPal["red"], testColors()["magenta"])
+	}
+	if colorsPal["color9"] != testColors()["magenta"] {
+		t.Errorf("palette colors.color9 = %v, want %v", colorsPal["color9"], testColors()["magenta"])
+	}
+	// Guaranteed br_* fallbacks exist in colors
+	if colorsPal["br_red"] != "#ff0000" { // defined in test variant
+		t.Errorf("colors.br_red = %v, want #ff0000", colorsPal["br_red"])
+	}
+	if colorsPal["br_green"] != testColors()["green"] { // fallback to green
+		t.Errorf("colors.br_green = %v, want %v", colorsPal["br_green"], testColors()["green"])
+	}
+	if colorsPal["br_yellow"] != testColors()["orange"] { // fallback to orange
+		t.Errorf("colors.br_yellow = %v, want %v", colorsPal["br_yellow"], testColors()["orange"])
+	}
+	if colorsPal["br_black"] != testColors()["bg_2"] { // fallback to bg_2
+		t.Errorf("colors.br_black = %v, want %v", colorsPal["br_black"], testColors()["bg_2"])
+	}
+	if colorsPal["br_white"] != testColors()["fg_1"] { // fallback to fg_1
+		t.Errorf("colors.br_white = %v, want %v", colorsPal["br_white"], testColors()["fg_1"])
+	}
+
+	// 2. Accents mode (terminal_bright = "accents")
+	repoAcc, dstAcc := themeConfigRepo(t, `terminal_bright = "accents"`)
+	rAcc := NewRepository(repoAcc, dstAcc)
+	if err := rAcc.LoadConfig(); err != nil {
+		t.Fatal(err)
+	}
+
+	valAcc := rAcc.theme.value().(map[string]any)
+	termAcc := valAcc["terminal"].(map[string]any)
+	brightAcc := termAcc["bright"].(map[string]any)
+	colorsAcc := valAcc["colors"].(map[string]any)
+
+	// Under "accents", bright red is br_red (#ff0000)
+	if brightAcc["red"] != "#ff0000" {
+		t.Errorf("accents bright red = %v, want #ff0000", brightAcc["red"])
+	}
+	if colorsAcc["color9"] != "#ff0000" {
+		t.Errorf("accents colors.color9 = %v, want #ff0000", colorsAcc["color9"])
+	}
+	// bright green falls back to green (#00000d)
+	if brightAcc["green"] != testColors()["green"] {
+		t.Errorf("accents bright green = %v, want %v", brightAcc["green"], testColors()["green"])
+	}
+	// bright yellow falls back to orange (#000007)
+	if brightAcc["yellow"] != testColors()["orange"] {
+		t.Errorf("accents bright yellow = %v, want %v", brightAcc["yellow"], testColors()["orange"])
+	}
+	if colorsAcc["color11"] != testColors()["orange"] {
+		t.Errorf("accents colors.color11 = %v, want %v", colorsAcc["color11"], testColors()["orange"])
+	}
+	// bright black falls back to bg_2
+	if brightAcc["black"] != testColors()["bg_2"] {
+		t.Errorf("accents bright black = %v, want %v", brightAcc["black"], testColors()["bg_2"])
+	}
+	// bright white falls back to fg_1
+	if brightAcc["white"] != testColors()["fg_1"] {
+		t.Errorf("accents bright white = %v, want %v", brightAcc["white"], testColors()["fg_1"])
+	}
+
+	// Starlark accessing term["normal"] and term["bright"] directly (like Alacritty)
+	prog, err := compileStarlark("test", `
+t = theme["terminal"]
+doc["normal_red"] = t["normal"]["red"]
+doc["bright_red"] = t["bright"]["red"]
+`)
+	if err != nil {
+		t.Fatal(err)
+	}
+	doc := starlark.NewDict(2)
+	if _, err := prog.Init(&starlark.Thread{}, starlarkPredeclared("", "x", rAcc.evalContext(), doc)); err != nil {
+		t.Fatal(err)
+	}
+	if v, _, _ := doc.Get(starlark.String("normal_red")); v != starlark.String(testColors()["bg_1"]) {
+		t.Errorf("doc[normal_red] = %v, want %v", v, testColors()["bg_1"])
+	}
+	if v, _, _ := doc.Get(starlark.String("bright_red")); v != starlark.String("#ff0000") {
+		t.Errorf("doc[bright_red] = %v, want #ff0000", v)
+	}
+
+	// Invalid terminal_bright value rejected
+	repoBad, dstBad := themeConfigRepo(t, `terminal_bright = "foo"`)
+	rBad := NewRepository(repoBad, dstBad)
+	if err := rBad.LoadConfig(); err == nil || !strings.Contains(err.Error(), "terminal_bright") {
+		t.Errorf("invalid terminal_bright error = %v, want error mentioning terminal_bright", err)
 	}
 }

@@ -71,6 +71,7 @@ var configKeyValues = map[string]string{
 	"theme.dark":                      "theme:variant",
 	"theme.light":                     "theme:variant",
 	"theme.mode":                      "dark or light",
+	"theme.terminal_bright":           "palette (the default) or accents",
 }
 
 func configKeysAppendix() string {

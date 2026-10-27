@@ -175,10 +175,11 @@ type Repositories struct {
 // ThemeConfig is [theme]: the directories that contain theme directories,
 // and the theme variants of dark and light mode.
 type ThemeConfig struct {
-	Dirs  []string `toml:"dirs"`
-	Dark  string   `toml:"dark,omitempty"`  // theme:variant
-	Light string   `toml:"light,omitempty"` // theme:variant
-	Mode  string   `toml:"mode,omitempty"`  // until a mode is chosen
+	Dirs           []string `toml:"dirs"`
+	Dark           string   `toml:"dark,omitempty"`            // theme:variant
+	Light          string   `toml:"light,omitempty"`           // theme:variant
+	Mode           string   `toml:"mode,omitempty"`            // until a mode is chosen
+	TerminalBright string   `toml:"terminal_bright,omitempty"` // "palette" or "accents"
 }
 
 type Config struct {
@@ -367,6 +368,11 @@ func (c *Config) validate() error {
 	case "", "dark", "light":
 	default:
 		errs = append(errs, fmt.Errorf("theme.mode: invalid %q: want dark or light", c.Theme.Mode))
+	}
+	switch c.Theme.TerminalBright {
+	case "", "palette", "accents":
+	default:
+		errs = append(errs, fmt.Errorf("theme.terminal_bright: invalid %q: want palette or accents", c.Theme.TerminalBright))
 	}
 	for i, s := range c.Script {
 		for _, event := range s.On {

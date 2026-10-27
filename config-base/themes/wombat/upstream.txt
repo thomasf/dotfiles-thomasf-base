@@ -1,0 +1,49 @@
+Wombat Color Palette Specification
+Creator: Lars H. Nielsen (original Vim scheme)
+Adapted by: Kristoffer Grönlund (GNU Emacs theme, emacs/etc/themes/wombat-theme.el)
+Source: etc/themes/wombat-theme.el
+License: GPL-3.0-or-later
+
+Emacs Faces:
+  default background       #242424
+  default foreground       #f6f3e8
+  cursor                   #656565
+  fringe                   #303030
+  highlight                #454545
+  region                   #444444
+  secondary-selection      #333366
+  isearch                  #343434
+  lazy-highlight           #384048
+  mode-line                #444444
+  mode-line-inactive       #444444   (foreground #857b6f)
+  minibuffer-prompt        #e5786d
+  escape-glyph             #ddaa6f
+  homoglyph                #ddaa6f
+  header-line              #303030   (foreground #e7f6da)
+  font-lock-builtin-face   #e5786d
+  font-lock-comment-face   #99968b
+  font-lock-constant-face  #e5786d
+  font-lock-function-name  #cae682
+  font-lock-keyword-face   #8ac6f2
+  font-lock-string-face    #95e454
+  font-lock-type-face      #92a65e
+  font-lock-variable-name  #cae682
+  font-lock-warning-face   #ccaa8f
+
+ANSI Colors (from wombat-theme.el):
+  ansi-color-black          #242424
+  ansi-color-red            #b85149
+  ansi-color-green          #92a65e
+  ansi-color-yellow         #ccaa8f
+  ansi-color-blue           #5b98c2
+  ansi-color-magenta        #64619a
+  ansi-color-cyan           #3f9f9e
+  ansi-color-white          #f6f3e8
+  ansi-color-bright-black   #444444
+  ansi-color-bright-red     #e5786d
+  ansi-color-bright-green   #95e454
+  ansi-color-bright-yellow  #edc4a3
+  ansi-color-bright-blue    #8ac6f2
+  ansi-color-bright-magenta #a6a1de
+  ansi-color-bright-cyan    #70cecc
+  ansi-color-bright-white   #ffffff

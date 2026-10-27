@@ -1,9 +1,12 @@
-# Everforest, https://github.com/sainnhe/everforest
-# The palette is Everforest by sainnhe (MIT License).
-#
-# Ported from sainnhe/everforest (autoload/everforest.vim), medium contrast.
-# It has no bright colors: the terminal's bright red and magenta are orange and
-# violet, and the other bright colors are the normal ones.
+creator = "sainnhe"
+url = "https://github.com/sainnhe/everforest"
+license = "MIT"
+description = """
+The palette is Everforest by sainnhe.
+
+Ported from sainnhe/everforest (autoload/everforest.vim), medium contrast.
+It has no bright colors: the terminal's bright yellow and magenta are orange
+and violet, and the other bright colors are the normal ones."""
 
 [ansi]
 color0 = "bg_1"
@@ -16,9 +19,9 @@ color6 = "cyan"
 color7 = "dim_0"
 
 color8  = "bg_2"
-color9  = "orange"
+color9  = "red"
 color10 = "green"
-color11 = "yellow"
+color11 = "orange"
 color12 = "blue"
 color13 = "violet"
 color14 = "cyan"

@@ -19,12 +19,17 @@ import (
 // A Theme is a set of color palettes, one for each variant, read from a theme
 // directory:
 //
-//	theme.toml            [ansi]: the terminal colors
+//	theme.toml            creator, url, license, description, [ansi]: the terminal colors
 //	variants/<name>.toml  mode, [colors] and [apps] of the variant <name>
 type Theme struct {
-	Name     string              // the name of the directory
-	Dir      string              // the directory
-	Variants map[string]*Variant // by name
+	Name        string              // the name of the directory
+	Dir         string              // the directory
+	Creator     string              // palette creator
+	URL         string              // upstream palette URL
+	License     string              // palette license
+	Description string              // palette description
+	Ansi        map[string]string   // [ansi]: the terminal color mappings
+	Variants    map[string]*Variant // by name
 }
 
 // A Variant is one palette of a [Theme].
@@ -36,7 +41,11 @@ type Variant struct {
 
 // themeFile is the content of theme.toml.
 type themeFile struct {
-	Ansi map[string]string `toml:"ansi"`
+	Creator     string            `toml:"creator,omitempty"`
+	URL         string            `toml:"url,omitempty"`
+	License     string            `toml:"license,omitempty"`
+	Description string            `toml:"description,omitempty"`
+	Ansi        map[string]string `toml:"ansi"`
 }
 
 // variantFile is the content of a file in variants/.
@@ -147,6 +156,11 @@ func loadTheme(dir string) (*Theme, error) {
 		return nil, errors.Join(errs...)
 	}
 
+	t.Creator = tf.Creator
+	t.URL = tf.URL
+	t.License = tf.License
+	t.Description = tf.Description
+	t.Ansi = tf.Ansi
 	for name, vf := range files {
 		v := &Variant{Mode: vf.Mode, Colors: maps.Clone(vf.Colors), Apps: vf.Apps}
 		if v.Apps == nil {
@@ -239,10 +253,11 @@ func parseThemeRef(ref string) (theme, variant string, err error) {
 // A themeSet is the themes of all repositories, and the [theme] settings
 // that choose between them.
 type themeSet struct {
-	themes map[string]*Theme // by name
-	dark   string            // theme:variant of dark mode, or ""
-	light  string            // theme:variant of light mode, or ""
-	mode   string            // the mode until one is chosen, or ""
+	themes         map[string]*Theme // by name
+	dark           string            // theme:variant of dark mode, or ""
+	light          string            // theme:variant of light mode, or ""
+	mode           string            // the mode until one is chosen, or ""
+	terminalBright string            // "palette", "accents", or ""
 }
 
 // mergeThemes loads the themes in the [theme] dirs of repos. Each
@@ -269,6 +284,7 @@ func mergeThemes(repos []*Repository) (*themeSet, []string, error) {
 		{"dark", func(c ThemeConfig) string { return c.Dark }, &ts.dark},
 		{"light", func(c ThemeConfig) string { return c.Light }, &ts.light},
 		{"mode", func(c ThemeConfig) string { return c.Mode }, &ts.mode},
+		{"terminal_bright", func(c ThemeConfig) string { return c.TerminalBright }, &ts.terminalBright},
 	}
 	setBy := map[string][]*Repository{}
 
@@ -351,14 +367,51 @@ func mergeThemes(repos []*Repository) (*themeSet, []string, error) {
 	return ts, warnings, errors.Join(errs...)
 }
 
+// brightAccent returns the bright variant of an accent color, falling back to
+// orange for yellow (if present), or the normal accent if br_<accent> is not
+// defined in colors.
+func brightAccent(colors map[string]string, accent string) string {
+	if c, ok := colors["br_"+accent]; ok {
+		return c
+	}
+	if accent == "yellow" {
+		if c, ok := colors["orange"]; ok {
+			return c
+		}
+	}
+	return colors[accent]
+}
+
+// brightNeutral returns the bright variant of black or white, falling back to
+// bg_2 (or bg_1) for black, and fg_1 (or fg_0) for white.
+func brightNeutral(colors map[string]string, name string) string {
+	if c, ok := colors["br_"+name]; ok {
+		return c
+	}
+	switch name {
+	case "black":
+		if c, ok := colors["bg_2"]; ok {
+			return c
+		}
+		return colors["bg_1"]
+	case "white":
+		if c, ok := colors["fg_1"]; ok {
+			return c
+		}
+		return colors["fg_0"]
+	}
+	return colors[name]
+}
+
 // An activeTheme is the theme variant in use.
 type activeTheme struct {
-	theme   *Theme
-	variant string
+	theme          *Theme
+	variant        string
+	terminalBright string // "palette" or "accents"
 }
 
 // value returns the theme value of conditions, templates and Starlark code:
-// a map with name, variant, mode, dir, colors and apps. It returns an untyped
+// a map with name, variant, mode, dir, colors, apps and terminal. It returns an untyped
 // nil if a is nil, so that using theme then fails rather than giving empty
 // values.
 func (a *activeTheme) value() any {
@@ -366,13 +419,76 @@ func (a *activeTheme) value() any {
 		return nil
 	}
 	v := a.theme.Variants[a.variant]
+
+	termNames := []string{"black", "red", "green", "yellow", "blue", "magenta", "cyan", "white"}
+	normal := make(map[string]any, 8)
+	brightAnsi := make(map[string]any, 8)
+	brightAccents := make(map[string]any, 8)
+
+	for i, name := range termNames {
+		normal[name] = v.Colors[ansiColors[i]]
+		brightAnsi[name] = v.Colors[ansiColors[i+8]]
+	}
+	brightAccents["black"] = brightNeutral(v.Colors, "black")
+	brightAccents["red"] = brightAccent(v.Colors, "red")
+	brightAccents["green"] = brightAccent(v.Colors, "green")
+	brightAccents["yellow"] = brightAccent(v.Colors, "yellow")
+	brightAccents["blue"] = brightAccent(v.Colors, "blue")
+	brightAccents["magenta"] = brightAccent(v.Colors, "magenta")
+	brightAccents["cyan"] = brightAccent(v.Colors, "cyan")
+	brightAccents["white"] = brightNeutral(v.Colors, "white")
+
+	bright := brightAnsi
+	if a.terminalBright == "accents" {
+		bright = brightAccents
+	}
+
+	colors := anyMap(v.Colors)
+	// Guarantee br_* exist in theme["colors"] with automatic fallbacks
+	for _, acc := range []string{"yellow", "orange", "red", "magenta", "violet", "blue", "cyan", "green"} {
+		if _, ok := colors["br_"+acc]; !ok {
+			colors["br_"+acc] = brightAccent(v.Colors, acc)
+		}
+	}
+	if _, ok := colors["br_black"]; !ok {
+		colors["br_black"] = brightNeutral(v.Colors, "black")
+	}
+	if _, ok := colors["br_white"]; !ok {
+		colors["br_white"] = brightNeutral(v.Colors, "white")
+	}
+
+	// Update color8..15 in theme["colors"] if terminalBright == "accents"
+	if a.terminalBright == "accents" {
+		colors["color8"] = brightAccents["black"]
+		colors["color9"] = brightAccents["red"]
+		colors["color10"] = brightAccents["green"]
+		colors["color11"] = brightAccents["yellow"]
+		colors["color12"] = brightAccents["blue"]
+		colors["color13"] = brightAccents["magenta"]
+		colors["color14"] = brightAccents["cyan"]
+		colors["color15"] = brightAccents["white"]
+	}
+
+	terminal := map[string]any{
+		"normal":         normal,
+		"bright":         bright,
+		"bright_ansi":    brightAnsi,
+		"bright_accents": brightAccents,
+	}
+
 	return map[string]any{
-		"name":    a.theme.Name,
-		"variant": a.variant,
-		"mode":    v.Mode,
-		"dir":     a.theme.Dir,
-		"colors":  anyMap(v.Colors),
-		"apps":    anyMap(v.Apps),
+		"name":            a.theme.Name,
+		"variant":         a.variant,
+		"mode":            v.Mode,
+		"dir":             a.theme.Dir,
+		"creator":         a.theme.Creator,
+		"url":             a.theme.URL,
+		"license":         a.theme.License,
+		"description":     a.theme.Description,
+		"colors":          colors,
+		"apps":            anyMap(v.Apps),
+		"terminal":        terminal,
+		"terminal_bright": a.terminalBright,
 	}
 }
 
@@ -391,8 +507,9 @@ const themeStatePath = ".local/state/dotfiles/theme.toml"
 
 // themeState is the content of the state file.
 type themeState struct {
-	Mode  string `toml:"mode"`
-	Theme string `toml:"theme,omitempty"` // theme:variant to use instead of [theme] dark or light
+	Mode           string `toml:"mode"`
+	Theme          string `toml:"theme,omitempty"` // theme:variant to use instead of [theme] dark or light
+	TerminalBright string `toml:"terminal_bright,omitempty"`
 }
 
 // readThemeState reads the state file in dstRoot. Without one, the mode is
@@ -412,6 +529,9 @@ func readThemeState(dstRoot string) (themeState, error) {
 	}
 	if st.Mode != "" && st.Mode != "dark" && st.Mode != "light" {
 		return st, fmt.Errorf("%s: mode: invalid %q: want dark or light", path, st.Mode)
+	}
+	if st.TerminalBright != "" && st.TerminalBright != "palette" && st.TerminalBright != "accents" {
+		return st, fmt.Errorf("%s: terminal_bright: invalid %q: want palette or accents", path, st.TerminalBright)
 	}
 	if st.Theme != "" {
 		if _, _, err := parseThemeRef(st.Theme); err != nil {
@@ -438,6 +558,7 @@ func selectTheme(ts *themeSet, option, dstRoot string) (*activeTheme, error) {
 // :variant only replaces the variant.
 func chooseTheme(ts *themeSet, option string, st themeState) (*activeTheme, error) {
 	mode := cmp.Or(st.Mode, ts.mode, "light")
+	terminalBright := cmp.Or(st.TerminalBright, ts.terminalBright, "palette")
 	ref := st.Theme
 	if ref == "" {
 		ref = ts.light
@@ -477,7 +598,7 @@ func chooseTheme(ts *themeSet, option string, st themeState) (*activeTheme, erro
 	if _, ok := t.Variants[variant]; !ok {
 		return nil, fmt.Errorf("theme %s: theme %s has no variant %s", ref, name, variant)
 	}
-	return &activeTheme{theme: t, variant: variant}, nil
+	return &activeTheme{theme: t, variant: variant, terminalBright: terminalBright}, nil
 }
 
 // colorFunc returns the function name of conditions, templates and Starlark

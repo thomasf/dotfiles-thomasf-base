@@ -21,6 +21,16 @@ blue    = "#8cd0d3"
 cyan    = "#93e0e3"
 green   = "#7f9f7f"
 
+# Zenburn official upstream bright accents (jnurmine/Zenburn, emacs zenburn-theme +1 variants)
+br_yellow  = "#f0dfaf"
+br_orange  = "#dfaf8f"
+br_red     = "#dca3a3"
+br_magenta = "#ec93d3"
+br_violet  = "#bbb0cb"
+br_blue    = "#94bff3"
+br_cyan    = "#93e0e3"
+br_green   = "#7f9f7f"
+
 [apps]
 emacs        = "my-solarized-zenburn"
 color_scheme = "prefer-dark"

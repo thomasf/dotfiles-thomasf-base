@@ -1,9 +1,11 @@
-# Gruvbox, https://github.com/morhetz/gruvbox
-#
-# The terminal colors as gruvbox's own terminal palettes have them: the
-# neutral colors as normal colors and the accents as bright ones (on a light
-# background the faded colors, which are darker). Black, white and their
-# bright versions are on the background and text sides, as in Selenized.
+creator = "Pavel Pertsev"
+url = "https://github.com/morhetz/gruvbox"
+license = "MIT"
+description = """
+The terminal colors as gruvbox's own terminal palettes have them: the
+neutral colors as normal colors and the accents as bright ones (on a light
+background the faded colors, which are darker). Black, white and their
+bright versions are on the background and text sides, as in Selenized."""
 
 [ansi]
 color0 = "bg_1"

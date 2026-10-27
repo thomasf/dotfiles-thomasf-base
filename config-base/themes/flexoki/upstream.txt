@@ -1,0 +1,69 @@
+Flexoki Color Palette Specification
+Creator: Steph Ango (https://stephango.com/flexoki)
+Source: kepano/flexoki
+License: MIT
+
+Dark Neutrals:
+  black       #100f0f
+  ui          #1c1b1a
+  ui-2        #282726
+  ui-3        #343331
+  tx-3        #575653
+  tx-2        #878580
+  tx          #cecdc3
+
+Light Neutrals:
+  paper       #fffcf0
+  ui          #f2f0e5
+  ui-2        #e6e4d9
+  ui-3        #dad8ce
+  tx-3        #b7b5ac
+  tx-2        #6f6e69
+  tx          #100f0f
+
+Base Step Scale:
+  paper       #fffcf0
+  base-50     #f2f0e5
+  base-100    #e6e4d9
+  base-150    #dad8ce
+  base-200    #cecdc3
+  base-300    #b7b5ac
+  base-400    #9f9d96
+  base-500    #878580
+  base-600    #6f6e69
+  base-700    #575653
+  base-800    #403e3c
+  base-850    #343331
+  base-900    #282726
+  base-950    #1c1b1a
+  black       #100f0f
+
+Accents 400 Tier (Normal for Dark, Bright for Light):
+  red-400     #d14d41
+  orange-400  #da702c
+  yellow-400  #d0a215
+  green-400   #879a39
+  cyan-400    #3aa99f
+  blue-400    #4385be
+  purple-400  #8b7ec8
+  magenta-400 #ce5d97
+
+Accents 600 Tier (Normal for Light):
+  red-600     #af3029
+  orange-600  #bc5215
+  yellow-600  #ad8301
+  green-600   #66800b
+  cyan-600    #24837b
+  blue-600    #205ea6
+  purple-600  #5e409d
+  magenta-600 #a02f6f
+
+Accents 300 Tier (Bright for Dark):
+  red-300     #e8705f
+  orange-300  #ea8547
+  yellow-300  #e3b341
+  green-300   #a0b943
+  cyan-300    #4ec0b5
+  blue-300    #599ed7
+  purple-300  #9f93db
+  magenta-300 #e076ab

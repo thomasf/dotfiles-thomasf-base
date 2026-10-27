@@ -1,8 +1,10 @@
-# Selenized, https://github.com/jan-warchol/selenized
-#
-# The terminal colors, as Selenized maps them. color0 and color8 are on the
-# background side and color7 and color15 on the text side in both modes.
-# Orange and violet have no terminal color.
+creator = "Jan Warchoł"
+url = "https://github.com/jan-warchol/selenized"
+license = "MIT"
+description = """
+The terminal colors, as Selenized maps them. color0 and color8 are on the
+background side and color7 and color15 on the text side in both modes.
+Orange and violet have no terminal color."""
 
 [ansi]
 color0 = "bg_1"

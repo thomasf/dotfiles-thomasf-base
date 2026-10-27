@@ -29,7 +29,7 @@ func TestDocAppendices(t *testing.T) {
 	for _, want := range []string{
 		"\npublic ",
 		"\n[[starlark]]\n  src ",
-		"\n  missing    skip (the default), create or error\n",
+		"\n  missing          skip (the default), create or error\n",
 		"\n[repositories.remote.<name>]\n  kind ",
 		"\n[vars]\n  <name> ",
 		"\n  -dry-run, DOTFILES_DRY_RUN\n",

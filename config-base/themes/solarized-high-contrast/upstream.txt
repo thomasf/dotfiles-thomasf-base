@@ -1,0 +1,23 @@
+Solarized High Contrast Color Palette Specification
+Creator: Thomas Frössman, based on Ethan Schoonover's Solarized
+Source: bbatsov/solarized-emacs (solarized-dark-high-contrast-palette-alist)
+License: MIT
+
+Monochromatic Neutral Tones:
+  base03   #002732   Dark background (primary)
+  base02   #033744   Dark background highlight / statusline
+  base01   #62787f   Dark comments / muted text
+  base0    #8d9fa1   Dark default body text
+  base1    #9eacac   Dark optional emphasized content
+  base2    #e5dfc9   Light background highlight
+  base3    #fff9e8   Light background (primary)
+
+Chromatic Accents:
+  yellow   #c49619
+  orange   #db5823
+  red      #ec423a
+  magenta  #e2468f
+  violet   #7a7ed2
+  blue     #3c98e0
+  cyan     #3cafa5
+  green    #93a61a

@@ -20,6 +20,16 @@ blue    = "#205ea6"
 cyan    = "#24837b"
 green   = "#66800b"
 
+# Flexoki 400 tier accents
+br_yellow  = "#d0a215"
+br_orange  = "#da702c"
+br_red     = "#d14d41"
+br_magenta = "#ce5d97"
+br_violet  = "#8b7ec8"
+br_blue    = "#4385be"
+br_cyan    = "#3aa99f"
+br_green   = "#879a39"
+
 [apps]
 emacs        = "my-solarized-flexoki-light"
 color_scheme = "prefer-light"

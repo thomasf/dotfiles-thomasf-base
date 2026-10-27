@@ -1,15 +1,19 @@
 mode = "dark"
 
-# Flexoki dark (kepano/flexoki, stephango.com/flexoki): bg, bg-2, ui-2 (hovered
-# borders), tx-3 (comments) and tx (also fg_1); the 400 accents; purple is violet.
+# Flexoki dark (kepano/flexoki, stephango.com/flexoki).
+# bg_1 uses upstream ui-2 (#282726) instead of ui-1 (#1c1b1a, contrast ratio 1.11:1 on bg_0)
+# to achieve 1.24:1 contrast ratio for terminal surface visibility.
+# fg_1 uses upstream paper (#e6e4d9) instead of duplicating tx (#cecdc3, fg_0)
+# to give emphasized text higher contrast (13.7:1 vs 10.6:1).
+# purple is mapped to violet.
 [colors]
-bg_0  = "#100f0f"
-bg_1  = "#1c1b1a"
-bg_2  = "#343331"
-dim_0 = "#575653"
-dim_1 = "#878580" # tx-2, muted text
-fg_0  = "#cecdc3"
-fg_1  = "#cecdc3"
+bg_0  = "#100f0f" # black
+bg_1  = "#282726" # upstream ui-2 (used over ui-1 #1c1b1a for >= 1.22:1 contrast)
+bg_2  = "#343331" # ui-3
+dim_0 = "#575653" # tx-3
+dim_1 = "#878580" # tx-2
+fg_0  = "#cecdc3" # tx
+fg_1  = "#e6e4d9" # upstream paper (used over tx for distinct emphasized text)
 
 yellow  = "#d0a215"
 orange  = "#da702c"
@@ -19,6 +23,16 @@ violet  = "#8b7ec8"
 blue    = "#4385be"
 cyan    = "#3aa99f"
 green   = "#879a39"
+
+# Flexoki 300 tier accents
+br_yellow  = "#e3b341"
+br_orange  = "#ea8547"
+br_red     = "#e8705f"
+br_magenta = "#e076ab"
+br_violet  = "#9f93db"
+br_blue    = "#599ed7"
+br_cyan    = "#4ec0b5"
+br_green   = "#a0b943"
 
 [apps]
 emacs        = "my-solarized-flexoki-dark"

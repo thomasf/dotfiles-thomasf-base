@@ -1,14 +1,18 @@
 mode = "dark"
 
-# Kanagawa wave (rebelot/kanagawa.nvim): ui bg, bg_p1, bg_p2, the comment color,
-# ui fg and terminal white; the accents are its terminal colors, with sakuraPink
-# as magenta, surimiOrange as orange and oniViolet as violet.
+# Kanagawa wave (rebelot/kanagawa.nvim): ui bg, the comment color, ui fg and
+# terminal white; accents are terminal colors, with sakuraPink as magenta,
+# surimiOrange as orange and oniViolet as violet.
+# bg_1 is adjusted from upstream sumiInk3 (#22222a, contrast ratio 1.04:1 on bg_0)
+# to #2f2f3e to achieve 1.24:1 contrast ratio for terminal surface visibility.
+# bg_2 is adjusted from upstream sumiInk4 (#2a2a37) to #3f3f52 for a 1.27:1 step.
+# dim_1 is not in upstream; mixed 50/50 in OKLab between dim_0 and fg_0.
 [colors]
-bg_0  = "#1f1f28"
-bg_1  = "#2a2a37"
-bg_2  = "#363646"
-dim_0 = "#727169"
-dim_1 = "#a5a391" # dim_0 and fg_0 mixed half and half in OKLab, chosen once
+bg_0  = "#1f1f28" # sumiInk1
+bg_1  = "#2f2f3e" # adjusted from sumiInk3 #22222a (raised for >= 1.22:1 contrast)
+bg_2  = "#3f3f52" # adjusted from sumiInk4 #2a2a37 (for monotonic contrast step)
+dim_0 = "#727169" # fujiGray
+dim_1 = "#a5a391" # generated: dim_0 and fg_0 mixed 50/50 in OKLab
 fg_0  = "#dcd7ba"
 fg_1  = "#dcd7ba"
 

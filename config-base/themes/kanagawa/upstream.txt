@@ -1,0 +1,89 @@
+Kanagawa Color Palette Specification
+Creator: Tommaso Laurenzi (https://github.com/rebelot/kanagawa.nvim)
+Source: lua/kanagawa/colors.lua
+License: MIT
+
+Kanagawa Wave (Dark):
+  Backgrounds:
+    sumiInk0    #16161d   Darkest background
+    sumiInk1    #1f1f28   Default background
+    sumiInk2    #2a2a37   Background highlight / statusline
+    sumiInk3    #22222a   Selection / popups
+    sumiInk4    #363646   Dark gray / visual
+  Foregrounds:
+    fujiWhite   #dcd7ba   Default foreground
+    oldWhite    #c8c093   Darker white
+    fujiGray    #727169   Comments
+  Accents:
+    autumnRed   #c34043   Red
+    surimiOrange#ffa066   Orange
+    boatYellow2 #c0a36e   Yellow
+    springGreen #76946a   Green
+    waveAqua1   #6a9589   Cyan / Aqua
+    crystalBlue #7e9cd8   Blue
+    oniViolet   #957fb8   Violet
+    sakuraPink  #d27e99   Magenta
+  Terminal Bright Accents:
+    samuraiRed  #e82424   Bright Red
+    springGreen #98bb6c   Bright Green
+    carpYellow  #e6c384   Bright Yellow
+    springBlue  #7fb4ca   Bright Blue
+    springViolet2 #938aa9 Bright Magenta
+    waveAqua2   #68ad99   Bright Cyan
+
+Kanagawa Dragon (Dark):
+  Backgrounds:
+    dragonBlack0 #0d0c0c
+    dragonBlack1 #12120f
+    dragonBlack2 #181616  Default background
+    dragonBlack3 #201e1e  Background highlight
+    dragonBlack4 #282727  Raised background
+    dragonBlack5 #393836  Lighter background
+  Foregrounds:
+    dragonWhite #c5c9c5   Default foreground
+    fujiWhite   #dcd7ba   High-contrast foreground
+    dragonGray  #737c73   Comments
+    dragonGray2 #9e9b93   Muted text
+  Accents:
+    dragonRed   #c4746e   Red
+    dragonOrange#b6927b   Orange
+    dragonYellow#c4b28a   Yellow
+    dragonGreen2#8a9a7b   Green
+    waveAqua2   #7aa89f   Cyan / Aqua
+    dragonBlue  #658594   Blue
+    dragonViolet#8992a7   Violet
+    dragonPink  #a292a3   Magenta
+  Terminal Bright Accents:
+    waveRed     #e46876   Bright Red
+    dragonGreen #87a987   Bright Green
+    carpYellow  #e6c384   Bright Yellow
+    springBlue  #7fb4ca   Bright Blue
+    springViolet2 #938aa9 Bright Magenta
+    waveAqua2   #68ad99   Bright Cyan
+
+Kanagawa Lotus (Light):
+  Backgrounds:
+    lotusWhite0 #f2ecbc   Default background
+    lotusWhite1 #e7dba0   Background highlight
+    lotusWhite2 #e4d794   Raised background
+  Foregrounds:
+    lotusInk1   #545464   Default foreground
+    lotusInk2   #43436c   Emphasized text
+    lotusGray   #8a8980   Comments
+    lotusGray2  #716e61   Muted text
+  Accents:
+    lotusRed    #c84053   Red
+    lotusOrange #cc6d00   Orange
+    lotusYellow #77713f   Yellow
+    lotusGreen  #6f894e   Green
+    lotusAqua   #597b75   Cyan / Aqua
+    lotusBlue   #4d699b   Blue
+    lotusViolet4#5d57a3   Violet
+    lotusPink   #b35b79   Magenta
+  Terminal Bright Accents:
+    lotusRed2   #d7474b   Bright Red
+    lotusGreen2 #6e915f   Bright Green
+    lotusYellow2#836f4a   Bright Yellow
+    lotusBlue2  #6693bf   Bright Blue
+    lotusViolet2#624c83   Bright Magenta
+    lotusAqua2  #5e857a   Bright Cyan
