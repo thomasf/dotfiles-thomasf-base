@@ -129,7 +129,8 @@ func stripes(name string, colors map[string]string, mode string, rng *rand.Rand,
 
 	period, angle := 20.0, 45.0 // angle clockwise from horizontal, in degrees
 	if rng != nil {
-		period = float64(20 + rng.IntN(10))
+		periods := []float64{6, 8, 20, 25}
+		period = periods[rng.IntN(len(periods))]
 		angle = float64([]int{45, 135}[rng.IntN(2)] - 10 + rng.IntN(21))
 	}
 	return func(dpi float64) image.Image {
