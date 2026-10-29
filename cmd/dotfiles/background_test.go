@@ -2,7 +2,9 @@ package main
 
 import (
 	"bytes"
+	"fmt"
 	"image"
+	"image/color"
 	"image/png"
 	"math"
 	"os"
@@ -209,5 +211,92 @@ light = "test:light"
 	}
 	if cfg, err := png.DecodeConfig(bytes.NewReader(data)); err != nil || cfg.Width != 28 || cfg.Height != 28 {
 		t.Errorf("the background is %dx%d, %v; want 28x28", cfg.Width, cfg.Height, err)
+	}
+
+	// Test -expr and -preview flags
+	out.Reset()
+	if err := d.ThemeCommand([]string{"background-image", "-expr", ":chevron()", "-preview"}); err != nil {
+		t.Fatalf("theme background-image -expr :chevron() -preview: %v", err)
+	}
+	if !strings.Contains(out.String(), "▀") {
+		t.Errorf("theme background-image -preview output does not contain ANSI blocks: %q", out.String())
+	}
+
+	// Test -all flag
+	out.Reset()
+	if err := d.ThemeCommand([]string{"background-image", "-all"}); err != nil {
+		t.Fatalf("theme background-image -all: %v", err)
+	}
+	for _, p := range []string{"chevron", "herringbone", "houndstooth", "basketweave", "diamond", "meander", "crosses", "parquet", "tatami", "stripes", "diagonal"} {
+		if !strings.Contains(out.String(), p) {
+			t.Errorf("theme background-image -all output missing %q: %q", p, out.String())
+		}
+	}
+}
+
+func TestClassicPatterns(t *testing.T) {
+	t.Parallel()
+	patterns := []string{
+		":chevron()", ":herringbone()", ":houndstooth()", ":basketweave()", ":diamond()",
+		":meander()", ":crosses()", ":parquet()", ":tatami()",
+	}
+	for _, name := range patterns {
+		draw, ok, err := generatedBackground(name, backgroundColors, "dark", 0)
+		if !ok || err != nil {
+			t.Fatalf("generatedBackground(%q) = %v, %v; want ok", name, ok, err)
+		}
+		img := draw(96).(*image.RGBA)
+		b := img.Bounds()
+		if b.Dx() <= 0 || b.Dy() <= 0 {
+			t.Fatalf("%s: invalid bounds %v", name, b)
+		}
+		// Zero smoothing: every pixel in the tile must be either the background
+		// color or the foreground color, with no intermediate blended colors.
+		counts := make(map[color.RGBA]int)
+		for y := range b.Dy() {
+			for x := range b.Dx() {
+				counts[img.RGBAAt(x, y)]++
+			}
+		}
+		if len(counts) != 2 {
+			t.Errorf("%s: tile contains %d distinct colors, want exactly 2 (no smoothing)", name, len(counts))
+		}
+		// Exact 50/50 balance between the two colors
+		total := b.Dx() * b.Dy()
+		for c, count := range counts {
+			if count != total/2 {
+				t.Errorf("%s: color %v has %d pixels out of %d (%.1f%%), want 50%%", name, c, count, total, float64(count)*100/float64(total))
+			}
+		}
+	}
+}
+
+func TestRandomBackground(t *testing.T) {
+	t.Parallel()
+	// Test :random without parens and with parens
+	for _, expr := range []string{":random", ":random()", ":random([bg_0, bg_1])", ":random([chevron(), houndstooth()])"} {
+		draw, ok, err := generatedBackground(expr, backgroundColors, "dark", 42)
+		if !ok || err != nil {
+			t.Fatalf("generatedBackground(%q) = %v, %v; want ok", expr, ok, err)
+		}
+		img := draw(96)
+		if img == nil || img.Bounds().Dx() <= 0 {
+			t.Errorf("generatedBackground(%q) produced empty image", expr)
+		}
+	}
+
+	// Random backgrounds across multiple seeds should produce variety
+	seen := make(map[string]bool)
+	for seed := range uint64(30) {
+		draw, ok, err := generatedBackground(":random()", backgroundColors, "dark", seed)
+		if !ok || err != nil {
+			t.Fatalf("seed %d: %v", seed, err)
+		}
+		img := draw(96).(*image.RGBA)
+		key := fmt.Sprintf("%v:%x", img.Bounds(), img.Pix[:min(len(img.Pix), 32)])
+		seen[key] = true
+	}
+	if len(seen) < 4 {
+		t.Errorf("got %d unique patterns across 30 seeds, want at least 4", len(seen))
 	}
 }

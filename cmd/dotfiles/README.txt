@@ -489,14 +489,24 @@ Both generators draw soft stripes: across them, the color goes smoothly
 through colors, at least two (default [bg_0, bg_1]), and back again.
 Distances are pixels at 96 DPI.
 
- Generator        | Image
-------------------|-----------------------------------------------------------------------------
- diagonal(colors) | The Selenized backgrounds: stripes from the top left to the bottom right, 6
-                  | pixels apart. Always the same.
- stripes(colors)  | Diagonal stripes from the top left or the top right, tilted by up to 10
-                  | degrees, 5 to 7 pixels apart. They change with a seed in the theme state[1]
-                  | that dotfiles theme set, toggle and apply replace, so other runs of
-                  | dotfiles draw the same background and every switch draws a new one.
+ Generator             | Image
+-----------------------|-----------------------------------------------------------------------------
+ diagonal(colors)      | The Selenized backgrounds: stripes from the top left to the bottom right.
+                       | Always the same.
+ stripes(colors)       | Diagonal stripes from the top left or the top right, tilted by up to 10
+                       | degrees. They change with a seed in the theme state[1] that dotfiles theme
+                       | set, toggle and apply replace, so other runs of dotfiles draw the same
+                       | background and every switch draws a new one.
+ chevron(colors)       | Classic continuous 45° zig-zag V-bands with equal width and 50/50 balance.
+ herringbone(colors)   | Classic staggered parquet tweed weave of alternating 45° diagonal blocks.
+ houndstooth(colors)   | The iconic 4-pointed menswear broken check from traditional 2/2 twill weave.
+ basketweave(colors)   | Alternating square blocks of horizontal/vertical bars (Panama/Oxford weave).
+ diamond(colors)       | 45° diamond lattice check of equal-area lozenges (harlequin masonry).
+ meander(colors)       | Classical interlocking Greek key (meander) architectural fretwork.
+ crosses(colors)       | Byzantine Greek cross mosaic tessellation of interlocking plus signs.
+ parquet(colors)       | Interlocking European windmill parquet wood-block floor pattern.
+ tatami(colors)        | Traditional Japanese 8-mat 2:1 tatami arrangement.
+ random(patterns)      | Selects randomly among background generators (or patterns passed as args).
 
 [1]: theme state #the-theme-in-use
 

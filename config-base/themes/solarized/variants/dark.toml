@@ -31,5 +31,5 @@ color_scheme = "prefer-dark"
 # at the DPI of the host, in a direction and width that change on every theme
 # switch. background_mode is how hsetroot draws it: tile, center, full, fill,
 # cover or extend.
-background      = ":stripes()"
+background      = ":random()"
 background_mode = "tile"

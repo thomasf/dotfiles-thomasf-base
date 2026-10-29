@@ -1,6 +1,7 @@
 package main
 
 import (
+	"cmp"
 	"encoding/json"
 	"errors"
 	"flag"
@@ -50,12 +51,12 @@ func (d *Dotfiles) ThemeCommand(args []string) error {
 	if len(args) > 0 {
 		sub, args = args[0], args[1:]
 	}
-	wantArgs := map[string]int{"show": 0, "set": 1, "toggle": 0, "apply": 0, "background-image": 0}
+	wantArgs := map[string]int{"show": 0, "set": 1, "toggle": 0, "apply": 0}
 	n, ok := wantArgs[sub]
 	switch {
-	case sub != "list" && sub != "color" && sub != "preview" && sub != "lint" && !ok:
+	case sub != "list" && sub != "color" && sub != "preview" && sub != "lint" && sub != "background-image" && !ok:
 		return usage("unknown command " + sub)
-	case sub != "list" && sub != "color" && sub != "preview" && sub != "lint" && len(args) != n:
+	case sub != "list" && sub != "color" && sub != "preview" && sub != "lint" && sub != "background-image" && len(args) != n:
 		return usage(fmt.Sprintf("%s takes %d arguments", sub, n))
 	case (sub == "set" || sub == "toggle") && d.Theme != "":
 		return usage("-theme can not be used with " + sub)
@@ -114,20 +115,84 @@ func (d *Dotfiles) ThemeCommand(args []string) error {
 		fmt.Fprintf(d.Stdout, "theme: %s (%s mode)\n", d.active.ref(), d.active.mode())
 		d.sync(false, nil, eventTheme)
 	case "background-image":
-		if d.active == nil {
-			return errors.New("theme: no theme is configured")
-		}
-		// Every repository sees the dpi var of the one that defines it.
 		var dpi string
 		if len(repos) > 0 {
 			dpi = repos[0].vars["dpi"]
 		}
-		path, err := themeBackground(d.active, dpi)
-		if err != nil {
-			return err
-		}
-		fmt.Fprintln(d.Stdout, path)
+		return d.themeBackgroundImage(dpi, args)
 	}
+	return nil
+}
+
+// themeBackgroundImage handles dotfiles theme background-image.
+func (d *Dotfiles) themeBackgroundImage(dpi string, args []string) error {
+	fs := flag.NewFlagSet("dotfiles theme background-image", flag.ContinueOnError)
+	fs.SetOutput(d.Stderr)
+	exprOpt := fs.String("expr", "", "expression to generate background (e.g. :dots(), :grid(), :checker())")
+	fs.StringVar(exprOpt, "e", "", "alias for -expr")
+	previewOpt := fs.Bool("preview", false, "display ANSI truecolor preview in terminal")
+	fs.BoolVar(previewOpt, "p", false, "alias for -preview")
+	allOpt := fs.Bool("all", false, "preview all pattern generators")
+	fs.Usage = func() {
+		fmt.Fprintf(d.Stderr, "Usage: dotfiles theme background-image [options] [<expression>]\n\n")
+		fmt.Fprintf(d.Stderr, "Write the background image and print its path, or preview patterns.\n\n")
+		fmt.Fprintf(d.Stderr, "Options:\n")
+		fs.PrintDefaults()
+	}
+	if err := fs.Parse(args); err != nil {
+		return err
+	}
+	if fs.NArg() > 0 && *exprOpt == "" {
+		*exprOpt = fs.Arg(0)
+	}
+	if d.active == nil {
+		return errors.New("theme: no theme is configured")
+	}
+
+	if *allOpt {
+		patterns := []struct {
+			name string
+			expr string
+		}{
+			{"chevron", ":chevron()"},
+			{"herringbone", ":herringbone()"},
+			{"houndstooth", ":houndstooth()"},
+			{"basketweave", ":basketweave()"},
+			{"diamond", ":diamond()"},
+			{"meander", ":meander()"},
+			{"crosses", ":crosses()"},
+			{"parquet", ":parquet()"},
+			{"tatami", ":tatami()"},
+			{"stripes", ":stripes()"},
+			{"diagonal", ":diagonal()"},
+		}
+		for i, p := range patterns {
+			if i > 0 {
+				fmt.Fprintln(d.Stdout)
+			}
+			fmt.Fprintf(d.Stdout, "\033[1m%s\033[0m (%s):\n", p.name, p.expr)
+			path, img, err := themeBackgroundExpr(d.active, dpi, p.expr)
+			if err != nil {
+				return err
+			}
+			if img != nil {
+				renderTerminalBackground(d.Stdout, img, 60, 6)
+			}
+			fmt.Fprintf(d.Stdout, "path: %s\n", path)
+		}
+		return nil
+	}
+
+	path, img, err := themeBackgroundExpr(d.active, dpi, *exprOpt)
+	if err != nil {
+		return err
+	}
+	if *previewOpt && img != nil {
+		exprName := cmp.Or(*exprOpt, d.active.theme.Variants[d.active.variant].Apps["background"], "background")
+		fmt.Fprintf(d.Stdout, "\033[1m%s\033[0m:\n", exprName)
+		renderTerminalBackground(d.Stdout, img, 60, 8)
+	}
+	fmt.Fprintln(d.Stdout, path)
 	return nil
 }
 
