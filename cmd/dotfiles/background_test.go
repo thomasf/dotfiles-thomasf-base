@@ -4,11 +4,14 @@ import (
 	"bytes"
 	"image"
 	"image/png"
+	"math"
 	"os"
 	"path/filepath"
 	"strings"
 	"testing"
 	"testing/fstest"
+
+	"github.com/lucasb-eyer/go-colorful"
 )
 
 var backgroundColors = map[string]string{
@@ -30,14 +33,14 @@ func TestGeneratedBackgroundErrors(t *testing.T) {
 		{":stripes([bg_0, bg_1], 8)", "stripes: got 2 arguments"},
 	}
 	for _, tt := range tests {
-		_, ok, err := generatedBackground(tt.value, backgroundColors, 0)
+		_, ok, err := generatedBackground(tt.value, backgroundColors, "dark", 0)
 		if !ok || err == nil || !strings.Contains(err.Error(), tt.want) {
 			t.Errorf("generatedBackground(%q) = ok %v, error %v; want an error with %q", tt.value, ok, err, tt.want)
 		}
 	}
 
 	for _, value := range []string{"assets/background.png", "/abs/bg.png", ""} {
-		if _, ok, err := generatedBackground(value, backgroundColors, 0); ok || err != nil {
+		if _, ok, err := generatedBackground(value, backgroundColors, "dark", 0); ok || err != nil {
 			t.Errorf("generatedBackground(%q) = ok %v, error %v; want a file", value, ok, err)
 		}
 	}
@@ -45,36 +48,70 @@ func TestGeneratedBackgroundErrors(t *testing.T) {
 
 func TestDiagonalBackground(t *testing.T) {
 	t.Parallel()
-	// The stripes run from the top left to the bottom right, the tile starts
-	// and peaks on the colors, and it is the same for every seed.
-	draw, _, err := generatedBackground(`:diagonal([bg_0, "#ffffff"])`, backgroundColors, 0)
+	// The stripes run from the top left to the bottom right, 20 pixels apart
+	// in a 28x28 tile, the tile starts in the middle of the first color and
+	// is in the middle of the second halfway across, and it is the same for
+	// every seed.
+	draw, _, err := generatedBackground(`:diagonal([bg_0, "#ffffff"])`, backgroundColors, "dark", 0)
 	if err != nil {
 		t.Fatal(err)
 	}
 	img := draw(96).(*image.RGBA)
-	for y := range 8 {
-		for x := range 8 {
-			if got, want := img.RGBAAt(x, y), img.RGBAAt((x+1)%8, (y+1)%8); got != want {
-				t.Errorf("(%d,%d) is %v, (%d,%d) is %v, want the same", x, y, got, (x+1)%8, (y+1)%8, want)
+	const n = 28
+	if got := img.Bounds(); got != image.Rect(0, 0, n, n) {
+		t.Fatalf("the tile is %v, want %dx%d", got, n, n)
+	}
+	for y := range n {
+		for x := range n {
+			if got, want := img.RGBAAt(x, y), img.RGBAAt((x+1)%n, (y+1)%n); got != want {
+				t.Errorf("(%d,%d) is %v, (%d,%d) is %v, want the same", x, y, got, (x+1)%n, (y+1)%n, want)
 			}
 		}
 	}
 	if got := img.RGBAAt(0, 0); got.R != 0x10 || got.G != 0x3c || got.B != 0x48 {
 		t.Errorf("(0,0) is %v, want bg_0", got)
 	}
-	if got := img.RGBAAt(4, 0); got.R != 0xff || got.G != 0xff || got.B != 0xff {
-		t.Errorf("(4,0) is %v, want #ffffff", got)
+	if got := img.RGBAAt(n/2, 0); got.R != 0xff || got.G != 0xff || got.B != 0xff {
+		t.Errorf("(%d,0) is %v, want #ffffff", n/2, got)
 	}
-	other, _, _ := generatedBackground(`:diagonal([bg_0, "#ffffff"])`, backgroundColors, 1)
+	other, _, _ := generatedBackground(`:diagonal([bg_0, "#ffffff"])`, backgroundColors, "dark", 1)
 	if got := other(96).(*image.RGBA); string(got.Pix) != string(img.Pix) {
 		t.Error("another seed gives another diagonal background")
+	}
+}
+
+func TestDefaultStripesLightness(t *testing.T) {
+	t.Parallel()
+	// bg_1 is mixed toward bg_0 until they differ in lightness by
+	// maxStripesLightness, and kept if they differ by less.
+	for bg1, want := range map[string]float64{"#ffffff": maxStripesLightness, "#123e4a": -1} {
+		colors := map[string]string{"bg_0": "#103c48", "bg_1": bg1}
+		draw, _, err := generatedBackground(":diagonal()", colors, "dark", 0)
+		if err != nil {
+			t.Fatal(err)
+		}
+		img := draw(96).(*image.RGBA)
+		c := img.RGBAAt(img.Bounds().Dx()/2, 0)
+		got := colorful.Color{R: float64(c.R) / 255, G: float64(c.G) / 255, B: float64(c.B) / 255}
+		if want < 0 {
+			if got.Hex() != bg1 {
+				t.Errorf("with bg_1 %s: the second stripe is %s, want bg_1", bg1, got.Hex())
+			}
+			continue
+		}
+		bg0, _ := colorful.Hex(colors["bg_0"])
+		l0, _, _ := bg0.OkLab()
+		l, _, _ := got.OkLab()
+		if d := l - l0; math.Abs(d-want) > 0.005 {
+			t.Errorf("with bg_1 %s: the stripes differ in lightness by %.3f, want %.3f", bg1, d, want)
+		}
 	}
 }
 
 func TestStripesBackground(t *testing.T) {
 	t.Parallel()
 	pix := func(seed uint64) string {
-		draw, _, err := generatedBackground(":stripes([bg_0, bg_1, bg_2])", backgroundColors, seed)
+		draw, _, err := generatedBackground(":stripes([bg_0, bg_1, bg_2])", backgroundColors, "dark", seed)
 		if err != nil {
 			t.Fatal(err)
 		}
@@ -121,8 +158,8 @@ func TestThemeBackground(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	if got := img.Bounds(); got != image.Rect(0, 0, 14, 14) {
-		t.Errorf("without a background: %v, want 14x14 at 160 DPI", got)
+	if got := img.Bounds(); got != image.Rect(0, 0, 47, 47) {
+		t.Errorf("without a background: %v, want 47x47 at 160 DPI", got)
 	}
 	if r, g, b, _ := img.At(5, 3).RGBA(); r>>8 != 0x10 || g>>8 != 0x3c || b>>8 != 0x48 {
 		t.Errorf("without a background: %v at 5,3, want bg_0", img.At(5, 3))
@@ -170,7 +207,7 @@ light = "test:light"
 	if want := filepath.Join(os.Getenv("XDG_RUNTIME_DIR"), "dotfiles", "background.png"); out.String() != want+"\n" {
 		t.Errorf("theme background-image printed %q, want %s", out, want)
 	}
-	if cfg, err := png.DecodeConfig(bytes.NewReader(data)); err != nil || cfg.Width != 8 || cfg.Height != 8 {
-		t.Errorf("the background is %dx%d, %v; want 8x8", cfg.Width, cfg.Height, err)
+	if cfg, err := png.DecodeConfig(bytes.NewReader(data)); err != nil || cfg.Width != 28 || cfg.Height != 28 {
+		t.Errorf("the background is %dx%d, %v; want 28x28", cfg.Width, cfg.Height, err)
 	}
 }

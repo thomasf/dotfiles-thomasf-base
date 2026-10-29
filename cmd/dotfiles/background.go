@@ -29,6 +29,11 @@ import (
 // defaultDPI is the DPI generated backgrounds are drawn at without a dpi var.
 const defaultDPI = 160
 
+// maxStripesLightness is the most difference in OKLab lightness, from 0 to 1,
+// between the default stripes, of bg_0 and bg_1. OKLab, unlike WCAG contrast,
+// weighs a difference between dark colors as it looks.
+const maxStripesLightness = 0.03
+
 // backgroundDir returns the directory that the generated background is
 // written to: dotfiles in $XDG_RUNTIME_DIR, or a directory of the user in the
 // temporary directory without it.
@@ -42,11 +47,12 @@ func backgroundDir() string {
 // A drawBackground draws a generated background at a DPI.
 type drawBackground func(dpi float64) image.Image
 
-// generatedBackground evaluates value, an apps.background, with the colors of
-// a variant, and returns the function that draws it. ok is false if value is
-// not an expression but a file. The variations of stripes come from seed, so
-// that the same seed gives the same background.
-func generatedBackground(value string, colors map[string]string, seed uint64) (draw drawBackground, ok bool, err error) {
+// generatedBackground evaluates value, an apps.background, with the colors and
+// the mode, "dark" or "light", of a variant, and returns the function that
+// draws it. ok is false if value is not an expression but a file. The
+// variations of stripes come from seed, so that the same seed gives the same
+// background.
+func generatedBackground(value string, colors map[string]string, mode string, seed uint64) (draw drawBackground, ok bool, err error) {
 	src, ok := strings.CutPrefix(value, ":")
 	if !ok {
 		return nil, false, nil
@@ -57,8 +63,8 @@ func generatedBackground(value string, colors map[string]string, seed uint64) (d
 	rng := rand.New(rand.NewChaCha8(key))
 	env := map[string]any{
 		"mix":      mixColors,
-		"diagonal": func(args ...any) (drawBackground, error) { return stripes("diagonal", colors, nil, args) },
-		"stripes":  func(args ...any) (drawBackground, error) { return stripes("stripes", colors, rng, args) },
+		"diagonal": func(args ...any) (drawBackground, error) { return stripes("diagonal", colors, mode, nil, args) },
+		"stripes":  func(args ...any) (drawBackground, error) { return stripes("stripes", colors, mode, rng, args) },
 	}
 	for name, c := range colors {
 		env[name] = c
@@ -74,18 +80,30 @@ func generatedBackground(value string, colors map[string]string, seed uint64) (d
 	return draw, true, nil
 }
 
-// stripes is the generator name, diagonal(colors) or stripes(colors): soft
-// stripes. Across them, the color goes smoothly through colors, a list of at
-// least two #rrggbb colors ([bg_0, bg_1] of the variant without one), and
-// back, so a,b,c is the cycle a,b,c,b. Without rng, for diagonal, they are
-// the Selenized backgrounds: from the top left to the bottom right, 6 pixels
-// apart at 96 DPI. With it, for stripes, they run from the top left or the
-// top right, tilted by up to 10 degrees, 5 to 7 pixels apart.
-func stripes(name string, colors map[string]string, rng *rand.Rand, args []any) (drawBackground, error) {
+// stripes is the generator name, diagonal(colors) or stripes(colors):
+// stripes of bands of equal width, with sharp edges. Across them, the bands
+// go through colors, a list of at least two #rrggbb colors, and back, so
+// a,b,c is the cycle a,b,c,b. Without colors, they are bg_0 and bg_1 of the
+// variant, with bg_1 mixed toward bg_0 just enough that they differ in
+// lightness by no more than maxStripesLightness. Without rng, for diagonal,
+// they run from the top left to the bottom right, 20 pixels apart at 96 DPI.
+// With it, for stripes, they run from the top left or the top right, tilted
+// by up to 10 degrees, 20 to 29 pixels apart. mode is that of the variant,
+// "dark" or "light".
+func stripes(name string, colors map[string]string, mode string, rng *rand.Rand, args []any) (drawBackground, error) {
 	if len(args) > 1 {
 		return nil, fmt.Errorf("%s: got %d arguments, want colors", name, len(args))
 	}
 	list := []any{colors["bg_0"], colors["bg_1"]}
+	bg0, err0 := parseColor(colors["bg_0"])
+	bg1, err1 := parseColor(colors["bg_1"])
+	if err0 == nil && err1 == nil {
+		l0, _, _ := bg0.OkLab()
+		l1, _, _ := bg1.OkLab()
+		if d := math.Abs(l1 - l0); d > maxStripesLightness {
+			list[1], _ = mixColors(colors["bg_0"], colors["bg_1"], maxStripesLightness/d)
+		}
+	}
 	if len(args) > 0 {
 		var ok bool
 		if list, ok = args[0].([]any); !ok {
@@ -95,8 +113,8 @@ func stripes(name string, colors map[string]string, rng *rand.Rand, args []any) 
 	var stops []colorful.Color
 	for _, c := range list {
 		s, _ := c.(string)
-		cc, err := colorful.Hex(s)
-		if err != nil || !hexColorRe.MatchString(s) {
+		cc, err := parseColor(s)
+		if err != nil {
 			return nil, fmt.Errorf("%s: colors: %v is not a #rrggbb color", name, c)
 		}
 		stops = append(stops, cc)
@@ -109,29 +127,27 @@ func stripes(name string, colors map[string]string, rng *rand.Rand, args []any) 
 		cycle = append(cycle, stops[i])
 	}
 
-	period, angle := 6.0, 45.0 // angle clockwise from horizontal, in degrees
+	period, angle := 20.0, 45.0 // angle clockwise from horizontal, in degrees
 	if rng != nil {
-		period = float64(5 + rng.IntN(3))
+		period = float64(20 + rng.IntN(10))
 		angle = float64([]int{45, 135}[rng.IntN(2)] - 10 + rng.IntN(21))
 	}
 	return func(dpi float64) image.Image {
-		// The color of a pixel is that at the phase of the pixel across the
-		// stripes, y*cos-x*sin of the angle in periods. It is made to change
-		// by one period along the width w and the height h of the tile, so
-		// that the tile repeats without a seam; that rounds the angle and the
-		// period a little.
 		p := period * dpi / 96
 		sin, cos := math.Sincos(angle * math.Pi / 180)
 		w := max(1, int(math.Round(p/math.Abs(sin))))
 		h := max(1, int(math.Round(p/math.Abs(cos))))
+		n := len(cycle)
+		px := float64(n) / p
 		img := image.NewRGBA(image.Rect(0, 0, w, h))
 		for y := range h {
 			for x := range w {
 				phase := math.Copysign(float64(y)/float64(h), cos) - math.Copysign(float64(x)/float64(w), sin)
-				s := (phase - math.Floor(phase)) * float64(len(cycle))
-				k := min(int(s), len(cycle)-1)
-				t := (1 - math.Cos(math.Pi*(s-float64(k)))) / 2 // eased, without kinks at the colors
-				r, g, b := cycle[k].BlendOkLab(cycle[(k+1)%len(cycle)], t).Clamped().RGB255()
+				s := (phase-math.Floor(phase))*float64(n) + 0.5 // the tile starts in the middle of the first band
+				e := math.Round(s)                              // the nearest edge, from the band e-1 to e
+				t := min(max((s-e)/px+0.5, 0), 1)
+				k := int(e) % n
+				r, g, b := cycle[(k+n-1)%n].BlendOkLab(cycle[k], t).Clamped().RGB255()
 				img.SetRGBA(x, y, color.RGBA{r, g, b, 0xff})
 			}
 		}
@@ -148,7 +164,7 @@ func stripes(name string, colors map[string]string, rng *rand.Rand, args []any) 
 func themeBackground(a *activeTheme, dpiVar string) (string, error) {
 	v := a.theme.Variants[a.variant]
 	value := cmp.Or(v.Apps["background"], ":diagonal([bg_0, bg_0])") // a tile of bg_0
-	draw, ok, err := generatedBackground(value, v.Colors, a.seed)
+	draw, ok, err := generatedBackground(value, v.Colors, v.Mode, a.seed)
 	if err != nil {
 		return "", fmt.Errorf("theme background-image: %s: apps.background: %w", a.ref(), err)
 	}

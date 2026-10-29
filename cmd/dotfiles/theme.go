@@ -670,15 +670,24 @@ func (a *activeTheme) dir() string {
 // with t between 0 and 1. The colors are mixed in OKLab, a perceptual color
 // space, so that equal steps look equal whatever the hues.
 func mixColors(a, b string, t float64) (string, error) {
-	for _, c := range []string{a, b} {
-		if !hexColorRe.MatchString(c) {
-			return "", fmt.Errorf("mix: %q is not a #rrggbb color", c)
-		}
+	ca, err := parseColor(a)
+	if err != nil {
+		return "", fmt.Errorf("mix: %w", err)
+	}
+	cb, err := parseColor(b)
+	if err != nil {
+		return "", fmt.Errorf("mix: %w", err)
 	}
 	if t < 0 || t > 1 {
 		return "", fmt.Errorf("mix: %v is not between 0 and 1", t)
 	}
-	ca, _ := colorful.Hex(a) // checked above
-	cb, _ := colorful.Hex(b)
 	return ca.BlendOkLab(cb, t).Clamped().Hex(), nil
+}
+
+// parseColor parses s, a #rrggbb color.
+func parseColor(s string) (colorful.Color, error) {
+	if !hexColorRe.MatchString(s) {
+		return colorful.Color{}, fmt.Errorf("%q is not a #rrggbb color", s)
+	}
+	return colorful.Hex(s)
 }

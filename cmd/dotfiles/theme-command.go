@@ -1181,7 +1181,7 @@ func lintVariant(t *Theme, v *Variant) []lintWarning {
 	// 10. Background asset integrity: a generated background is valid, an
 	// image file exists.
 	if bgAsset := v.Apps["background"]; bgAsset != "" {
-		_, generated, err := generatedBackground(bgAsset, v.Colors, 0)
+		_, generated, err := generatedBackground(bgAsset, v.Colors, v.Mode, 0)
 		if err != nil {
 			msgs = append(msgs, lintWarning{message: fmt.Sprintf("invalid generated background: %v", err)})
 		}
