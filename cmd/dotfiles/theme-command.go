@@ -8,6 +8,7 @@ import (
 	"io"
 	"maps"
 	"math"
+	"math/rand/v2"
 	"os"
 	"path/filepath"
 	"slices"
@@ -24,13 +25,14 @@ func (d *Dotfiles) ThemeCommand(args []string) error {
 	fs := flag.NewFlagSet("dotfiles theme", flag.ContinueOnError)
 	fs.SetOutput(d.Stderr)
 	fs.Usage = func() {
-		fmt.Fprintf(d.Stderr, "Usage: dotfiles theme [show | list [-names | -json] | preview [-all] [<variant>] | lint [-all] [<variant>] | color [options] <color> | set <variant> | toggle | apply]\n\n")
+		fmt.Fprintf(d.Stderr, "Usage: dotfiles theme [show | list [-names | -json] | preview [-all] [<variant>] | lint [-all] [<variant>] | color [options] <color> | set <variant> | toggle | apply | background-image]\n\n")
 		fmt.Fprintf(d.Stderr, "Show the theme variant in use, list the themes and their variants, show\n")
 		fmt.Fprintf(d.Stderr, "the colors of a variant in the terminal, check variants for styling issues,\n")
 		fmt.Fprintf(d.Stderr, "print a single color, switch the theme, or apply the currently selected theme.\n")
 		fmt.Fprintf(d.Stderr, "color prints a single named color in the specified format (default hex).\n")
 		fmt.Fprintf(d.Stderr, "preview, lint, color and set take dark or light, theme:variant, or :variant of the theme\n")
-		fmt.Fprintf(d.Stderr, "in use; toggle switches between dark and light mode; apply applies the active theme.\n\n")
+		fmt.Fprintf(d.Stderr, "in use; toggle switches between dark and light mode; apply applies the active theme.\n")
+		fmt.Fprintf(d.Stderr, "background-image writes the background image of the theme in use and prints its path.\n\n")
 		fmt.Fprintf(d.Stderr, "A switch saves the choice in ~/%s,\n", themeStatePath)
 		fmt.Fprintf(d.Stderr, "installs the files of every repository (not [[go]] packages) and runs\n")
 		fmt.Fprintf(d.Stderr, "the [[script]] entries with on = \"theme\". See dotfiles doc theme.\n")
@@ -48,7 +50,7 @@ func (d *Dotfiles) ThemeCommand(args []string) error {
 	if len(args) > 0 {
 		sub, args = args[0], args[1:]
 	}
-	wantArgs := map[string]int{"show": 0, "set": 1, "toggle": 0, "apply": 0}
+	wantArgs := map[string]int{"show": 0, "set": 1, "toggle": 0, "apply": 0, "background-image": 0}
 	n, ok := wantArgs[sub]
 	switch {
 	case sub != "list" && sub != "color" && sub != "preview" && sub != "lint" && !ok:
@@ -59,7 +61,7 @@ func (d *Dotfiles) ThemeCommand(args []string) error {
 		return usage("-theme can not be used with " + sub)
 	}
 
-	d.loadRepos()
+	repos := d.loadRepos()
 	if len(d.runErrors) > 0 {
 		return errors.New("theme: the configs or themes failed to load")
 	}
@@ -83,6 +85,7 @@ func (d *Dotfiles) ThemeCommand(args []string) error {
 		if err != nil {
 			return err
 		}
+		st.Seed = rand.Int64()
 		next, err := chooseTheme(d.themes, "", st)
 		if err != nil {
 			return err
@@ -99,8 +102,31 @@ func (d *Dotfiles) ThemeCommand(args []string) error {
 		if d.active == nil {
 			return errors.New("theme: no theme is configured")
 		}
+		// A new seed, for new random values in generated backgrounds.
+		st, err := readThemeState(d.DstPath)
+		if err != nil {
+			return err
+		}
+		st.Seed = rand.Int64()
+		if err := writeThemeState(d.DstPath, st); err != nil {
+			return err
+		}
 		fmt.Fprintf(d.Stdout, "theme: %s (%s mode)\n", d.active.ref(), d.active.mode())
 		d.sync(false, nil, eventTheme)
+	case "background-image":
+		if d.active == nil {
+			return errors.New("theme: no theme is configured")
+		}
+		// Every repository sees the dpi var of the one that defines it.
+		var dpi string
+		if len(repos) > 0 {
+			dpi = repos[0].vars["dpi"]
+		}
+		path, err := themeBackground(d.active, dpi)
+		if err != nil {
+			return err
+		}
+		fmt.Fprintln(d.Stdout, path)
 	}
 	return nil
 }
@@ -1152,9 +1178,14 @@ func lintVariant(t *Theme, v *Variant) []lintWarning {
 		}
 	}
 
-	// 10. Background asset integrity
-	if t != nil && t.Dir != "" && len(v.Apps) > 0 {
-		if bgAsset, ok := v.Apps["background"]; ok && bgAsset != "" && !strings.Contains(bgAsset, "://") {
+	// 10. Background asset integrity: a generated background is valid, an
+	// image file exists.
+	if bgAsset := v.Apps["background"]; bgAsset != "" {
+		_, generated, err := generatedBackground(bgAsset, v.Colors, 0)
+		if err != nil {
+			msgs = append(msgs, lintWarning{message: fmt.Sprintf("invalid generated background: %v", err)})
+		}
+		if !generated && t != nil && t.Dir != "" {
 			assetPath := bgAsset
 			if !filepath.IsAbs(assetPath) {
 				assetPath = filepath.Join(t.Dir, bgAsset)

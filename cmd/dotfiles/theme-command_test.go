@@ -101,7 +101,23 @@ func TestThemeCommand(t *testing.T) {
 		}
 		return out.String()
 	}
-	state := func() string { return readOr(t, filepath.Join(dst, themeStatePath)) }
+	// state returns the state file without its seed, which every switch
+	// must change.
+	seeds := map[string]bool{}
+	state := func() string {
+		s := readOr(t, filepath.Join(dst, themeStatePath))
+		i := strings.Index(s, "seed = ")
+		if i < 0 {
+			t.Errorf("state %q has no seed", s)
+			return s
+		}
+		j := i + strings.Index(s[i:], "\n") + 1
+		if seeds[s[i:j]] {
+			t.Errorf("the seed did not change: %s", s[i:j])
+		}
+		seeds[s[i:j]] = true
+		return s[:i] + s[j:]
+	}
 	scripts := func() string {
 		s := readOr(t, filepath.Join(dst, "scripts.txt"))
 		os.Remove(filepath.Join(dst, "scripts.txt"))
@@ -741,6 +757,17 @@ func TestThemeLintRules(t *testing.T) {
 	vAsset.Apps["background"] = absAsset
 	if warns := lintVariant(thmAsset, vAsset); len(warns) > 0 {
 		t.Errorf("expected no warnings for valid absolute background asset, got: %v", warns)
+	}
+
+	// A generated background is checked, not looked for as a file
+	vAsset.Apps["background"] = ":stripes([bg_0, bg_1])"
+	if warns := lintVariant(thmAsset, vAsset); len(warns) > 0 {
+		t.Errorf("expected no warnings for a valid generated background, got: %v", warns)
+	}
+	vAsset.Apps["background"] = ":stripes([bg_0, nope])"
+	warns = lintVariant(thmAsset, vAsset)
+	if !slices.ContainsFunc(warns, func(w lintWarning) bool { return strings.Contains(w.message, "invalid generated background") }) {
+		t.Errorf("expected invalid generated background warning, got: %v", warns)
 	}
 }
 

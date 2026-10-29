@@ -35,3 +35,10 @@ br_green   = "#95e454" # ansi-color-bright-green, font-lock-string-face
 [apps]
 emacs        = "my-solarized-wombat-dark"
 color_scheme = "prefer-dark"
+
+# The root window background: soft diagonal stripes from bg_0 to bg_1, drawn
+# at the DPI of the host, in a direction and width that change on every theme
+# switch. background_mode is how hsetroot draws it: tile, center, full, fill,
+# cover or extend.
+background      = ":stripes()"
+background_mode = "tile"

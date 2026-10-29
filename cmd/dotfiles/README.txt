@@ -461,6 +461,48 @@ dim_1, dim text that reads better than dim_0 on bg_1; every
 variant of a theme must have the same colors and the same apps. Colors are
 written #rrggbb; names are lower case letters, digits and _.
 
+#### Background Images
+
+apps.background is the desktop background of a variant: an image file,
+relative to the theme directory or absolute, or, after a :, an
+expression that generates an image from the colors of the
+variant:
+
+  [apps]
+  background      = ":stripes()"
+  background_mode = "tile"
+
+In the expression, the colors of the variant are variables (bg_0, blue,
+color4), and it has mix and the generators below. A color can also be
+written as a string, "#184956", or mixed, mix(bg_0, blue, 0.1):
+:stripes([bg_0, mix(bg_0, blue, 0.15)]) gives stripes tinted blue.
+
+dotfiles theme background-image prints the absolute path of the background
+image, a tile of bg_0 if the variant has none. A generated one is drawn
+anew on every call, at the dpi var, or at 160 DPI without one, and written uncompressed
+to $XDG_RUNTIME_DIR/dotfiles/background.png, replacing the last one. A
+[[script]] with on = "theme" can set the desktop background with it:
+
+  hsetroot -tile "$(dotfiles theme background-image)"
+
+Both generators draw soft stripes: across them, the color goes smoothly
+through colors, at least two (default [bg_0, bg_1]), and back again.
+Distances are pixels at 96 DPI.
+
+ Generator        | Image
+------------------|-----------------------------------------------------------------------------
+ diagonal(colors) | The Selenized backgrounds: stripes from the top left to the bottom right, 6
+                  | pixels apart. Always the same.
+ stripes(colors)  | Diagonal stripes from the top left or the top right, tilted by up to 10
+                  | degrees, 5 to 7 pixels apart. They change with a seed in the theme state[1]
+                  | that dotfiles theme set, toggle and apply replace, so other runs of
+                  | dotfiles draw the same background and every switch draws a new one.
+
+[1]: theme state #the-theme-in-use
+
+dotfiles theme lint reports an expression that fails or does not return a
+background, and a missing image file.
+
 The accent names indicate positions around the color wheel rather than strict
 literal color definitions: they provide an evenly spaced 8-accent spectrum
 (spaced at ~45° intervals: red, orange, yellow, green, cyan, blue, violet,
@@ -547,30 +589,36 @@ read(theme["dir"] + "/extra.toml").
 
 dotfiles theme shows and switches the theme:
 
- Command                        | What it does
---------------------------------|---------------------------------------------------------------
- dotfiles theme                 | Shows the theme variant in use and its mode.
- dotfiles theme list            | Lists every variant of every theme, marking the one in use
-                                | with *.
- dotfiles theme preview         | Shows the colors of the variant in use in a terminal with 24-
-                                | bit colors: swatches, text on each background with its
-                                | contrast ratio, surface hierarchy, accent spectrum, terminal
-                                | colors, styled terminal text, warnings for invisible text,
-                                | and app metadata. preview dark, preview selenized:light and
-                                | preview :black show another variant, and preview -all shows
-                                | all variants.
- dotfiles theme lint            | Lints a theme variant or all themes (-all) for contrast and
-                                | styling issues (such as invisible text combinations).
-                                | Defaults to the variant in use; accepts <variant> or -theme.
- dotfiles theme color <name>    | Prints a single named color in hex format (or -format raw,
-                                | 0x, rgb). -theme specifies another variant.
- dotfiles theme set dark        | Switches to dark mode, with [theme] dark; set light likewise.
- dotfiles theme set selenized:x | Switches to a variant, and to its mode; set :x keeps the
-                                | theme in use.
- dotfiles theme toggle          | Switches between dark and light mode, with [theme] dark and
-                                | light.
- dotfiles theme apply           | Applies the theme variant in use: installs files and runs
-                                | [[script]] entries with on = "theme".
+ Command                         | What it does
+---------------------------------|--------------------------------------------------------------
+ dotfiles theme                  | Shows the theme variant in use and its mode.
+ dotfiles theme list             | Lists every variant of every theme, marking the one in use
+                                 | with *.
+ dotfiles theme preview          | Shows the colors of the variant in use in a terminal with
+                                 | 24-bit colors: swatches, text on each background with its
+                                 | contrast ratio, surface hierarchy, accent spectrum, terminal
+                                 | colors, styled terminal text, warnings for invisible text,
+                                 | and app metadata. preview dark, preview selenized:light and
+                                 | preview :black show another variant, and preview -all shows
+                                 | all variants.
+ dotfiles theme lint             | Lints a theme variant or all themes (-all) for contrast and
+                                 | styling issues (such as invisible text combinations).
+                                 | Defaults to the variant in use; accepts <variant> or -theme.
+ dotfiles theme color <name>     | Prints a single named color in hex format (or -format raw,
+                                 | 0x, rgb). -theme specifies another variant.
+ dotfiles theme set dark         | Switches to dark mode, with [theme] dark; set light
+                                 | likewise.
+ dotfiles theme set selenized:x  | Switches to a variant, and to its mode; set :x keeps the
+                                 | theme in use.
+ dotfiles theme toggle           | Switches between dark and light mode, with [theme] dark and
+                                 | light.
+ dotfiles theme apply            | Applies the theme variant in use: installs files and runs
+                                 | [[script]] entries with on = "theme", with new variations of
+                                 | generated backgrounds.
+ dotfiles theme background-image | Writes the background image of the theme variant in use and
+                                 | prints its path (see Background Images[1]).
+
+[1]: Background Images #background-images
 
 A switch writes the state file, then installs the files of every repository
 as dotfiles install does, with the new theme, and runs the [[script]]

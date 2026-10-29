@@ -408,6 +408,7 @@ type activeTheme struct {
 	theme          *Theme
 	variant        string
 	terminalBright string // "palette" or "accents"
+	seed           uint64 // of the random values of a generated background
 }
 
 // value returns the theme value of conditions, templates and Starlark code:
@@ -510,6 +511,7 @@ type themeState struct {
 	Mode           string `toml:"mode"`
 	Theme          string `toml:"theme,omitempty"` // theme:variant to use instead of [theme] dark or light
 	TerminalBright string `toml:"terminal_bright,omitempty"`
+	Seed           int64  `toml:"seed,omitempty"` // of the random values of generated backgrounds, new on every switch
 }
 
 // readThemeState reads the state file in dstRoot. Without one, the mode is
@@ -598,7 +600,7 @@ func chooseTheme(ts *themeSet, option string, st themeState) (*activeTheme, erro
 	if _, ok := t.Variants[variant]; !ok {
 		return nil, fmt.Errorf("theme %s: theme %s has no variant %s", ref, name, variant)
 	}
-	return &activeTheme{theme: t, variant: variant, terminalBright: terminalBright}, nil
+	return &activeTheme{theme: t, variant: variant, terminalBright: terminalBright, seed: uint64(st.Seed)}, nil
 }
 
 // colorFunc returns the function name of conditions, templates and Starlark

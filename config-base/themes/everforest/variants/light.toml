@@ -28,3 +28,10 @@ green   = "#8da101"
 [apps]
 emacs        = "my-solarized-everforest-light"
 color_scheme = "prefer-light"
+
+# The root window background: soft diagonal stripes from bg_0 to bg_1, drawn
+# at the DPI of the host, in a direction and width that change on every theme
+# switch. background_mode is how hsetroot draws it: tile, center, full, fill,
+# cover or extend.
+background      = ":stripes()"
+background_mode = "tile"
