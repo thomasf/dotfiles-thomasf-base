@@ -1,8 +1,9 @@
 mode = "dark"
 
-# From solarized-zenburn-color-palette-alist,
-# drawn as dark by solarized-emacs. bg_2 is not in it: it is zenburn-bg+2
-# of upstream zenburn-emacs, the level after bg_1 (zenburn-bg+1).
+# Zenburn (solarized-emacs solarized-zenburn-color-palette-alist, as drawn
+# dark). Changes:
+#   - bg_2: zenburn-bg+2 from upstream zenburn-emacs, the level after bg_1
+#     (zenburn-bg+1); the palette has none.
 [colors]
 bg_0  = "#3f3f3f"
 bg_1  = "#4f4f4f"
@@ -21,7 +22,8 @@ blue    = "#8cd0d3"
 cyan    = "#93e0e3"
 green   = "#7f9f7f"
 
-# Zenburn official upstream bright accents (jnurmine/Zenburn, emacs zenburn-theme +1 variants)
+# Bright accents: upstream Zenburn's +1 variants (jnurmine/Zenburn, emacs
+# zenburn-theme).
 br_yellow  = "#f0dfaf"
 br_orange  = "#dfaf8f"
 br_red     = "#dca3a3"

@@ -1,0 +1,42 @@
+mode = "dark"
+
+# Nordfox (EdenEast/nightfox.nvim). Changes:
+#   - bg_1: bg3 instead of bg2 (1.20:1 on bg_0), for 1.45:1.
+#   - fg_1: white instead of fg0, which has less contrast than fg1.
+#   - violet: its purple turned to OKLCH hue 300, as magenta (its pink) has
+#     nearly the same hue.
+[colors]
+bg_0  = "#2e3440" # bg1
+bg_1  = "#444c5e" # bg3
+bg_2  = "#5a657d" # bg4
+dim_0 = "#60728a" # comment
+dim_1 = "#abb1bb" # fg2
+fg_0  = "#cdcecf" # fg1
+fg_1  = "#e5e9f0" # white
+
+yellow  = "#ebcb8b"
+orange  = "#c9826b"
+red     = "#bf616a"
+magenta = "#bf88bc"
+violet  = "#a294bd" # derived
+blue    = "#81a1c1"
+cyan    = "#88c0d0"
+green   = "#a3be8c"
+
+br_red     = "#d06f79"
+br_green   = "#b1d196"
+br_yellow  = "#f0d399"
+br_blue    = "#8cafd2"
+br_magenta = "#d092ce" # pink.bright
+br_cyan    = "#93ccdc"
+
+[apps]
+emacs        = "my-solarized-nordfox"
+color_scheme = "prefer-dark"
+
+# The root window background: soft diagonal stripes from bg_0 to bg_1, drawn
+# at the DPI of the host, in a direction and width that change on every theme
+# switch. background_mode is how hsetroot draws it: tile, center, full, fill,
+# cover or extend.
+background      = ":random()"
+background_mode = "tile"

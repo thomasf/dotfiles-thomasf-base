@@ -1,0 +1,39 @@
+mode = "light"
+
+# Dayfox (EdenEast/nightfox.nvim). Changes:
+#   - bg_1: bg3 instead of bg0 (1.22:1 on bg_0), for 1.49:1.
+[colors]
+bg_0  = "#f6f2ee" # bg1
+bg_1  = "#d3c7bb" # bg3
+bg_2  = "#aab0ad" # bg4
+dim_0 = "#837a72" # comment
+dim_1 = "#643f61" # fg2
+fg_0  = "#3d2b5a" # fg1
+fg_1  = "#302b5d" # fg0
+
+yellow  = "#ac5402"
+orange  = "#955f61"
+red     = "#a5222f"
+magenta = "#a440b5"
+violet  = "#6e33ce"
+blue    = "#2848a9"
+cyan    = "#287980"
+green   = "#396847"
+
+br_red     = "#b3434e"
+br_green   = "#577f63"
+br_yellow  = "#b86e28"
+br_blue    = "#4863b6"
+br_magenta = "#b25dc0" # pink.bright (shade 0.15)
+br_cyan    = "#488d93"
+
+[apps]
+emacs        = "my-solarized-dayfox"
+color_scheme = "prefer-light"
+
+# The root window background: soft diagonal stripes from bg_0 to bg_1, drawn
+# at the DPI of the host, in a direction and width that change on every theme
+# switch. background_mode is how hsetroot draws it: tile, center, full, fill,
+# cover or extend.
+background      = ":random()"
+background_mode = "tile"

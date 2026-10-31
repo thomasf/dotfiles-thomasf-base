@@ -1,15 +1,14 @@
 mode = "dark"
 
-# Selenized black, from the upstream values (jan-warchol/selenized, the-values.md).
-# bg_1 is adjusted from upstream #252525 (contrast ratio 1.18:1 on bg_0) to
-# #2a2a2a to achieve 1.24:1 contrast ratio for terminal surface visibility.
-# dim_1 is not in upstream; mixed 50/50 in OKLab between dim_0 and fg_0.
+# Selenized black (jan-warchol/selenized, the-values.md). Changes:
+#   - bg_1: #252525 (1.18:1 on bg_0) raised to #2a2a2a, for 1.24:1.
+#   - dim_1: dim_0 and fg_0 mixed 50/50 in OKLab; upstream has none.
 [colors]
 bg_0  = "#181818" # bg_0
-bg_1  = "#2a2a2a" # upstream bg_1 is #252525 (raised for >= 1.22:1 contrast)
+bg_1  = "#2a2a2a" # adjusted bg_1
 bg_2  = "#3b3b3b" # bg_2
 dim_0 = "#777777" # dim_0
-dim_1 = "#979797" # generated: dim_0 and fg_0 mixed 50/50 in OKLab
+dim_1 = "#979797" # derived
 fg_0  = "#b9b9b9"
 fg_1  = "#dedede"
 

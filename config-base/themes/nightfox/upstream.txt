@@ -1,0 +1,202 @@
+Nightfox Color Palette Specification
+Creator: James Simpson (https://github.com/EdenEast/nightfox.nvim)
+Source: lua/nightfox/palette/*.lua, extra/*/kitty.conf
+License: MIT
+
+Accents are listed as base / bright (terminal bright). Nightfox's "magenta"
+is a purple and "pink" the reddish purple.
+
+Nightfox (Dark):
+  Backgrounds:
+    bg0     #131a24   Dark bg (status line and float)
+    bg1     #192330   Default background
+    bg2     #212e3f   Lighter bg (colorcolumn, folds)
+    bg3     #29394f   Lighter bg (cursor line)
+    bg4     #39506d   Conceal, border fg
+    sel0    #2b3b51   Popup bg, visual selection bg
+    sel1    #3c5372   Popup sel bg, search bg
+  Foregrounds:
+    fg0     #d6d6d7   Lighter fg
+    fg1     #cdcecf   Default foreground
+    fg2     #aeafb0   Darker fg (status line)
+    fg3     #71839b   Darker fg (line numbers, fold columns)
+    comment #738091   Comments
+  Accents (base / bright):
+    black   #393b44 / #575860
+    red     #c94f6d / #d16983
+    orange  #f4a261 / #f6b079 (shade 0.15)
+    yellow  #dbc074 / #e0c989
+    green   #81b29a / #8ebaa4
+    cyan    #63cdcf / #7ad5d6
+    blue    #719cd6 / #86abdc
+    magenta #9d79d6 / #baa1e2
+    pink    #d67ad2 / #dc8ed9 (shade 0.15)
+    white   #dfdfe0 / #e4e4e5
+
+Dayfox (Light):
+  Backgrounds:
+    bg0     #e4dcd4   Dark bg (status line and float)
+    bg1     #f6f2ee   Default background
+    bg2     #dbd1dd   Lighter bg (colorcolumn, folds)
+    bg3     #d3c7bb   Lighter bg (cursor line)
+    bg4     #aab0ad   Conceal, border fg
+    sel0    #e7d2be   Popup bg, visual selection bg
+    sel1    #a4c1c2   Popup sel bg, search bg
+  Foregrounds:
+    fg0     #302b5d   Lighter fg
+    fg1     #3d2b5a   Default foreground
+    fg2     #643f61   Darker fg (status line)
+    fg3     #824d5b   Darker fg (line numbers, fold columns)
+    comment #837a72   Comments
+  Accents (base / bright):
+    black   #352c24 / #534c45
+    red     #a5222f / #b3434e
+    orange  #955f61 / #a57779 (shade 0.15)
+    yellow  #ac5402 / #b86e28
+    green   #396847 / #577f63
+    cyan    #287980 / #488d93
+    blue    #2848a9 / #4863b6
+    magenta #6e33ce / #8452d5
+    pink    #a440b5 / #b25dc0 (shade 0.15)
+    white   #f2e9e1 / #f4ece6
+
+Dawnfox (Light):
+  Backgrounds:
+    bg0     #ebe5df   Dark bg (status line and float)
+    bg1     #faf4ed   Default background
+    bg2     #ebe0df   Lighter bg (colorcolumn, folds)
+    bg3     #ebdfe4   Lighter bg (cursor line)
+    bg4     #bdbfc9   Conceal, border fg
+    sel0    #d0d8d8   Popup bg, visual selection bg
+    sel1    #b8cece   Popup sel bg, search bg
+  Foregrounds:
+    fg0     #4c4769   Lighter fg
+    fg1     #575279   Default foreground
+    fg2     #625c87   Darker fg (status line)
+    fg3     #a8a3b3   Darker fg (line numbers, fold columns)
+    comment #9893a5   Comments
+  Accents (base / bright):
+    black   #575279 / #5f5695
+    red     #b4637a / #c26d85
+    orange  #d7827e / #de8c88
+    yellow  #ea9d34 / #eea846
+    green   #618774 / #629f81
+    cyan    #56949f / #5ca7b4
+    blue    #286983 / #2d81a3
+    magenta #907aa9 / #9a80b9
+    pink    #d685af / #de8db7
+    white   #e5e9f0 / #e6ebf3
+
+Duskfox (Dark):
+  Backgrounds:
+    bg0     #191726   Dark bg (status line and float)
+    bg1     #232136   Default background
+    bg2     #2d2a45   Lighter bg (colorcolumn, folds)
+    bg3     #373354   Lighter bg (cursor line)
+    bg4     #4b4673   Conceal, border fg
+    sel0    #433c59   Popup bg, visual selection bg
+    sel1    #63577d   Popup sel bg, search bg
+  Foregrounds:
+    fg0     #eae8ff   Lighter fg
+    fg1     #e0def4   Default foreground
+    fg2     #cdcbe0   Darker fg (status line)
+    fg3     #6e6a86   Darker fg (line numbers, fold columns)
+    comment #817c9c   Comments
+  Accents (base / bright):
+    black   #393552 / #47407d
+    red     #eb6f92 / #f083a2
+    orange  #ea9a97 / #f0a4a2
+    yellow  #f6c177 / #f9cb8c
+    green   #a3be8c / #b1d196
+    cyan    #9ccfd8 / #a6dae3
+    blue    #569fba / #65b1cd
+    magenta #c4a7e7 / #ccb1ed
+    pink    #eb98c3 / #f0a6cc
+    white   #e0def4 / #e2e0f7
+
+Nordfox (Dark):
+  Backgrounds:
+    bg0     #232831   Dark bg (status line and float)
+    bg1     #2e3440   Default background
+    bg2     #39404f   Lighter bg (colorcolumn, folds)
+    bg3     #444c5e   Lighter bg (cursor line)
+    bg4     #5a657d   Conceal, border fg
+    sel0    #3e4a5b   Popup bg, visual selection bg
+    sel1    #4f6074   Popup sel bg, search bg
+  Foregrounds:
+    fg0     #c7cdd9   Lighter fg
+    fg1     #cdcecf   Default foreground
+    fg2     #abb1bb   Darker fg (status line)
+    fg3     #7e8188   Darker fg (line numbers, fold columns)
+    comment #60728a   Comments
+  Accents (base / bright):
+    black   #3b4252 / #465780
+    red     #bf616a / #d06f79
+    orange  #c9826b / #d89079
+    yellow  #ebcb8b / #f0d399
+    green   #a3be8c / #b1d196
+    cyan    #88c0d0 / #93ccdc
+    blue    #81a1c1 / #8cafd2
+    magenta #b48ead / #c895bf
+    pink    #bf88bc / #d092ce
+    white   #e5e9f0 / #e7ecf4
+
+Terafox (Dark):
+  Backgrounds:
+    bg0     #0f1c1e   Dark bg (status line and float)
+    bg1     #152528   Default background
+    bg2     #1d3337   Lighter bg (colorcolumn, folds)
+    bg3     #254147   Lighter bg (cursor line)
+    bg4     #2d4f56   Conceal, border fg
+    sel0    #293e40   Popup bg, visual selection bg
+    sel1    #425e5e   Popup sel bg, search bg
+  Foregrounds:
+    fg0     #eaeeee   Lighter fg
+    fg1     #e6eaea   Default foreground
+    fg2     #cbd9d8   Darker fg (status line)
+    fg3     #587b7b   Darker fg (line numbers, fold columns)
+    comment #6d7f8b   Comments
+  Accents (base / bright):
+    black   #2f3239 / #4e5157
+    red     #e85c51 / #eb746b
+    orange  #ff8349 / #ff9664
+    yellow  #fda47f / #fdb292
+    green   #7aa4a1 / #8eb2af
+    cyan    #a1cdd8 / #afd4de
+    blue    #5a93aa / #73a3b7
+    magenta #ad5c7c / #b97490
+    pink    #cb7985 / #d38d97
+    white   #ebebeb / #eeeeee
+
+Carbonfox (Dark):
+  Computed upstream from bg #161616 and fg #f2f4f8.
+  Backgrounds:
+    bg0     #0c0c0c   Dark bg (status line and float)
+    bg1     #161616   Default background
+    bg2     #252525   Lighter bg (colorcolumn, folds)
+    bg3     #353535   Lighter bg (cursor line)
+    bg4     #535353   Conceal, border fg
+    sel0    #2a2a2a   Popup bg, visual selection bg
+    sel1    #525253   Popup sel bg, search bg
+  Foregrounds:
+    fg0     #f9fbff   Lighter fg
+    fg1     #f2f4f8   Default foreground
+    fg2     #b6b8bb   Darker fg (status line)
+    fg3     #7b7c7e   Darker fg (line numbers, fold columns)
+    comment #6e6f70   Comments
+  Accents (base / bright):
+    black   #282828 / #484848
+    red     #ee5396 / #f16da6   (Carbon magenta 50)
+    orange  #3ddbd9 / #5ae0df (shade 0.15)   (Carbon teal 30)
+    yellow  #08bdba / #2dc7c4   (Carbon teal 40)
+    green   #25be6a / #46c880
+    cyan    #33b1ff / #52bdff   (Carbon cyan 40)
+    blue    #78a9ff / #8cb6ff   (Carbon blue 40)
+    magenta #be95ff / #c8a5ff   (Carbon purple 40)
+    pink    #ff7eb6 / #ff91c1 (shade 0.15)   (Carbon magenta 40)
+    white   #dfdfe0 / #e4e4e5
+
+IBM Carbon (carbon-design-system/carbon, @carbon/colors), used for carbonfox:
+    yellow30  #f1c21b
+    orange40  #ff832b
+    red50     #fa4d56

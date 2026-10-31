@@ -1,0 +1,39 @@
+mode = "dark"
+
+# IBM Carbon g100: grade 40 accents, grade 30 brights. Changes:
+#   - bg_1: gray 80 instead of layer-01 gray 90 (1.20:1 on bg_0), for 1.57:1.
+[colors]
+bg_0  = "#161616" # gray 100, background
+bg_1  = "#393939" # gray 80
+bg_2  = "#525252" # gray 70
+dim_0 = "#6f6f6f" # gray 60
+dim_1 = "#a8a8a8" # gray 40, text-helper
+fg_0  = "#c6c6c6" # gray 30, text-secondary
+fg_1  = "#f4f4f4" # gray 10, text-primary
+
+yellow  = "#d2a106"
+orange  = "#ff832b"
+red     = "#ff8389"
+magenta = "#ff7eb6"
+violet  = "#be95ff" # purple 40
+blue    = "#78a9ff"
+cyan    = "#08bdba" # teal 40
+green   = "#42be65"
+
+br_red     = "#ffb3b8"
+br_green   = "#6fdc8c"
+br_yellow  = "#f1c21b"
+br_blue    = "#a6c8ff"
+br_magenta = "#ffafd2"
+br_cyan    = "#3ddbd9"
+
+[apps]
+emacs        = "my-solarized-carbon-dark"
+color_scheme = "prefer-dark"
+
+# The root window background: soft diagonal stripes from bg_0 to bg_1, drawn
+# at the DPI of the host, in a direction and width that change on every theme
+# switch. background_mode is how hsetroot draws it: tile, center, full, fill,
+# cover or extend.
+background      = ":random()"
+background_mode = "tile"

@@ -1,19 +1,18 @@
 mode = "dark"
 
-# Flexoki dark (kepano/flexoki, stephango.com/flexoki).
-# bg_1 uses upstream ui-2 (#282726) instead of ui-1 (#1c1b1a, contrast ratio 1.11:1 on bg_0)
-# to achieve 1.24:1 contrast ratio for terminal surface visibility.
-# fg_1 uses upstream paper (#e6e4d9) instead of duplicating tx (#cecdc3, fg_0)
-# to give emphasized text higher contrast (13.7:1 vs 10.6:1).
-# purple is mapped to violet.
+# Flexoki dark (kepano/flexoki, stephango.com/flexoki), with purple as violet.
+# Changes:
+#   - bg_1: ui-2 instead of ui-1 (1.11:1 on bg_0), for 1.24:1.
+#   - fg_1: paper instead of tx, which is fg_0, for higher contrast (13.7:1 vs
+#     10.6:1).
 [colors]
 bg_0  = "#100f0f" # black
-bg_1  = "#282726" # upstream ui-2 (used over ui-1 #1c1b1a for >= 1.22:1 contrast)
+bg_1  = "#282726" # ui-2
 bg_2  = "#343331" # ui-3
 dim_0 = "#575653" # tx-3
 dim_1 = "#878580" # tx-2
 fg_0  = "#cecdc3" # tx
-fg_1  = "#e6e4d9" # upstream paper (used over tx for distinct emphasized text)
+fg_1  = "#e6e4d9" # paper
 
 yellow  = "#d0a215"
 orange  = "#da702c"

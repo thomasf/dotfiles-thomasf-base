@@ -1,26 +1,27 @@
 mode = "dark"
 
 # Kanagawa dragon (rebelot/kanagawa.nvim): ui bg, the comment color, ui fg and
-# terminal white; the accents are its terminal colors, with dragonPink as magenta,
-# dragonOrange as orange and dragonViolet as violet.
-# bg_1 is adjusted from upstream dragonBlack3 (#201e1e, contrast ratio 1.09:1 on bg_0)
-# to #2b2a2a to achieve 1.26:1 contrast ratio for terminal surface visibility.
-# bg_2 uses upstream dragonBlack5 (#393836) instead of dragonBlack4 (#282727)
-# for a monotonic 1.25:1 contrast step.
-# fg_0 uses upstream dragonWhite (#c5c9c5) instead of duplicating fujiWhite (#dcd7ba, fg_1).
-# Upstream terminal blue and cyan (dragonBlue2, dragonAqua) are nearly identical,
-# so blue is dragonBlue (#658594) and cyan is waveAqua2 (#7aa89f).
+# terminal white; the accents are its terminal colors, with dragonPink as
+# magenta and dragonViolet as violet. Changes:
+#   - bg_1: dragonBlack3 (#201e1e, 1.09:1 on bg_0) raised to #2b2a2a, for
+#     1.26:1.
+#   - bg_2: dragonBlack5 instead of dragonBlack4, for a 1.25:1 step.
+#   - fg_0: dragonWhite instead of fujiWhite, which is fg_1.
+#   - blue, cyan: dragonBlue and waveAqua2, as its terminal blue and cyan
+#     (dragonBlue2, dragonAqua) are nearly identical.
+#   - orange: dragonOrange (#b6927b) with OKLCH chroma raised from 0.054 to
+#     0.09, same hue and lightness, as it read as a tan between red and yellow.
 [colors]
 bg_0  = "#181616" # dragonBlack2
-bg_1  = "#2b2a2a" # adjusted from dragonBlack3 #201e1e (raised for >= 1.22:1 contrast)
-bg_2  = "#393836" # upstream dragonBlack5 (used over dragonBlack4 for >= 1.22:1 contrast step)
+bg_1  = "#2b2a2a" # adjusted dragonBlack3
+bg_2  = "#393836" # dragonBlack5
 dim_0 = "#737c73" # dragonGray
 dim_1 = "#9e9b93" # dragonGray2
-fg_0  = "#c5c9c5" # dragonWhite (used over fujiWhite for distinct body vs emphasized text)
+fg_0  = "#c5c9c5" # dragonWhite
 fg_1  = "#dcd7ba" # fujiWhite
 
 yellow  = "#c4b28a"
-orange  = "#b6927b"
+orange  = "#c68b64" # adjusted dragonOrange
 red     = "#c4746e"
 magenta = "#a292a3"
 violet  = "#8992a7"

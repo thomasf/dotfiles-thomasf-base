@@ -1,0 +1,29 @@
+creator = "IBM"
+url = "https://github.com/carbon-design-system/carbon"
+license = "Apache-2.0"
+description = """
+The palette is IBM's Carbon Design System, from @carbon/themes (g100 and
+white) and @carbon/colors.
+
+- Each accent family is at one grade, which Carbon keeps at equal contrast.
+- Brights are the next lighter grade.
+- cyan is teal, as Carbon's cyan is close to its blue; violet is purple."""
+
+[ansi]
+color0 = "bg_1"
+color1 = "red"
+color2 = "green"
+color3 = "yellow"
+color4 = "blue"
+color5 = "magenta"
+color6 = "cyan"
+color7 = "dim_0"
+
+color8  = "bg_2"
+color9  = "br_red"
+color10 = "br_green"
+color11 = "br_yellow"
+color12 = "br_blue"
+color13 = "br_magenta"
+color14 = "br_cyan"
+color15 = "fg_1"

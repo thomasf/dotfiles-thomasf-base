@@ -1,0 +1,39 @@
+mode = "dark"
+
+# Duskfox (EdenEast/nightfox.nvim). Changes:
+#   - bg_1: bg3 instead of bg2 (1.14:1 on bg_0), for 1.31:1.
+[colors]
+bg_0  = "#232136" # bg1
+bg_1  = "#373354" # bg3
+bg_2  = "#4b4673" # bg4
+dim_0 = "#817c9c" # comment
+dim_1 = "#cdcbe0" # fg2
+fg_0  = "#e0def4" # fg1
+fg_1  = "#eae8ff" # fg0
+
+yellow  = "#f6c177"
+orange  = "#ea9a97"
+red     = "#eb6f92"
+magenta = "#eb98c3"
+violet  = "#c4a7e7"
+blue    = "#569fba"
+cyan    = "#9ccfd8"
+green   = "#a3be8c"
+
+br_red     = "#f083a2"
+br_green   = "#b1d196"
+br_yellow  = "#f9cb8c"
+br_blue    = "#65b1cd"
+br_magenta = "#f0a6cc" # pink.bright
+br_cyan    = "#a6dae3"
+
+[apps]
+emacs        = "my-solarized-duskfox"
+color_scheme = "prefer-dark"
+
+# The root window background: soft diagonal stripes from bg_0 to bg_1, drawn
+# at the DPI of the host, in a direction and width that change on every theme
+# switch. background_mode is how hsetroot draws it: tile, center, full, fill,
+# cover or extend.
+background      = ":random()"
+background_mode = "tile"

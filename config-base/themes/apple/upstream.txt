@@ -1,0 +1,55 @@
+Apple Color Palette Specification
+Creator: Apple (https://developer.apple.com/design/human-interface-guidelines)
+Source: Human Interface Guidelines, Color (system colors updated June 9, 2025)
+
+System colors: default / increased contrast.
+
+Apple Light:
+  Grays (iOS, iPadOS):
+    gray     #8e8e93
+    gray2    #aeaeb2
+    gray3    #c7c7cc
+    gray4    #d1d1d6
+    gray5    #e5e5ea
+    gray6    #f2f2f7
+  Labels (UIKit; not listed on the HIG page):
+    primary    #000000
+    secondary  #3c3c43   Drawn at 60% opacity
+  System colors:
+    red      #ff383c / #e9152d
+    orange   #ff8d28 / #c55300
+    yellow   #ffcc00 / #a16a00
+    green    #34c759 / #008932
+    mint     #00c8b3 / #008575
+    teal     #00c3d0 / #008198
+    cyan     #00c0e8 / #007eae
+    blue     #0088ff / #1e6ef4
+    indigo   #6155f5 / #564ade
+    purple   #cb30e0 / #b02fc2
+    pink     #ff2d55 / #e7124d
+    brown    #ac7f5e / #956d51
+
+Apple Dark:
+  Grays (iOS, iPadOS):
+    gray     #8e8e93
+    gray2    #636366
+    gray3    #48484a
+    gray4    #3a3a3c
+    gray5    #2c2c2e
+    gray6    #1c1c1e
+  Labels (UIKit; not listed on the HIG page):
+    primary    #ffffff
+    secondary  #ebebf5   Drawn at 60% opacity
+  System colors:
+    red      #ff4245 / #ff6165
+    orange   #ff9230 / #ffa056
+    yellow   #ffd600 / #fedf43
+    green    #30d158 / #4ad968
+    mint     #00dac3 / #54dfcb
+    teal     #00d2e0 / #3bddec
+    cyan     #3cd3fe / #6dd9ff
+    blue     #0091ff / #5cb8ff
+    indigo   #6d7cff / #a7aaff
+    purple   #db34f2 / #ea8dff
+    pink     #ff375f / #ff8ac4
+    brown    #b78a66 / #dba679

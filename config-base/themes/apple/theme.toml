@@ -1,0 +1,30 @@
+creator = "Apple"
+url = "https://developer.apple.com/design/human-interface-guidelines/color"
+description = """
+The palette is Apple's Human Interface Guidelines colors (2025).
+
+- magenta is purple, violet indigo and cyan mint, as pink is close to red
+  and teal and cyan to blue.
+- Dark uses the default colors, light the increased contrast ones, as the
+  default yellow, orange, green and mint are under 2.4:1 on white.
+- Brights are the other set: increased contrast in dark, default in light.
+- fg_0 is the secondary label color without its 60% opacity."""
+
+[ansi]
+color0 = "bg_1"
+color1 = "red"
+color2 = "green"
+color3 = "yellow"
+color4 = "blue"
+color5 = "magenta"
+color6 = "cyan"
+color7 = "dim_0"
+
+color8  = "bg_2"
+color9  = "br_red"
+color10 = "br_green"
+color11 = "br_yellow"
+color12 = "br_blue"
+color13 = "br_magenta"
+color14 = "br_cyan"
+color15 = "fg_1"

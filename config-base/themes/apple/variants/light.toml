@@ -1,0 +1,40 @@
+mode = "light"
+
+# Apple light: increased contrast colors, default colors as brights. Changes:
+#   - bg_1: gray 5 instead of gray 6 (1.12:1 on bg_0), for 1.26:1.
+#   - br_yellow: default yellow darkened to OKLCH lightness 0.66, as it is
+#     1.5:1 on white.
+[colors]
+bg_0  = "#ffffff" # white
+bg_1  = "#e5e5ea" # gray 5
+bg_2  = "#c7c7cc" # gray 3
+dim_0 = "#8e8e93" # gray
+fg_0  = "#3c3c43" # label secondary
+fg_1  = "#000000" # label primary
+
+yellow  = "#a16a00"
+orange  = "#c55300"
+red     = "#e9152d"
+magenta = "#b02fc2" # purple
+violet  = "#564ade" # indigo
+blue    = "#1e6ef4"
+cyan    = "#008575" # mint
+green   = "#008932"
+
+br_red     = "#ff383c"
+br_green   = "#34c759"
+br_yellow  = "#b18e15" # derived
+br_blue    = "#0088ff"
+br_magenta = "#cb30e0" # purple
+br_cyan    = "#00c8b3" # mint
+
+[apps]
+emacs        = "my-solarized-apple-light"
+color_scheme = "prefer-light"
+
+# The root window background: soft diagonal stripes from bg_0 to bg_1, drawn
+# at the DPI of the host, in a direction and width that change on every theme
+# switch. background_mode is how hsetroot draws it: tile, center, full, fill,
+# cover or extend.
+background      = ":random()"
+background_mode = "tile"

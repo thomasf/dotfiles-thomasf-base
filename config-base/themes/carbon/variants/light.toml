@@ -1,0 +1,41 @@
+mode = "light"
+
+# IBM Carbon white: grade 60 accents, grade 50 brights. Changes:
+#   - bg_1: gray 20 instead of layer-01 gray 10 (1.10:1 on bg_0), for 1.32:1.
+#   - blue, br_blue: cyan 60 and 50, as blue 60 is far more saturated than
+#     the other accents.
+[colors]
+bg_0  = "#ffffff" # white, background
+bg_1  = "#e0e0e0" # gray 20
+bg_2  = "#c6c6c6" # gray 30
+dim_0 = "#8d8d8d" # gray 50
+dim_1 = "#6f6f6f" # gray 60, text-helper
+fg_0  = "#525252" # gray 70, text-secondary
+fg_1  = "#161616" # gray 100, text-primary
+
+yellow  = "#8e6a00"
+orange  = "#ba4e00"
+red     = "#da1e28"
+magenta = "#d02670"
+violet  = "#8a3ffc" # purple 60
+blue    = "#0072c3" # cyan 60
+cyan    = "#007d79" # teal 60
+green   = "#198038"
+
+br_red     = "#fa4d56"
+br_green   = "#24a148"
+br_yellow  = "#b28600"
+br_blue    = "#1192e8" # cyan 50
+br_magenta = "#ee5396"
+br_cyan    = "#009d9a"
+
+[apps]
+emacs        = "my-solarized-carbon-light"
+color_scheme = "prefer-light"
+
+# The root window background: soft diagonal stripes from bg_0 to bg_1, drawn
+# at the DPI of the host, in a direction and width that change on every theme
+# switch. background_mode is how hsetroot draws it: tile, center, full, fill,
+# cover or extend.
+background      = ":random()"
+background_mode = "tile"

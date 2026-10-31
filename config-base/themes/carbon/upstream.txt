@@ -1,0 +1,43 @@
+IBM Carbon Color Palette Specification
+Creator: IBM (https://github.com/carbon-design-system/carbon)
+Source: @carbon/themes (g100, white) and @carbon/colors
+License: Apache-2.0
+
+Each color family has grades 10 (lightest) to 100 (darkest); a grade has the
+same contrast in every family.
+
+Theme g100 (Dark):
+  background      #161616   gray 100
+  layer-01        #262626   gray 90
+  layer-02        #393939   gray 80
+  text-primary    #f4f4f4   gray 10
+  text-secondary  #c6c6c6   gray 30
+  text-helper     #a8a8a8   gray 40
+  support-error   #fa4d56   red 50
+  support-warning #f1c21b   yellow 30
+  support-success #42be65   green 40
+  link-primary    #78a9ff   blue 40
+
+Theme white (Light):
+  background      #ffffff   white
+  layer-01        #f4f4f4   gray 10
+  text-primary    #161616   gray 100
+  text-secondary  #525252   gray 70
+  text-helper     #6f6f6f   gray 60
+  support-error   #da1e28   red 60
+  support-warning #f1c21b   yellow 30
+  support-success #24a148   green 50
+  link-primary    #0f62fe   blue 60
+
+Colors (grades 30 to 70):
+  gray    30 #c6c6c6  40 #a8a8a8  50 #8d8d8d  60 #6f6f6f  70 #525252
+  yellow  30 #f1c21b  40 #d2a106  50 #b28600  60 #8e6a00  70 #684e00
+  orange  30 #ffb784  40 #ff832b  50 #eb6200  60 #ba4e00  70 #8a3800
+  red     30 #ffb3b8  40 #ff8389  50 #fa4d56  60 #da1e28  70 #a2191f
+  magenta 30 #ffafd2  40 #ff7eb6  50 #ee5396  60 #d02670  70 #9f1853
+  purple  30 #d4bbff  40 #be95ff  50 #a56eff  60 #8a3ffc  70 #6929c4
+  blue    30 #a6c8ff  40 #78a9ff  50 #4589ff  60 #0f62fe  70 #0043ce
+  cyan    30 #82cfff  40 #33b1ff  50 #1192e8  60 #0072c3  70 #00539a
+  teal    30 #3ddbd9  40 #08bdba  50 #009d9a  60 #007d79  70 #005d5d
+  green   30 #6fdc8c  40 #42be65  50 #24a148  60 #198038  70 #0e6027
+  gray    10 #f4f4f4  20 #e0e0e0  80 #393939  90 #262626  100 #161616

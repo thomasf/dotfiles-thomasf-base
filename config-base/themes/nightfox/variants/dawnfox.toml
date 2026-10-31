@@ -1,0 +1,41 @@
+mode = "light"
+
+# Dawnfox (EdenEast/nightfox.nvim). Changes:
+#   - bg_1: sel0, as bg0, bg2 and bg3 are under 1.22:1 on bg_0; 1.33:1.
+#   - yellow: #ea9d34 toned down to OKLCH lightness 0.64, chroma 0.11 (same
+#     hue), in line with the other accents; br_yellow is upstream's.
+[colors]
+bg_0  = "#faf4ed" # bg1
+bg_1  = "#d0d8d8" # sel0
+bg_2  = "#bdbfc9" # bg4
+dim_0 = "#9893a5" # comment
+dim_1 = "#625c87" # fg2
+fg_0  = "#575279" # fg1
+fg_1  = "#4c4769" # fg0
+
+yellow  = "#b77f39" # adjusted
+orange  = "#d7827e"
+red     = "#b4637a"
+magenta = "#d685af"
+violet  = "#907aa9"
+blue    = "#286983"
+cyan    = "#56949f"
+green   = "#618774"
+
+br_red     = "#c26d85"
+br_green   = "#629f81"
+br_yellow  = "#eea846"
+br_blue    = "#2d81a3"
+br_magenta = "#de8db7" # pink.bright
+br_cyan    = "#5ca7b4"
+
+[apps]
+emacs        = "my-solarized-dawnfox"
+color_scheme = "prefer-light"
+
+# The root window background: soft diagonal stripes from bg_0 to bg_1, drawn
+# at the DPI of the host, in a direction and width that change on every theme
+# switch. background_mode is how hsetroot draws it: tile, center, full, fill,
+# cover or extend.
+background      = ":random()"
+background_mode = "tile"

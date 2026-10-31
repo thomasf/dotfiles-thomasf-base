@@ -1,11 +1,10 @@
 mode = "dark"
 
-# Upstream gruvbox (morhetz/gruvbox, colors/gruvbox.vim), medium contrast:
-# bg0, bg1 and bg2, gray (comments) as dim_0, fg1 (Normal) as fg_0 and fg0 as
-# fg_1; bright_* accents, as gruvbox does on a dark background.
-# Gruvbox has one purple: magenta is it and violet is that purple turned
-# toward blue (OKLCH hue 300). The neutral_* colors are the terminal's
-# normal colors (see theme.toml).
+# Gruvbox (morhetz/gruvbox, colors/gruvbox.vim), medium contrast: bg0, bg1 and
+# bg2, gray (comments) as dim_0, fg1 (Normal) as fg_0 and fg0 as fg_1; bright_*
+# accents, as gruvbox does on a dark background. The neutral_* colors are the
+# terminal's normal colors (see theme.toml). Changes:
+#   - violet: its one purple, magenta, turned to OKLCH hue 300.
 [colors]
 bg_0  = "#282828"
 bg_1  = "#3c3836"

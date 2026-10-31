@@ -1,13 +1,13 @@
 mode = "dark"
 
-# From GNU Emacs built-in theme (/home/t/.opt/emacs/etc/themes/wombat-theme.el)
-# by Kristoffer Grönlund, adapted from the Vim color scheme by Lars H. Nielsen.
-# bg_1 is adjusted from upstream fringe/header #303030 (contrast ratio 1.17:1 on bg_0)
-# to #353535 to achieve 1.25:1 contrast ratio for terminal surface visibility.
+# Wombat (GNU Emacs etc/themes/wombat-theme.el by Kristoffer Grönlund, after
+# the Vim scheme by Lars H. Nielsen). Changes:
+#   - bg_1: fringe and header #303030 (1.17:1 on bg_0) raised to #353535, for
+#     1.25:1.
 [colors]
 bg_0  = "#242424" # default background
-bg_1  = "#353535" # adjusted from upstream #303030 (raised for >= 1.22:1 contrast)
-bg_2  = "#444444" # upstream region, mode-line, ansi-color-bright-black
+bg_1  = "#353535" # adjusted fringe
+bg_2  = "#444444" # region, mode-line, ansi-color-bright-black
 dim_0 = "#99968b" # font-lock-comment-face
 dim_1 = "#857b6f" # isearch, mode-line-inactive
 fg_0  = "#f6f3e8" # default foreground

@@ -1,14 +1,13 @@
 mode = "dark"
 
-# From solarized-dark-color-palette-alist, drawn as dark by solarized-emacs.
-# bg_1 is adjusted from upstream base02 (#073642, contrast ratio 1.15:1 on bg_0)
-# to #093b48 to achieve 1.24:1 contrast ratio for terminal surface visibility.
-# bg_2 is not in upstream Solarized; added as a third surface level with a
-# monotonic 1.22:1 contrast step from bg_1.
+# Solarized dark (solarized-emacs solarized-dark-color-palette-alist, as drawn
+# dark). Changes:
+#   - bg_1: base02 (#073642, 1.15:1 on bg_0) raised to #093b48, for 1.24:1.
+#   - bg_2: a third surface, a 1.22:1 step from bg_1; upstream has none.
 [colors]
 bg_0  = "#002b36" # base03
-bg_1  = "#093b48" # upstream base02 is #073642 (raised for >= 1.22:1 contrast)
-bg_2  = "#224954" # generated surface level (upstream has no bg_2)
+bg_1  = "#093b48" # adjusted base02
+bg_2  = "#224954" # derived
 dim_0 = "#586e75"
 dim_1 = "#657b83" # base00
 fg_0  = "#839496"

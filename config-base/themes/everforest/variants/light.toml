@@ -1,20 +1,18 @@
 mode = "light"
 
-# Everforest light (sainnhe/everforest, medium contrast).
-# bg_1 uses upstream bg2 (#efebd4) instead of bg1 (#f4f0d9, contrast ratio 1.12:1 on bg_0)
-# to achieve 1.22:1 contrast ratio for terminal surface visibility.
-# bg_2 uses upstream bg3 (#e6e2cc) instead of bg2 for a monotonic 1.23:1 contrast step.
-# fg_1 uses upstream statusline1 (#343f44) instead of duplicating fg (#5c6a72, fg_0)
-# to give emphasized text higher contrast.
-# violet is not in upstream; derived by turning purple toward blue (OKLCH hue 300).
+# Everforest light (sainnhe/everforest, medium contrast). Changes:
+#   - bg_1: bg2 instead of bg1 (1.12:1 on bg_0), for 1.22:1.
+#   - bg_2: bg3 instead of bg2, for a 1.23:1 step.
+#   - fg_1: statusline1 instead of fg, which is fg_0, for higher contrast.
+#   - violet: its one purple, magenta, turned to OKLCH hue 300.
 [colors]
 bg_0  = "#fdf6e3" # bg0
-bg_1  = "#efebd4" # upstream bg2 (used over bg1 #f4f0d9 for >= 1.22:1 contrast)
-bg_2  = "#e6e2cc" # upstream bg3 (used over bg2 for monotonic >= 1.22:1 contrast step)
+bg_1  = "#efebd4" # bg2
+bg_2  = "#e6e2cc" # bg3
 dim_0 = "#939f91" # grey0
 dim_1 = "#829181" # grey2
 fg_0  = "#5c6a72" # fg
-fg_1  = "#343f44" # upstream statusline1 (used over fg for distinct emphasized text)
+fg_1  = "#343f44" # statusline1
 
 yellow  = "#dfa000"
 orange  = "#f57d26"

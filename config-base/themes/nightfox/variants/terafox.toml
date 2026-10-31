@@ -1,0 +1,40 @@
+mode = "dark"
+
+# Terafox (EdenEast/nightfox.nvim). Changes:
+#   - bg_1: bg3 instead of bg2 (1.19:1 on bg_0), for 1.45:1.
+#   - violet: its magenta turned to OKLCH hue 300; it has no purple.
+[colors]
+bg_0  = "#152528" # bg1
+bg_1  = "#254147" # bg3
+bg_2  = "#2d4f56" # bg4
+dim_0 = "#6d7f8b" # comment
+dim_1 = "#cbd9d8" # fg2
+fg_0  = "#e6eaea" # fg1
+fg_1  = "#eaeeee" # fg0
+
+yellow  = "#fda47f"
+orange  = "#ff8349"
+red     = "#e85c51"
+magenta = "#ad5c7c"
+violet  = "#846ab2" # derived
+blue    = "#5a93aa"
+cyan    = "#a1cdd8"
+green   = "#7aa4a1"
+
+br_red     = "#eb746b"
+br_green   = "#8eb2af"
+br_yellow  = "#fdb292"
+br_blue    = "#73a3b7"
+br_magenta = "#b97490" # magenta.bright
+br_cyan    = "#afd4de"
+
+[apps]
+emacs        = "my-solarized-terafox"
+color_scheme = "prefer-dark"
+
+# The root window background: soft diagonal stripes from bg_0 to bg_1, drawn
+# at the DPI of the host, in a direction and width that change on every theme
+# switch. background_mode is how hsetroot draws it: tile, center, full, fill,
+# cover or extend.
+background      = ":random()"
+background_mode = "tile"

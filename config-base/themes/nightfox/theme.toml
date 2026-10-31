@@ -1,0 +1,31 @@
+creator = "James Simpson"
+url = "https://github.com/EdenEast/nightfox.nvim"
+license = "MIT"
+description = """
+The palette is Nightfox by James Simpson, from EdenEast/nightfox.nvim
+(lua/nightfox/palette/*.lua and the generated extra/*/kitty.conf).
+
+- magenta is its pink, violet its magenta (a purple).
+- Brights are its terminal brights; br_magenta is the bright pink.
+- dim_1 is fg2, the status line text; bg_2 is bg4.
+- Carbonfox is based on oxocarbon (nyoom-engineering/oxocarbon.nvim) and
+  takes its yellow, orange and red from IBM Carbon."""
+
+[ansi]
+color0 = "bg_1"
+color1 = "red"
+color2 = "green"
+color3 = "yellow"
+color4 = "blue"
+color5 = "magenta"
+color6 = "cyan"
+color7 = "dim_0"
+
+color8  = "bg_2"
+color9  = "br_red"
+color10 = "br_green"
+color11 = "br_yellow"
+color12 = "br_blue"
+color13 = "br_magenta"
+color14 = "br_cyan"
+color15 = "fg_1"
