@@ -70,7 +70,6 @@ upgrader-go() {
       golang.org/x/tools/cmd/stringer \
       golang.org/x/tools/gopls \
       golang.org/x/vuln/cmd/govulncheck \
-      honnef.co/go/tools/cmd/... \
       honnef.co/go/tools/cmd/staticcheck \
       mvdan.cc/gofumpt \
     ; do
@@ -126,11 +125,11 @@ dp() {
 }
 
 upgrader-docker() {
-  dp golang:1.{17,18,19}{,-alpine}
-  dp python:{2.7,3.7,3.8,3.9,3.10}{,-alpine}
-  dp ubuntu:{16.04,18.04,20.04,22.04}
-  dp redis:{3,4,5}
-  dp postgres:{9,10,11,12,13,14}
+  dp golang:1.{22,23,24}{,-alpine}
+  dp python:{3.10,3.11,3.12,3.13}{,-alpine}
+  dp ubuntu:{20.04,22.04,24.04}
+  dp redis:{6,7}
+  dp postgres:{13,14,15,16,17}
   dp plugins/{docker,slack,git,s3,drone-git}
   dp thomasf/{twine,drone-devpi}
   dp minio/minio
