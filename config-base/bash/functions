@@ -288,9 +288,9 @@ cdup() {
 
 cdl() {
   local target
-  target=`resolvelink $PWD`
+  target=$(realpath "$PWD")
   [[ -z $target ]] && return 1
-  cd $target
+  cd "$target"
 }
 
 alias u="cdup"
@@ -423,7 +423,7 @@ _jump_repo_find() {
   local selected=$(cd "${basedir}" && _find_repos | cut -c3- | sort |
                         selectline --query="$query") || return 1
   local target="${basedir}/${selected}"
-  target=`resolvelink $target`
+  target=$(realpath "$target")
   cd "$target"
 }
 
