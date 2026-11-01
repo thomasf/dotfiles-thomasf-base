@@ -117,8 +117,7 @@ type configKey struct {
 func configSections(t reflect.Type, path []string, header string) []configSection {
 	s := configSection{header: header}
 	var inner []configSection
-	for i := range t.NumField() {
-		f := t.Field(i)
+	for f := range t.Fields() {
 		if !f.IsExported() {
 			continue
 		}
@@ -203,7 +202,7 @@ func optionsAppendix() string {
 func wrap(s string, indent int) string {
 	var b strings.Builder
 	col := 0
-	for _, word := range strings.Fields(s) {
+	for word := range strings.FieldsSeq(s) {
 		switch {
 		case col == 0:
 		case col+1+len(word) > 79:

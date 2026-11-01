@@ -365,8 +365,7 @@ func runPick(s *Store, queryParts []string) bool {
 	cmd.Stderr = os.Stderr
 	out, err := cmd.Output()
 	if err != nil {
-		var exitErr *exec.ExitError
-		if !errors.As(err, &exitErr) {
+		if _, ok := errors.AsType[*exec.ExitError](err); !ok {
 			fmt.Fprintf(os.Stderr, "zzz: %v\n", err)
 		}
 		return false

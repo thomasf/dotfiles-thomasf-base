@@ -135,7 +135,7 @@ func getPushRemotes(path string) ([]string, error) {
 		return nil, err
 	}
 	var remotes []string
-	for _, remote := range strings.Fields(out) {
+	for remote := range strings.FieldsSeq(out) {
 		if remote == "origin" || strings.HasPrefix(remote, "backup.") {
 			remotes = append(remotes, remote)
 		}

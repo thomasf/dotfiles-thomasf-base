@@ -923,12 +923,9 @@ func lintTerminalVisibility(v *Variant) []sampleWarning {
 			bgCol := v.Colors[s.bgName]
 			effectiveFgName, effectiveBgName := s.fgName, s.bgName
 			effectiveFgCol, effectiveBgCol := fgCol, bgCol
-			for _, style := range s.styles {
-				if style == "7" {
-					effectiveFgName, effectiveBgName = s.bgName, s.fgName
-					effectiveFgCol, effectiveBgCol = bgCol, fgCol
-					break
-				}
+			if slices.Contains(s.styles, "7") {
+				effectiveFgName, effectiveBgName = s.bgName, s.fgName
+				effectiveFgCol, effectiveBgCol = bgCol, fgCol
 			}
 			if effectiveFgCol != "" && effectiveBgCol != "" {
 				cr := contrast(effectiveFgCol, effectiveBgCol)
@@ -1173,7 +1170,7 @@ func lintVariant(t *Theme, v *Variant) []lintWarning {
 	}
 
 	// 8. Accent color collisions / distinctiveness
-	for i := 0; i < len(accents); i++ {
+	for i := range accents {
 		for j := i + 1; j < len(accents); j++ {
 			a1, a2 := accents[i], accents[j]
 			c1, ok1 := v.Colors[a1]
@@ -1415,7 +1412,7 @@ func printAppsMetadata(w io.Writer, v *Variant, t *Theme, variant string) {
 	}
 	if t != nil && t.Description != "" {
 		fmt.Fprintln(w)
-		for _, line := range strings.Split(strings.TrimSpace(t.Description), "\n") {
+		for line := range strings.SplitSeq(strings.TrimSpace(t.Description), "\n") {
 			if line == "" {
 				fmt.Fprintln(w)
 			} else {

@@ -301,8 +301,7 @@ func decodeTOML(path string, data []byte, v any) error {
 	dec := toml.NewDecoder(bytes.NewReader(data))
 	dec.DisallowUnknownFields()
 	if err := dec.Decode(v); err != nil {
-		var derr *toml.DecodeError
-		if errors.As(err, &derr) {
+		if derr, ok := errors.AsType[*toml.DecodeError](err); ok {
 			row, col := derr.Position()
 			return fmt.Errorf("%s:%d:%d: %s: %w", path, row, col, strings.Join(derr.Key(), "."), err)
 		}
