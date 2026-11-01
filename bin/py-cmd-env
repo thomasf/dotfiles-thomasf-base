@@ -1,121 +1,66 @@
-#!/bin/bash
+#!/usr/bin/env bash
 
 set -e
-# set -x
 
-cmd="NO_COMMAND"
-bn=$(basename ${0})
-env_name=${bn}
+bn=$(basename "$0")
+bin_dir="${UV_TOOL_BIN_DIR:-$HOME/.local/bin}"
+target_bin="$bin_dir/$bn"
 
-
-# colors
-reset="$(tput sgr0 2>/dev/null||echo -n)"
-red="$(tput setaf 1 2>/dev/null||echo -n)"
-green="$(tput setaf 2  2>/dev/null||echo -n)"
-yellow="$(tput setaf 3  2>/dev/null||echo -n)"
-magenta="$(tput setaf 5  2>/dev/null||echo -n)"
-
-
-ts() {
-  echo "${reset}[$(date +%T)] ${@}"
-}
-
-
-upgrade-env() {
-  local env_dir=${1}
-  ts "$yellow ->  $magenta $env_dir $reset"
-  deactivate 2> /dev/null|| true
-  echo -n ${env_name} | (
-    set -e &&
-    cd "${env_dir}" &&
-    . bin/activate &&
-    pip install --upgrade -r requirements.txt
-  )
-  ts "$yellow <- $magenta $env_dir $reset"
-}
-
-list-envs() {
-  find ${HOME}/.virtualenvs-cmd/  -maxdepth 1 -mindepth 1 -type d
-}
-
-
-
-upgradeall() {
-  deactivate || true
-  for d in ${HOME}/.virtualenvs-cmd/*; do
-    export d
-    (
-      set -e
-      cd ${d}
-      . bin/activate
-      pip install --upgrade $(cat requirements.txt)
-    )
-  done
-}
-
-case ${bn} in
+case $bn in
   py-cmd-env)
-    subcommand=${1}
-    shift
-    case ${subcommand} in
+    subcommand=${1:-}
+    case $subcommand in
       u|upgrade)
-        upgradeall
-        exit 0
+        exec uv tool upgrade --all
         ;;
-      ls|list-envs)
-        list-envs
-        exit 0
+      ls|list-envs|list)
+        exec uv tool list
         ;;
       upgrade-env)
-        upgrade-env "$1"
-        exit 0
+        shift
+        exec uv tool upgrade "$@"
+        ;;
+      *)
+        echo "Usage: py-cmd-env [upgrade|list|upgrade-env <tool>]" >&2
+        exit 1
         ;;
     esac
-    echo "usage ${0} upgrade"
-    exit 1
     ;;
-  ansible|ansible-playbook|ansible-config|ansible-connection|ansible-console|ansible-doc|ansible-galaxy|ansible-inventory|ansible-pull|ansible-vault)
-    packages=ansible
-    env_name=ansible
+
+  ansible|ansible-*)
+    pkg="ansible"
     ;;
   platformio|pio)
-    packages=platformio
-    env_name=platformio
+    pkg="platformio"
     ;;
   git-goggles)
-    packages="git-goggles termcolor"
+    pkg="git-goggles"
+    extra_args=(--with termcolor)
     ;;
   yt-dlp)
-    packages="yt-dlp yt-dlp-ejs"
-    env_name=yt-dlp
+    pkg="yt-dlp"
+    extra_args=(--with yt-dlp-ejs)
     ;;
   devpi*)
-    packages="devpi-client devpi-server"
-    env_name="devpi"
+    pkg="devpi-client"
+    extra_args=(--with-executables-from devpi-server)
     ;;
   sam)
-    packages="aws-sam-cli"
-    ;;
-  pyup_dirs)
-    packages="pyupgrade-directories"
+    pkg="aws-sam-cli"
     ;;
   *)
-    packages=${bn}
+    pkg="$bn"
     ;;
 esac
 
-
-envs_root="${HOME}/.virtualenvs-cmd"
-env_path="${envs_root}/${env_name}"
-cmd_path="${env_path}/bin/${bn}"
-
-if [ ! -e "${cmd_path}" ]; then
-  deactivate 2>/dev/null || true
-  mkdir -p ${envs_root}
-  python3 -mvenv --clear "${env_path}"
-  ${env_path}/bin/pip install wheel
-  ${env_path}/bin/pip install ${packages}
-  echo ${packages} > "${env_path}/requirements.txt"
+if [ ! -x "$target_bin" ]; then
+  echo "Provisioning $pkg via uv tool..." >&2
+  uv tool install "$pkg" "${extra_args[@]}"
 fi
 
-exec ${cmd_path} "$@"
+if [ ! -x "$target_bin" ]; then
+  echo "Error: $target_bin was not created by installing $pkg" >&2
+  exit 1
+fi
+
+exec "$target_bin" "$@"
