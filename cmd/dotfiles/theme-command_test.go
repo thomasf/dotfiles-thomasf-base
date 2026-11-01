@@ -254,7 +254,7 @@ func TestThemeCommandErrors(t *testing.T) {
 		{args: []string{"toggle"}, option: ":dark", want: "-theme can not be used with toggle"},
 		{args: []string{"list", "-names", "-json"}, want: "-names and -json cannot be combined"},
 		{args: []string{"list", "extra"}, want: "unexpected arguments: extra"},
-		{args: []string{"preview", "extra1", "extra2"}, want: "unexpected arguments: extra2"},
+		{args: []string{"preview", "extra1", "extra2"}, want: `invalid "extra1"`},
 		{args: []string{"preview", "-theme", ":black", ":black"}, want: "<variant> argument and -theme cannot be combined"},
 		{args: []string{"apply", "extra"}, want: "apply takes 0 arguments"},
 	} {
@@ -458,15 +458,87 @@ func TestThemePreview(t *testing.T) {
 		t.Errorf("preview -all output missing full width horizontal divider")
 	}
 
-	// -all flag error combinations
+	// -all.dark flag
+	out.Reset()
+	if err := d.ThemeCommand([]string{"preview", "-all.dark"}); err != nil {
+		t.Fatalf("preview -all.dark: %v", err)
+	}
+	darkPreview := out.String()
+	for _, want := range []string{"test:black (dark mode)\n", "test:dark (dark mode)\n"} {
+		if !strings.Contains(darkPreview, want) {
+			t.Errorf("preview -all.dark output missing %q", want)
+		}
+	}
+	if strings.Contains(darkPreview, "test:light") {
+		t.Errorf("preview -all.dark should not contain test:light:\n%s", darkPreview)
+	}
+
+	// -all.light flag
+	out.Reset()
+	if err := d.ThemeCommand([]string{"preview", "-all.light"}); err != nil {
+		t.Fatalf("preview -all.light: %v", err)
+	}
+	lightPreview := out.String()
+	if !strings.Contains(lightPreview, "test:light (light mode)\n") {
+		t.Errorf("preview -all.light output missing test:light:\n%s", lightPreview)
+	}
+	if strings.Contains(lightPreview, "test:black") || strings.Contains(lightPreview, "test:dark") {
+		t.Errorf("preview -all.light should not contain dark variants:\n%s", lightPreview)
+	}
+
+	// multiple positional arguments
+	out.Reset()
+	if err := d.ThemeCommand([]string{"preview", ":black", ":light"}); err != nil {
+		t.Fatalf("preview :black :light: %v", err)
+	}
+	multiPreview := out.String()
+	if !strings.Contains(multiPreview, "test:black (dark mode)\n") || !strings.Contains(multiPreview, "test:light (light mode)\n") {
+		t.Errorf("preview :black :light output missing variant:\n%s", multiPreview)
+	}
+	if !strings.Contains(multiPreview, strings.Repeat("─", 80)) {
+		t.Errorf("preview :black :light missing divider:\n%s", multiPreview)
+	}
+
+	// -show section selection
+	out.Reset()
+	if err := d.ThemeCommand([]string{"preview", "-show", "terminal", ":black"}); err != nil {
+		t.Fatalf("preview -show terminal: %v", err)
+	}
+	showTerminal := out.String()
+	if !strings.Contains(showTerminal, "\nTerminal colors:\n") {
+		t.Errorf("preview -show terminal missing Terminal colors:\n%s", showTerminal)
+	}
+	if strings.Contains(showTerminal, "Text on bg_0") || strings.Contains(showTerminal, "\nSurfaces:\n") || strings.Contains(showTerminal, "\nTerminal examples:\n") {
+		t.Errorf("preview -show terminal contains unexpected sections:\n%s", showTerminal)
+	}
+
+	// -hide section selection
+	out.Reset()
+	if err := d.ThemeCommand([]string{"preview", "-hide", "examples,meta", ":black"}); err != nil {
+		t.Fatalf("preview -hide examples,meta: %v", err)
+	}
+	hideExamples := out.String()
+	if strings.Contains(hideExamples, "\nTerminal examples:\n") || strings.Contains(hideExamples, "creator:") {
+		t.Errorf("preview -hide examples,meta contains hidden section:\n%s", hideExamples)
+	}
+	if !strings.Contains(hideExamples, "Text on bg_0") || !strings.Contains(hideExamples, "\nTerminal colors:\n") {
+		t.Errorf("preview -hide examples,meta missing remaining sections:\n%s", hideExamples)
+	}
+
+	// flag error combinations
 	for _, tt := range []struct {
 		args    []string
 		wantErr string
 	}{
 		{[]string{"preview", "-all", ":black"}, "<variant> and -all cannot be combined"},
+		{[]string{"preview", "-all.dark", ":black"}, "<variant> and -all.dark cannot be combined"},
+		{[]string{"preview", "-all.light", ":black"}, "<variant> and -all.light cannot be combined"},
+		{[]string{"preview", "-all", "-all.dark"}, "-all, -all.light, and -all.dark cannot be combined"},
+		{[]string{"preview", "-all.dark", "-all.light"}, "-all, -all.light, and -all.dark cannot be combined"},
 		{[]string{"preview", "-all", "-theme", ":black"}, "<variant> and -all cannot be combined"},
+		{[]string{"preview", "-show", "colors", "-hide", "terminal"}, "-show and -hide cannot be combined"},
+		{[]string{"preview", "-show", "invalid_section"}, `unknown section "invalid_section"`},
 		{[]string{"preview", "-theme", ":black", ":light"}, "<variant> argument and -theme cannot be combined"},
-		{[]string{"preview", ":black", ":light"}, "unexpected arguments"},
 	} {
 		err := d.ThemeCommand(tt.args)
 		if err == nil || !strings.Contains(err.Error(), tt.wantErr) {
@@ -491,6 +563,11 @@ func TestThemePreview(t *testing.T) {
 		"lg    >= 3.0:1",
 		"·      < 3.0:1",
 		"invisible text",
+		"Sections (default: meta, colors, surfaces, accents, terminal, examples):",
+		"-all.dark",
+		"-all.light",
+		"-show",
+		"-hide",
 	} {
 		if !strings.Contains(helpOut, want) {
 			t.Errorf("preview -h help output missing %q:\n%s", want, helpOut)

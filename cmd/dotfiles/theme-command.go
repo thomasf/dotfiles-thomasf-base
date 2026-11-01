@@ -26,7 +26,7 @@ func (d *Dotfiles) ThemeCommand(args []string) error {
 	fs := flag.NewFlagSet("dotfiles theme", flag.ContinueOnError)
 	fs.SetOutput(d.Stderr)
 	fs.Usage = func() {
-		fmt.Fprintf(d.Stderr, "Usage: dotfiles theme [show | list [-names | -json] | preview [-all] [<variant>] | lint [-all] [<variant>] | color [options] <color> | set <variant> | toggle | apply | background-image]\n\n")
+		fmt.Fprintf(d.Stderr, "Usage: dotfiles theme [show | list [-names | -json] | preview [-all | -all.dark | -all.light] [<variant>...] | lint [-all] [<variant>] | color [options] <color> | set <variant> | toggle | apply | background-image]\n\n")
 		fmt.Fprintf(d.Stderr, "Show the theme variant in use, list the themes and their variants, show\n")
 		fmt.Fprintf(d.Stderr, "the colors of a variant in the terminal, check variants for styling issues,\n")
 		fmt.Fprintf(d.Stderr, "print a single color, switch the theme, or apply the currently selected theme.\n")
@@ -497,16 +497,133 @@ func (d *Dotfiles) colorTheme(args []string) error {
 	return nil
 }
 
+var previewSections = []string{"meta", "colors", "surfaces", "accents", "terminal", "examples"}
+
+type previewSectionSet struct {
+	meta     bool
+	colors   bool
+	surfaces bool
+	accents  bool
+	terminal bool
+	examples bool
+}
+
+func normalizePreviewSection(name string) (string, error) {
+	switch strings.ToLower(strings.TrimSpace(name)) {
+	case "meta", "metadata", "apps":
+		return "meta", nil
+	case "colors", "palette", "contrast", "swatches":
+		return "colors", nil
+	case "surfaces", "surface":
+		return "surfaces", nil
+	case "accents", "spectrum":
+		return "accents", nil
+	case "terminal", "ansi":
+		return "terminal", nil
+	case "examples", "demo", "sample", "samples":
+		return "examples", nil
+	case "all":
+		return "all", nil
+	default:
+		return "", fmt.Errorf("theme preview: unknown section %q (valid: %s)", name, strings.Join(previewSections, ", "))
+	}
+}
+
+func parsePreviewSections(show, hide string) (previewSectionSet, error) {
+	secs := previewSectionSet{
+		meta:     true,
+		colors:   true,
+		surfaces: true,
+		accents:  true,
+		terminal: true,
+		examples: true,
+	}
+	if show == "" && hide == "" {
+		return secs, nil
+	}
+	if show != "" {
+		secs = previewSectionSet{}
+		for part := range strings.SplitSeq(show, ",") {
+			part = strings.TrimSpace(part)
+			if part == "" {
+				continue
+			}
+			norm, err := normalizePreviewSection(part)
+			if err != nil {
+				return secs, err
+			}
+			switch norm {
+			case "all":
+				secs.meta = true
+				secs.colors = true
+				secs.surfaces = true
+				secs.accents = true
+				secs.terminal = true
+				secs.examples = true
+			case "meta":
+				secs.meta = true
+			case "colors":
+				secs.colors = true
+			case "surfaces":
+				secs.surfaces = true
+			case "accents":
+				secs.accents = true
+			case "terminal":
+				secs.terminal = true
+			case "examples":
+				secs.examples = true
+			}
+		}
+		return secs, nil
+	}
+
+	// hide != ""
+	for part := range strings.SplitSeq(hide, ",") {
+		part = strings.TrimSpace(part)
+		if part == "" {
+			continue
+		}
+		norm, err := normalizePreviewSection(part)
+		if err != nil {
+			return secs, err
+		}
+		switch norm {
+		case "all":
+			secs.meta = false
+			secs.colors = false
+			secs.surfaces = false
+			secs.accents = false
+			secs.terminal = false
+			secs.examples = false
+		case "meta":
+			secs.meta = false
+		case "colors":
+			secs.colors = false
+		case "surfaces":
+			secs.surfaces = false
+		case "accents":
+			secs.accents = false
+		case "terminal":
+			secs.terminal = false
+		case "examples":
+			secs.examples = false
+		}
+	}
+	return secs, nil
+}
+
 // previewTheme prints the colors of the variant ref, given as set takes it,
 // or of the one in use if ref is "": each color as a swatch, its name and
 // value, text in it on all backgrounds with WCAG contrast ratios, terminal
 // text styling examples, then the terminal colors. -all previews all variants
-// of all themes.
+// of all themes, -all.dark previews dark variants, -all.light previews light
+// variants. -show and -hide select which sections to display. Multiple
+// variant arguments can be given to preview them in sequence.
 func (d *Dotfiles) previewTheme(args []string) error {
 	fs := flag.NewFlagSet("dotfiles theme preview", flag.ContinueOnError)
 	fs.SetOutput(d.Stderr)
 	fs.Usage = func() {
-		fmt.Fprintf(d.Stderr, "Usage: dotfiles theme preview [options] [<variant>]\n\n")
+		fmt.Fprintf(d.Stderr, "Usage: dotfiles theme preview [options] [<variant>...]\n\n")
 		fmt.Fprintf(d.Stderr, "Show the colors of a theme variant in the terminal with 24-bit colors:\n")
 		fmt.Fprintf(d.Stderr, "metadata, swatches, hex values, text on every background with WCAG contrast\n")
 		fmt.Fprintf(d.Stderr, "ratios, surface hierarchy, accent spectrum, terminal colors, and styled\n")
@@ -520,31 +637,70 @@ func (d *Dotfiles) previewTheme(args []string) error {
 		fmt.Fprintf(d.Stderr, "  ·      < 3.0:1   Low contrast; fails WCAG text guidelines (decorative only)\n\n")
 		fmt.Fprintf(d.Stderr, "A warning is printed below the terminal examples if any combination produces\n")
 		fmt.Fprintf(d.Stderr, "invisible text (< 1.2:1 contrast ratio, or < 1.10:1 in light mode).\n\n")
+		fmt.Fprintf(d.Stderr, "Sections (default: %s):\n", strings.Join(previewSections, ", "))
+		fmt.Fprintf(d.Stderr, "  meta        theme metadata, app templates, and description\n")
+		fmt.Fprintf(d.Stderr, "  colors      palette swatches, hex values, and WCAG contrast ratios\n")
+		fmt.Fprintf(d.Stderr, "  surfaces    surface hierarchy and step contrast\n")
+		fmt.Fprintf(d.Stderr, "  accents     accent spectrum ribbons across background shades\n")
+		fmt.Fprintf(d.Stderr, "  terminal    16 ANSI terminal colors\n")
+		fmt.Fprintf(d.Stderr, "  examples    terminal text styling examples and invisible text warnings\n\n")
 		fmt.Fprintf(d.Stderr, "preview takes dark or light, theme:variant, or :variant of the theme\n")
-		fmt.Fprintf(d.Stderr, "in use, or the active variant if omitted. -all previews every variant.\n\n")
+		fmt.Fprintf(d.Stderr, "in use, or the active variant if omitted. Multiple variants can be specified.\n")
+		fmt.Fprintf(d.Stderr, "-all previews every variant, -all.light previews all light variants,\n")
+		fmt.Fprintf(d.Stderr, "-all.dark previews all dark variants.\n\n")
 		fmt.Fprintf(d.Stderr, "Options:\n")
 		fs.PrintDefaults()
 	}
 	allOpt := fs.Bool("all", false, "preview all variants of all themes")
+	allDarkOpt := fs.Bool("all.dark", false, "preview all dark variants of all themes")
+	allLightOpt := fs.Bool("all.light", false, "preview all light variants of all themes")
+	hideOpt := fs.String("hide", "", "comma-separated sections to hide")
+	showOpt := fs.String("show", "", fmt.Sprintf("comma-separated sections to show (default: %s)", strings.Join(previewSections, ", ")))
 	themeOpt := fs.String("theme", "", "theme to use (dark, light, theme:variant, or :variant)")
 	if err := fs.Parse(args); err != nil {
 		return err
 	}
-	if *allOpt && (fs.NArg() > 0 || *themeOpt != "") {
-		fs.Usage()
-		return errors.New("theme preview: <variant> and -all cannot be combined")
+
+	allCount := 0
+	allFlag := ""
+	if *allOpt {
+		allCount++
+		allFlag = "-all"
 	}
-	if fs.NArg() > 1 {
-		fs.Usage()
-		return fmt.Errorf("theme preview: unexpected arguments: %s", strings.Join(fs.Args()[1:], " "))
+	if *allDarkOpt {
+		allCount++
+		allFlag = "-all.dark"
 	}
-	if fs.NArg() == 1 && *themeOpt != "" {
+	if *allLightOpt {
+		allCount++
+		allFlag = "-all.light"
+	}
+
+	if allCount > 1 {
+		fs.Usage()
+		return errors.New("theme preview: -all, -all.light, and -all.dark cannot be combined")
+	}
+	if allFlag != "" && (fs.NArg() > 0 || *themeOpt != "") {
+		fs.Usage()
+		return fmt.Errorf("theme preview: <variant> and %s cannot be combined", allFlag)
+	}
+	if fs.NArg() > 0 && *themeOpt != "" {
 		fs.Usage()
 		return errors.New("theme preview: <variant> argument and -theme cannot be combined")
 	}
+	if *showOpt != "" && *hideOpt != "" {
+		fs.Usage()
+		return errors.New("theme preview: -show and -hide cannot be combined")
+	}
+
+	sec, err := parsePreviewSections(*showOpt, *hideOpt)
+	if err != nil {
+		fs.Usage()
+		return err
+	}
 
 	w := d.Stdout
-	if *allOpt {
+	if allFlag != "" {
 		var themeNames []string
 		for name := range d.themes.themes {
 			themeNames = append(themeNames, name)
@@ -556,96 +712,124 @@ func (d *Dotfiles) previewTheme(args []string) error {
 			t := d.themes.themes[name]
 			for _, variantName := range slices.Sorted(maps.Keys(t.Variants)) {
 				v := t.Variants[variantName]
+				if *allDarkOpt && v.Mode != "dark" {
+					continue
+				}
+				if *allLightOpt && v.Mode != "light" {
+					continue
+				}
 				ref := name + ":" + variantName
 				if !first {
 					fmt.Fprintf(w, "%s\n\n", strings.Repeat("─", terminalWidth(w)))
 				}
 				first = false
-				printVariantPreview(w, ref, v, t, variantName)
+				printVariantPreview(w, ref, v, t, variantName, sec)
 			}
 		}
 		return nil
 	}
 
-	ref := *themeOpt
-	if fs.NArg() == 1 {
-		ref = fs.Arg(0)
-	}
-	if ref == "" {
-		ref = d.Theme
+	var refs []string
+	if fs.NArg() > 0 {
+		refs = fs.Args()
+	} else if *themeOpt != "" {
+		refs = []string{*themeOpt}
+	} else {
+		refs = []string{d.Theme}
 	}
 
-	v, ref, err := d.resolveVariant(ref, "preview")
-	if err != nil {
-		return err
-	}
-	name, variant, _ := strings.Cut(ref, ":")
-	t := d.themes.themes[name]
+	first := true
+	for _, ref := range refs {
+		v, resolvedRef, err := d.resolveVariant(ref, "preview")
+		if err != nil {
+			return err
+		}
+		name, variant, _ := strings.Cut(resolvedRef, ":")
+		t := d.themes.themes[name]
 
-	printVariantPreview(w, ref, v, t, variant)
+		if !first {
+			fmt.Fprintf(w, "%s\n\n", strings.Repeat("─", terminalWidth(w)))
+		}
+		first = false
+		printVariantPreview(w, resolvedRef, v, t, variant, sec)
+	}
 	return nil
 }
 
 // printVariantPreview displays the full terminal color preview for a variant:
 // metadata, swatches, text contrast table, surfaces, accent spectrum, terminal
 // colors table, and terminal text examples.
-func printVariantPreview(w io.Writer, ref string, v *Variant, t *Theme, variant string) {
+func printVariantPreview(w io.Writer, ref string, v *Variant, t *Theme, variant string, sections previewSectionSet) {
 	fmt.Fprintf(w, "%s (%s mode)\n", ref, v.Mode)
-	printAppsMetadata(w, v, t, variant)
-	fmt.Fprintln(w)
+	if sections.meta {
+		printAppsMetadata(w, v, t, variant)
+	}
 
 	// Collect background colors: standard bg_0, bg_1, bg_2 first, then any other bg_* colors.
 	var bgNames []string
-	for _, name := range []string{"bg_0", "bg_1", "bg_2"} {
-		if _, ok := v.Colors[name]; ok {
-			bgNames = append(bgNames, name)
+	if sections.colors || sections.surfaces || sections.accents {
+		for _, name := range []string{"bg_0", "bg_1", "bg_2"} {
+			if _, ok := v.Colors[name]; ok {
+				bgNames = append(bgNames, name)
+			}
 		}
-	}
-	for _, name := range slices.Sorted(maps.Keys(v.Colors)) {
-		if strings.HasPrefix(name, "bg_") && !slices.Contains(bgNames, name) {
-			bgNames = append(bgNames, name)
+		for _, name := range slices.Sorted(maps.Keys(v.Colors)) {
+			if strings.HasPrefix(name, "bg_") && !slices.Contains(bgNames, name) {
+				bgNames = append(bgNames, name)
+			}
 		}
 	}
 
-	names := slices.Clone(requiredColors)
-	for _, n := range slices.Sorted(maps.Keys(v.Colors)) {
-		if !slices.Contains(names, n) && !slices.Contains(ansiColors, n) {
-			names = append(names, n)
-		}
-	}
-	width := 0
-	for _, n := range names {
-		width = max(width, len(n))
-	}
-	for _, n := range names {
-		c := v.Colors[n]
-		fmt.Fprintf(w, "  %s  %-*s  %s", swatch(c), width, n, c)
-		for _, bgName := range bgNames {
-			bgCol := v.Colors[bgName]
-			cr := contrast(c, bgCol)
-			fmt.Fprintf(w, "  %s %4.1f %s", onBackground(c, bgCol, fmt.Sprintf(" Text on %s ", bgName)), cr, wcagBadge(cr))
-		}
+	if sections.colors {
 		fmt.Fprintln(w)
+		names := slices.Clone(requiredColors)
+		for _, n := range slices.Sorted(maps.Keys(v.Colors)) {
+			if !slices.Contains(names, n) && !slices.Contains(ansiColors, n) {
+				names = append(names, n)
+			}
+		}
+		width := 0
+		for _, n := range names {
+			width = max(width, len(n))
+		}
+		for _, n := range names {
+			c := v.Colors[n]
+			fmt.Fprintf(w, "  %s  %-*s  %s", swatch(c), width, n, c)
+			for _, bgName := range bgNames {
+				bgCol := v.Colors[bgName]
+				cr := contrast(c, bgCol)
+				fmt.Fprintf(w, "  %s %4.1f %s", onBackground(c, bgCol, fmt.Sprintf(" Text on %s ", bgName)), cr, wcagBadge(cr))
+			}
+			fmt.Fprintln(w)
+		}
 	}
 
-	fmt.Fprintf(w, "\nSurfaces:\n")
-	printSurfaces(w, v, bgNames)
+	if sections.surfaces {
+		fmt.Fprintf(w, "\nSurfaces:\n")
+		printSurfaces(w, v, bgNames)
+	}
 
-	fmt.Fprintf(w, "\nAccent spectrum (red, orange, yellow, green, cyan, blue, violet, magenta):\n")
-	printAccentSpectrum(w, v, bgNames)
+	if sections.accents {
+		fmt.Fprintf(w, "\nAccent spectrum (red, orange, yellow, green, cyan, blue, violet, magenta):\n")
+		printAccentSpectrum(w, v, bgNames)
+	}
 
-	fmt.Fprintf(w, "\nTerminal colors:\n")
-	for row := range 2 {
-		fmt.Fprint(w, " ")
-		for i := row * 8; i < row*8+8; i++ {
-			fmt.Fprintf(w, " %2d %s", i, swatch(v.Colors[ansiColors[i]]))
+	if sections.terminal {
+		fmt.Fprintf(w, "\nTerminal colors:\n")
+		for row := range 2 {
+			fmt.Fprint(w, " ")
+			for i := row * 8; i < row*8+8; i++ {
+				fmt.Fprintf(w, " %2d %s", i, swatch(v.Colors[ansiColors[i]]))
+			}
+			fmt.Fprintln(w)
 		}
-		fmt.Fprintln(w)
 	}
 
 	// Terminal examples below the terminal colors table: 8 lines incorporating most styling possibilities
-	fmt.Fprintf(w, "\nTerminal examples:\n")
-	printTerminalExamples(w, v)
+	if sections.examples {
+		fmt.Fprintf(w, "\nTerminal examples:\n")
+		printTerminalExamples(w, v)
+	}
 	fmt.Fprintln(w)
 }
 
