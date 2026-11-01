@@ -188,3 +188,4 @@ ALTERNATE_EDITOR="" && export ALTERNATE_EDITOR
 hash less 2>/dev/null && PAGER="less -R" && export PAGER
 
 export MGFXC_WINE_PATH="${HOME}/.winemonogame"
+export XMONAD_XMESSAGE="xmonad-xmessage"
