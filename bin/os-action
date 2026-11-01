@@ -12,13 +12,6 @@
 # - /etc/acpi/sleep.sh
 # - /etc/acpi/hibernate.sh
 
-if [ -n "$DISPLAY" ]; then
-  sudocmd="sudo"
-else
-  sudocmd="sudo"
-fi
-
-
 for arg in $*; do
   case $arg in
     silence)
@@ -43,10 +36,10 @@ for arg in $*; do
       fi
       ;;
     hibernate)
-      $sudocmd /usr/sbin/pm-hibernate
+      systemctl hibernate
       ;;
     suspend)
-      $sudocmd /usr/sbin/pm-suspend
+      systemctl suspend
       ;;
     reboot)
       reboot
