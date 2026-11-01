@@ -25,7 +25,6 @@ fi
 # If option o is given, take ownership of some directories
 # that might have files accidently owned by root while sudoing.
 if  [ "${1}" = "o" ]; then
-  [ -d "${HOME}/.venvburrito" ] && sudo chown -R ${USER} "${HOME}/.venvburrito"
   [ -d "${HOME}/.virtualenvs" ] && sudo chown -R ${USER} "${HOME}/.virtualenvs"
   # Node version manager
   [ -d "${HOME}/.nvm" ] && sudo chown -R ${USER} "${HOME}/.nvm"

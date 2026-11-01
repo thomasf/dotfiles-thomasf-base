@@ -36,7 +36,6 @@ dl_completion "yarn" "https://raw.githubusercontent.com/dsifford/yarn-completion
 
 # dl_bin "git-imerge" "https://raw.github.com/mhagger/git-imerge/master/git-imerge" &
 dl_bin "git-when-merged" "https://raw.githubusercontent.com/mhagger/git-when-merged/master/bin/git-when-merged" &
-dl_bin "ghi" "https://raw.github.com/stephencelis/ghi/master/ghi" &
 dl_bin "vcprompt" "https://raw.github.com/djl/vcprompt/master/bin/vcprompt" &
 # dl_bin "svtget" "https://raw.github.com/mmn/svtget/master/bash/svtget"
 dl_bin "spark" "https://raw.github.com/holman/spark/master/spark" &
@@ -44,7 +43,6 @@ dl_bin "spark" "https://raw.github.com/holman/spark/master/spark" &
 dl_bin "pamixer" "https://raw.github.com/mk-fg/pulseaudio-mixer-cli/master/pa-mixer-mk2.py" &
 dl_bin "git-ls-dir" "https://raw.github.com/aspiers/git-config/master/bin/git-ls-dir" &
 dl_bin "recollfs" "https://raw.githubusercontent.com/pidlug/recollfs/master/recollfs" &
-dl_bin "neofetch" "https://raw.githubusercontent.com/dylanaraps/neofetch/master/neofetch" &
 dl_bin "sysz" "https://raw.githubusercontent.com/joehillen/sysz/master/sysz" &
 
 dl "z" "https://raw.github.com/rupa/z/master/z.sh" &

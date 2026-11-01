@@ -626,7 +626,15 @@ je() {
 alias cdb='je'
 
 pwdclip() {
-  pwd | xsel --clipboard
+  if [ -n "$WAYLAND_DISPLAY" ] && command -v wl-copy >/dev/null 2>&1; then
+    pwd | wl-copy
+  elif [ -n "$DISPLAY" ] && command -v xsel >/dev/null 2>&1; then
+    pwd | xsel --clipboard
+  elif [ -n "$DISPLAY" ] && command -v xclip >/dev/null 2>&1; then
+    pwd | xclip -selection clipboard
+  else
+    printf "\033]52;c;%s\a" "$(pwd | base64 | tr -d '\n')"
+  fi
 }
 
 __select_ssh() {
