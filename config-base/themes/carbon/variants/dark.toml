@@ -2,6 +2,8 @@ mode = "dark"
 
 # IBM Carbon g100: grade 40 accents, grade 30 brights. Changes:
 #   - bg_1: gray 80 instead of layer-01 gray 90 (1.20:1 on bg_0), for 1.57:1.
+#   - red: red 50 (Carbon's support-error) and br_red red 40, to distinguish
+#     red from magenta (magenta 40).
 [colors]
 bg_0  = "#161616" # gray 100, background
 bg_1  = "#393939" # gray 80
@@ -13,14 +15,14 @@ fg_1  = "#f4f4f4" # gray 10, text-primary
 
 yellow  = "#d2a106"
 orange  = "#ff832b"
-red     = "#ff8389"
+red     = "#fa4d56"
 magenta = "#ff7eb6"
 violet  = "#be95ff" # purple 40
 blue    = "#78a9ff"
 cyan    = "#08bdba" # teal 40
 green   = "#42be65"
 
-br_red     = "#ffb3b8"
+br_red     = "#ff8389"
 br_green   = "#6fdc8c"
 br_yellow  = "#f1c21b"
 br_blue    = "#a6c8ff"
