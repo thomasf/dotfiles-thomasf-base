@@ -202,7 +202,7 @@ ll() {
   fi
 }
 
-alias lslistenports="sudo netstat -plunt"
+alias lslistenports="sudo ss -tulpn"
 alias adblogcat="adb logcat | adb-logcat-pp"
 
 lsnew() {
