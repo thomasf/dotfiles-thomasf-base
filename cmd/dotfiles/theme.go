@@ -253,14 +253,55 @@ func parseThemeRef(ref string) (theme, variant string, err error) {
 // A themeSet is the themes of all repositories, and the [theme] settings
 // that choose between them.
 type themeSet struct {
-	themes         map[string]*Theme // by name
-	dark           string            // theme:variant of dark mode, or ""
-	light          string            // theme:variant of light mode, or ""
-	mode           string            // the mode until one is chosen, or ""
-	terminalBright string            // "palette", "accents", or ""
+	dirs           map[string]string    // the directory of each theme, by name
+	loaded         map[string]themeLoad // the themes loaded so far, by name (see theme)
+	dark           string               // theme:variant of dark mode, or ""
+	light          string               // theme:variant of light mode, or ""
+	mode           string               // the mode until one is chosen, or ""
+	terminalBright string               // "palette", "accents", or ""
 }
 
-// mergeThemes loads the themes in the [theme] dirs of repos. Each
+// A themeLoad is the result of loading a theme.
+type themeLoad struct {
+	theme *Theme
+	err   error
+}
+
+// theme returns the theme name, loading it the first time it is asked for,
+// or nil if there is no such theme.
+func (ts *themeSet) theme(name string) (*Theme, error) {
+	if l, ok := ts.loaded[name]; ok {
+		return l.theme, l.err
+	}
+	dir, ok := ts.dirs[name]
+	if !ok {
+		return nil, nil
+	}
+	t, err := loadTheme(dir)
+	ts.loaded[name] = themeLoad{t, err}
+	return t, err
+}
+
+// loadAll loads every theme, for the commands that show or check all of
+// them. It returns the themes that load, by name, and the errors of the
+// others.
+func (ts *themeSet) loadAll() (map[string]*Theme, error) {
+	themes := map[string]*Theme{}
+	var errs []error
+	for _, name := range slices.Sorted(maps.Keys(ts.dirs)) {
+		t, err := ts.theme(name)
+		if err != nil {
+			errs = append(errs, err)
+			continue
+		}
+		themes[name] = t
+	}
+	return themes, errors.Join(errs...)
+}
+
+// mergeThemes finds the themes in the [theme] dirs of repos, and loads those
+// of [theme] dark and light to check them; the others are loaded when they
+// are needed (see themeSet.theme). Each
 // subdirectory of a dir, except hidden ones, is a theme. dark, light and
 // mode are taken from the first repository, in the order of orderRepos,
 // that sets them; unlike [vars], every repository gets the same ones.
@@ -270,10 +311,9 @@ type themeSet struct {
 // theme name that is used twice, and each of dark and light that names no
 // variant of that mode. A theme that fails to load is left out.
 func mergeThemes(repos []*Repository) (*themeSet, []string, error) {
-	ts := &themeSet{themes: map[string]*Theme{}}
+	ts := &themeSet{dirs: map[string]string{}, loaded: map[string]themeLoad{}}
 	var warnings []string
 	var errs []error
-	failed := map[string]bool{}
 
 	type setting struct {
 		key    string
@@ -313,17 +353,11 @@ func mergeThemes(repos []*Repository) (*themeSet, []string, error) {
 					errs = append(errs, err)
 					continue
 				}
-				if prev, ok := ts.themes[e.Name()]; ok {
-					errs = append(errs, fmt.Errorf("theme %s is in both %s and %s", e.Name(), prev.Dir, path))
+				if prev, ok := ts.dirs[e.Name()]; ok {
+					errs = append(errs, fmt.Errorf("theme %s is in both %s and %s", e.Name(), prev, path))
 					continue
 				}
-				t, err := loadTheme(path)
-				if err != nil {
-					errs = append(errs, err)
-					failed[e.Name()] = true
-					continue
-				}
-				ts.themes[t.Name] = t
+				ts.dirs[e.Name()] = path
 			}
 		}
 	}
@@ -341,17 +375,25 @@ func mergeThemes(repos []*Repository) (*themeSet, []string, error) {
 			s.key, strings.Join(paths, ", "), rs[0].configPath))
 	}
 
+	reported := map[string]bool{} // the themes whose load error is reported
 	for _, s := range settings[:2] {
 		ref := *s.target
 		if ref == "" {
 			continue
 		}
 		name, variant, err := parseThemeRef(ref) // checked by validate
-		if err != nil || failed[name] {
+		if err != nil {
 			continue
 		}
-		t, ok := ts.themes[name]
-		if !ok {
+		t, err := ts.theme(name)
+		switch {
+		case err != nil:
+			if !reported[name] {
+				errs = append(errs, err)
+				reported[name] = true
+			}
+			continue
+		case t == nil:
 			errs = append(errs, fmt.Errorf("theme.%s: no theme %s", s.key, name))
 			continue
 		}
@@ -593,8 +635,11 @@ func chooseTheme(ts *themeSet, option string, st themeState) (*activeTheme, erro
 	if err != nil {
 		return nil, err
 	}
-	t, ok := ts.themes[name]
-	if !ok {
+	t, err := ts.theme(name)
+	if err != nil {
+		return nil, err
+	}
+	if t == nil {
 		return nil, fmt.Errorf("theme %s: no such theme", ref)
 	}
 	if _, ok := t.Variants[variant]; !ok {

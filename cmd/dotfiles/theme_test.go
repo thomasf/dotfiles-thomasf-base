@@ -310,11 +310,11 @@ mode = "light"
 	if err != nil {
 		t.Fatal(err)
 	}
-	if got := slices.Sorted(maps.Keys(ts.themes)); !slices.Equal(got, []string{"one", "two"}) {
+	if got := slices.Sorted(maps.Keys(ts.dirs)); !slices.Equal(got, []string{"one", "two"}) {
 		t.Errorf("themes = %v, want [one two]", got)
 	}
-	if want := filepath.Join(root, "b", "themes", "two"); ts.themes["two"].Dir != want {
-		t.Errorf("two.Dir = %q, want %q", ts.themes["two"].Dir, want)
+	if want := filepath.Join(root, "b", "themes", "two"); ts.dirs["two"] != want {
+		t.Errorf("dir of two = %q, want %q", ts.dirs["two"], want)
 	}
 	if ts.dark != "one:dark" || ts.light != "two:light" || ts.mode != "dark" {
 		t.Errorf("dark, light, mode = %q, %q, %q, want one:dark, two:light, dark", ts.dark, ts.light, ts.mode)
@@ -382,18 +382,35 @@ func TestMergeThemesErrors(t *testing.T) {
 }
 
 // TestMergeThemesBroken checks that a theme that fails to load is reported
-// once and left out, while the others are loaded.
+// once where it is needed, and that themes are loaded only when they are.
 func TestMergeThemesBroken(t *testing.T) {
 	t.Parallel()
 	files := themeFiles("themes/one")
+	maps.Copy(files, themeFiles("themes/two"))
 	files["themes/bad/variants/dark.toml"] = `mode = "dark"`
+
+	// bad is [theme] dark: reported once, not as missing.
 	r := themeRepo(t, t.TempDir(), "a", "[theme]\ndirs = [\"themes\"]\ndark = \"bad:dark\"", files)
-	ts, _, err := mergeThemes([]*Repository{r})
-	if err == nil || !strings.Contains(err.Error(), "bad") || strings.Contains(err.Error(), "no theme bad") {
+	_, _, err := mergeThemes([]*Repository{r})
+	if err == nil || strings.Count(err.Error(), "bad") != strings.Count(err.Error(), "bad/") || strings.Contains(err.Error(), "no theme bad") {
 		t.Errorf("err = %v, want only the error loading bad", err)
 	}
-	if got := slices.Sorted(maps.Keys(ts.themes)); !slices.Equal(got, []string{"one"}) {
-		t.Errorf("themes = %v, want [one]", got)
+
+	// bad is not in use: not loaded, and two neither, until loadAll.
+	r = themeRepo(t, t.TempDir(), "a", "[theme]\ndirs = [\"themes\"]\nlight = \"one:light\"", files)
+	ts, _, err := mergeThemes([]*Repository{r})
+	if err != nil {
+		t.Fatalf("mergeThemes: %v", err)
+	}
+	if got := slices.Sorted(maps.Keys(ts.loaded)); !slices.Equal(got, []string{"one"}) {
+		t.Errorf("loaded %v, want [one]", got)
+	}
+	themes, err := ts.loadAll()
+	if err == nil || !strings.Contains(err.Error(), "bad") {
+		t.Errorf("loadAll: err = %v, want the error loading bad", err)
+	}
+	if got := slices.Sorted(maps.Keys(themes)); !slices.Equal(got, []string{"one", "two"}) {
+		t.Errorf("loadAll = %v, want [one two]", got)
 	}
 }
 
@@ -436,7 +453,12 @@ func testThemeSet(t *testing.T) *themeSet {
 	if err != nil {
 		t.Fatal(err)
 	}
-	return &themeSet{themes: map[string]*Theme{"test": theme}, dark: "test:dark", light: "test:light"}
+	return &themeSet{
+		dirs:   map[string]string{"test": theme.Dir},
+		loaded: map[string]themeLoad{"test": {theme: theme}},
+		dark:   "test:dark",
+		light:  "test:light",
+	}
 }
 
 func TestSelectTheme(t *testing.T) {

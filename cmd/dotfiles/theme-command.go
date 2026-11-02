@@ -224,8 +224,11 @@ func (d *Dotfiles) nextThemeState(sub string, args []string) (themeState, error)
 	if err != nil {
 		return themeState{}, fmt.Errorf("theme set: %w", err)
 	}
-	t, ok := d.themes.themes[name]
-	if !ok {
+	t, err := d.themes.theme(name)
+	if err != nil {
+		return themeState{}, fmt.Errorf("theme set: %w", err)
+	}
+	if t == nil {
 		return themeState{}, fmt.Errorf("theme set: no theme %s", name)
 	}
 	v, ok := t.Variants[variant]
@@ -237,6 +240,17 @@ func (d *Dotfiles) nextThemeState(sub string, args []string) (themeState, error)
 		st.Theme = arg
 	}
 	return st, nil
+}
+
+// loadAllThemes loads every theme for the theme command command, and
+// reports the ones that fail to load, as loadRepos reports the others.
+func (d *Dotfiles) loadAllThemes(command string) (map[string]*Theme, error) {
+	themes, err := d.themes.loadAll()
+	if err != nil {
+		fmt.Fprintf(d.Stderr, "error loading themes: %v\n", err)
+		return nil, fmt.Errorf("theme %s: themes failed to load", command)
+	}
+	return themes, nil
 }
 
 // listThemes prints every variant of every theme. With -names, it prints only
@@ -266,9 +280,13 @@ func (d *Dotfiles) listThemes(args []string) error {
 		return errors.New("theme list: -names and -json cannot be combined")
 	}
 
+	themes, err := d.loadAllThemes("list")
+	if err != nil {
+		return err
+	}
 	var refs []string
-	for _, name := range slices.Sorted(maps.Keys(d.themes.themes)) {
-		for _, variant := range slices.Sorted(maps.Keys(d.themes.themes[name].Variants)) {
+	for _, name := range slices.Sorted(maps.Keys(themes)) {
+		for _, variant := range slices.Sorted(maps.Keys(themes[name].Variants)) {
 			refs = append(refs, name+":"+variant)
 		}
 	}
@@ -297,7 +315,7 @@ func (d *Dotfiles) listThemes(args []string) error {
 				Name:    ref,
 				Theme:   name,
 				Variant: variant,
-				Mode:    d.themes.themes[name].Variants[variant].Mode,
+				Mode:    themes[name].Variants[variant].Mode,
 				Active:  d.active != nil && d.active.ref() == ref,
 				Dark:    d.themes.dark == ref,
 				Light:   d.themes.light == ref,
@@ -328,51 +346,54 @@ func (d *Dotfiles) listThemes(args []string) error {
 		if d.themes.light == ref {
 			uses = append(uses, "[theme] light")
 		}
-		line := fmt.Sprintf("%s %-*s  %-5s  %s", mark, width, ref, d.themes.themes[name].Variants[variant].Mode, strings.Join(uses, ", "))
+		line := fmt.Sprintf("%s %-*s  %-5s  %s", mark, width, ref, themes[name].Variants[variant].Mode, strings.Join(uses, ", "))
 		fmt.Fprintln(d.Stdout, strings.TrimRight(line, " "))
 	}
 	return nil
 }
 
-// resolveVariant returns the variant and theme:variant ref for the given
-// variant specifier (dark, light, theme:variant, or :variant), or the active
-// theme variant if ref is "".
-func (d *Dotfiles) resolveVariant(ref, command string) (*Variant, string, error) {
+// resolveVariant returns the theme, the variant and the theme:variant ref
+// for the given variant specifier (dark, light, theme:variant, or :variant),
+// or the active theme variant if ref is "".
+func (d *Dotfiles) resolveVariant(ref, command string) (*Theme, *Variant, string, error) {
 	switch {
 	case ref == "":
 		if d.active == nil {
-			return nil, "", fmt.Errorf("theme %s: no theme is configured", command)
+			return nil, nil, "", fmt.Errorf("theme %s: no theme is configured", command)
 		}
 		ref = d.active.ref()
 	case ref == "dark":
 		ref = d.themes.dark
 		if ref == "" {
-			return nil, "", fmt.Errorf("theme %s: no dark theme is configured", command)
+			return nil, nil, "", fmt.Errorf("theme %s: no dark theme is configured", command)
 		}
 	case ref == "light":
 		ref = d.themes.light
 		if ref == "" {
-			return nil, "", fmt.Errorf("theme %s: no light theme is configured", command)
+			return nil, nil, "", fmt.Errorf("theme %s: no light theme is configured", command)
 		}
 	case strings.HasPrefix(ref, ":"):
 		if d.active == nil {
-			return nil, "", fmt.Errorf("theme %s: no theme is selected to take the variant of", command)
+			return nil, nil, "", fmt.Errorf("theme %s: no theme is selected to take the variant of", command)
 		}
 		ref = d.active.theme.Name + ref
 	}
 	name, variant, err := parseThemeRef(ref)
 	if err != nil {
-		return nil, "", fmt.Errorf("theme %s: %w", command, err)
+		return nil, nil, "", fmt.Errorf("theme %s: %w", command, err)
 	}
-	t, ok := d.themes.themes[name]
-	if !ok {
-		return nil, "", fmt.Errorf("theme %s: no theme %s", command, name)
+	t, err := d.themes.theme(name)
+	if err != nil {
+		return nil, nil, "", fmt.Errorf("theme %s: %w", command, err)
+	}
+	if t == nil {
+		return nil, nil, "", fmt.Errorf("theme %s: no theme %s", command, name)
 	}
 	v, ok := t.Variants[variant]
 	if !ok {
-		return nil, "", fmt.Errorf("theme %s: theme %s has no variant %s", command, name, variant)
+		return nil, nil, "", fmt.Errorf("theme %s: theme %s has no variant %s", command, name, variant)
 	}
-	return v, ref, nil
+	return t, v, ref, nil
 }
 
 // colorTheme prints a single named color from a theme variant.
@@ -439,7 +460,7 @@ func (d *Dotfiles) colorTheme(args []string) error {
 	if ref == "" {
 		ref = d.Theme
 	}
-	v, refName, err := d.resolveVariant(ref, "color")
+	_, v, refName, err := d.resolveVariant(ref, "color")
 	if err != nil {
 		return err
 	}
@@ -701,15 +722,13 @@ func (d *Dotfiles) previewTheme(args []string) error {
 
 	w := d.Stdout
 	if allFlag != "" {
-		var themeNames []string
-		for name := range d.themes.themes {
-			themeNames = append(themeNames, name)
+		themes, err := d.loadAllThemes("preview")
+		if err != nil {
+			return err
 		}
-		slices.Sort(themeNames)
-
 		first := true
-		for _, name := range themeNames {
-			t := d.themes.themes[name]
+		for _, name := range slices.Sorted(maps.Keys(themes)) {
+			t := themes[name]
 			for _, variantName := range slices.Sorted(maps.Keys(t.Variants)) {
 				v := t.Variants[variantName]
 				if *allDarkOpt && v.Mode != "dark" {
@@ -740,12 +759,11 @@ func (d *Dotfiles) previewTheme(args []string) error {
 
 	first := true
 	for _, ref := range refs {
-		v, resolvedRef, err := d.resolveVariant(ref, "preview")
+		t, v, resolvedRef, err := d.resolveVariant(ref, "preview")
 		if err != nil {
 			return err
 		}
-		name, variant, _ := strings.Cut(resolvedRef, ":")
-		t := d.themes.themes[name]
+		_, variant, _ := strings.Cut(resolvedRef, ":")
 
 		if !first {
 			fmt.Fprintf(w, "%s\n\n", strings.Repeat("─", terminalWidth(w)))
@@ -865,16 +883,14 @@ func (d *Dotfiles) lintTheme(args []string) error {
 
 	w := d.Stdout
 	if *allOpt {
-		var themeNames []string
-		for name := range d.themes.themes {
-			themeNames = append(themeNames, name)
+		themes, err := d.loadAllThemes("lint")
+		if err != nil {
+			return err
 		}
-		slices.Sort(themeNames)
-
 		totalIssues := 0
 		totalVariants := 0
-		for _, name := range themeNames {
-			t := d.themes.themes[name]
+		for _, name := range slices.Sorted(maps.Keys(themes)) {
+			t := themes[name]
 			for _, variantName := range slices.Sorted(maps.Keys(t.Variants)) {
 				totalVariants++
 				v := t.Variants[variantName]
@@ -910,12 +926,10 @@ func (d *Dotfiles) lintTheme(args []string) error {
 		ref = d.Theme
 	}
 
-	v, ref, err := d.resolveVariant(ref, "lint")
+	t, v, ref, err := d.resolveVariant(ref, "lint")
 	if err != nil {
 		return err
 	}
-	name, _, _ := strings.Cut(ref, ":")
-	t := d.themes.themes[name]
 
 	warnings := lintVariant(t, v)
 	if len(warnings) == 0 {
