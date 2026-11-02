@@ -97,15 +97,33 @@ func mergeRepositories(repos []*Repository) (*repoSet, error) {
 
 // loadRepoSet loads the config of every repository in d.repos and merges their
 // [repositories] sections. Repositories whose config fails to load are
-// reported and left out.
+// reported and left out. Only the [vars] are resolved, for the conditions of
+// remotes: no theme is selected and nothing is rendered.
 func (d *Dotfiles) loadRepoSet() (*repoSet, error) {
-	return mergeRepositories(d.loadRepos())
+	return mergeRepositories(d.loadRepos(partVars))
 }
 
-// loadRepos loads the config of every repository in d.repos, with the [vars]
-// of all of them merged (see mergeVars). Repositories without a config are
+// configParts says which parts of the configs loadRepos loads, on top of
+// reading and checking them, which it always does.
+type configParts uint8
+
+const (
+	partTheme  configParts = 1 << iota // select the theme in use (see selectTheme)
+	partVars                           // resolve the [vars] (see mergeVars)
+	partRender                         // render the templated parts of each config; needs partVars
+
+	allParts = partTheme | partVars | partRender
+)
+
+// loadRepos loads the config of every repository in d.repos, as far as parts
+// says: the theme in use, and the [vars] of all of them merged (see
+// mergeVars) and the configs rendered with them. Without partTheme, theme is
+// undefined in conditions and templates. Repositories without a config are
 // skipped; those whose config fails to load are reported and left out.
-func (d *Dotfiles) loadRepos(opts ...Option) []*Repository {
+func (d *Dotfiles) loadRepos(parts configParts, opts ...Option) []*Repository {
+	if parts&partRender != 0 && parts&partVars == 0 {
+		panic("loadRepos: partRender needs partVars")
+	}
 	fail := func(r *Repository, err error) {
 		fmt.Fprintf(d.Stderr, "error loading config for %s: %v\n", r.srcRoot, err)
 		d.collectErr(fmt.Errorf("config %s: %w", filepath.Base(r.srcRoot), err))
@@ -122,9 +140,14 @@ func (d *Dotfiles) loadRepos(opts ...Option) []*Repository {
 		read = append(read, r)
 	}
 
-	theme := d.selectTheme(read)
-	for _, r := range read {
-		r.theme = theme
+	if parts&partTheme != 0 {
+		theme := d.selectTheme(read)
+		for _, r := range read {
+			r.theme = theme
+		}
+	}
+	if parts&partVars == 0 {
+		return read
 	}
 	views, warnings := mergeVars(read)
 	for _, w := range warnings {
@@ -132,7 +155,11 @@ func (d *Dotfiles) loadRepos(opts ...Option) []*Repository {
 	}
 	var loaded []*Repository
 	for _, r := range read {
-		if err := r.resolve(views[r]); err != nil {
+		err := r.resolveVars(views[r])
+		if err == nil && parts&partRender != 0 {
+			err = r.renderConfig()
+		}
+		if err != nil {
 			fail(r, err)
 			continue
 		}

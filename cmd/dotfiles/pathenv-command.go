@@ -181,9 +181,10 @@ func pathenvDir(dir string) (string, error) {
 // files, and reports the errors of those that fail to load. They are left
 // out; the others still apply.
 func (d *Dotfiles) loadPathenvSet(shell string) *pathenvSet {
-	repos := d.loadRepos()
-	// loadRepos reported its errors; a repository that fails to load only
-	// loses its pathenv files.
+	// Only the [vars]: neither a broken theme nor a template elsewhere in a
+	// config affects pathenv. loadRepos reported its errors; a repository
+	// that fails to load only loses its pathenv files.
+	repos := d.loadRepos(partVars)
 	d.runErrors = nil
 	set := loadPathenv(repos, d.DstPath, shell)
 	for _, err := range set.loadErrors() {

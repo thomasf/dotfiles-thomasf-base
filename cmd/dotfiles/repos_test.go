@@ -2,6 +2,7 @@ package main
 
 import (
 	"fmt"
+	"io"
 	"maps"
 	"os"
 	"path/filepath"
@@ -171,4 +172,56 @@ func TestMergeRepositories(t *testing.T) {
 			}
 		})
 	}
+}
+
+// TestLoadReposParts checks that loadRepos loads only the parts it is asked
+// for, so that a broken theme or template stops only what needs them.
+func TestLoadReposParts(t *testing.T) {
+	t.Parallel()
+	repo := t.TempDir()
+	// [vars] resolve; the template's dst does not render; -theme names no
+	// theme.
+	config := "[vars]\nx = '{{\"y\"}}'\n\n[[template]]\nsrc = 'a'\ndst = '{{.vars.missing}}'\n"
+	if err := os.WriteFile(filepath.Join(repo, "dotfiles.toml"), []byte(config), 0o644); err != nil {
+		t.Fatal(err)
+	}
+	for _, tt := range []struct {
+		name   string
+		parts  configParts
+		loaded bool   // the repository is returned
+		vars   bool   // its [vars] are resolved
+		errs   string // the errors collected, in this order
+	}{
+		{"nothing", 0, true, false, ""},
+		{"theme", partTheme, true, false, "theme"},
+		{"vars", partVars, true, true, ""},
+		{"vars and render", partVars | partRender, false, false, "config"},
+		{"all", allParts, false, false, "theme config"},
+	} {
+		d := &Dotfiles{Stdout: io.Discard, Stderr: io.Discard, DstPath: t.TempDir(), Theme: "nope:dark", repos: []string{repo}}
+		loaded := d.loadRepos(tt.parts)
+		var errs []string
+		for _, err := range d.runErrors {
+			kind, _, _ := strings.Cut(err.Error(), ":")
+			kind, _, _ = strings.Cut(kind, " ")
+			errs = append(errs, kind)
+		}
+		if got := strings.Join(errs, " "); got != tt.errs {
+			t.Errorf("%s: errors %q, want %q: %v", tt.name, got, tt.errs, d.runErrors)
+		}
+		if (len(loaded) == 1) != tt.loaded {
+			t.Errorf("%s: %d repositories loaded, want loaded %v", tt.name, len(loaded), tt.loaded)
+			continue
+		}
+		if tt.loaded && (loaded[0].vars["x"] == "y") != tt.vars {
+			t.Errorf("%s: vars %v, want resolved %v", tt.name, loaded[0].vars, tt.vars)
+		}
+	}
+
+	defer func() {
+		if recover() == nil {
+			t.Error("partRender without partVars: no panic")
+		}
+	}()
+	(&Dotfiles{Stderr: io.Discard, repos: []string{repo}}).loadRepos(partRender)
 }

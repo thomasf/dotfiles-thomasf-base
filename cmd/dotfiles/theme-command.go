@@ -62,7 +62,13 @@ func (d *Dotfiles) ThemeCommand(args []string) error {
 		return usage("-theme can not be used with " + sub)
 	}
 
-	repos := d.loadRepos()
+	// The theme, and the [vars] for the dpi of background-image. set, toggle
+	// and apply install with all of the configs (see sync).
+	parts := partTheme
+	if sub == "background-image" {
+		parts |= partVars
+	}
+	repos := d.loadRepos(parts)
 	if len(d.runErrors) > 0 {
 		return errors.New("theme: the configs or themes failed to load")
 	}

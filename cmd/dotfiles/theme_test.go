@@ -643,7 +643,7 @@ func TestThemeOption(t *testing.T) {
 	repo, dst := themeConfigRepo(t, "")
 	var stderr strings.Builder
 	d := &Dotfiles{Stdout: io.Discard, Stderr: &stderr, DstPath: dst, Theme: ":light", repos: []string{repo}}
-	loaded := d.loadRepos()
+	loaded := d.loadRepos(allParts)
 	if len(loaded) != 1 || loaded[0].theme == nil || loaded[0].theme.variant != "light" {
 		t.Fatalf("theme = %+v, want test:light; stderr:\n%s", loaded, stderr.String())
 	}

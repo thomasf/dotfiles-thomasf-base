@@ -320,11 +320,25 @@ func decodeTOML(path string, data []byte, v any) error {
 // resolve resolves raw, the [vars] the repository sees, and renders the
 // templated paths of its config with them.
 func (r *Repository) resolve(raw map[string]string) error {
+	if err := r.resolveVars(raw); err != nil {
+		return err
+	}
+	return r.renderConfig()
+}
+
+// resolveVars resolves raw, the [vars] the repository sees.
+func (r *Repository) resolveVars(raw map[string]string) error {
 	vars, err := resolveVars(raw, r.evalContext())
 	if err != nil {
 		return fmt.Errorf("%s: %w", r.configPath, err)
 	}
 	r.vars = vars
+	return nil
+}
+
+// renderConfig renders the templated paths of the config with the resolved
+// [vars] (see Config.render).
+func (r *Repository) renderConfig() error {
 	if err := r.config.render(r.evalContext()); err != nil {
 		return fmt.Errorf("%s: %w", r.configPath, err)
 	}

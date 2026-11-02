@@ -64,7 +64,7 @@ func loadTestPathenv(t *testing.T, repos, home string) *pathenvSet {
 	if err := d.discoverRepos(); err != nil {
 		t.Fatal(err)
 	}
-	set := loadPathenv(d.loadRepos(), home, "bash")
+	set := loadPathenv(d.loadRepos(partVars), home, "bash")
 	if len(d.runErrors) > 0 {
 		t.Fatalf("loading the repositories: %v\n%s", d.runErrors, stderr.String())
 	}
