@@ -47,10 +47,3 @@ confidental-mode() {
 }
 
 
-# ----------------------------------------------------------------------------
-# FZF
-
-if hash fzf 2>/dev/null; then
-  eval "$(fzf --bash)"
-fi
-

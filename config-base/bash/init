@@ -197,6 +197,15 @@ for file in $(find $HOME/.config-base/bash/completion.d/ -mindepth 1 -maxdepth 1
   source $file
 done
 
+# fzf must load after bash-completion
+if hash fzf 2>/dev/null; then
+  eval "$(fzf --bash)"
+  _fzf_setup_completion path o e ee g rg eza
+  _fzf_setup_completion dir tree bakdir dust fd tokei scc
+  _fzf_setup_completion proc gops
+  _fzf_setup_completion host ssh-copy-id
+fi
+
 alias t=todo.sh
 
 # ------------------------------------------------------------------------------

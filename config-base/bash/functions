@@ -278,9 +278,6 @@ cdl() {
 
 alias u="cdup"
 
-alias t2='tree -d -L 2'
-alias t3='tree -d -L 3'
-
 alias p='python3'
 alias doco='docker compose'
 
