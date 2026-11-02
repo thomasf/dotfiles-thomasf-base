@@ -1,0 +1,4 @@
+condition = "shell == 'bash' && lookPath('mise') != ''"
+[[run]]
+on  = ['activate', 'refresh']
+src = 'declare -F _mise_hook_prompt_command >/dev/null || eval "$(command mise activate bash)"'

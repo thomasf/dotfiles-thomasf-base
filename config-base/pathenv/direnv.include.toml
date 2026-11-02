@@ -1,0 +1,7 @@
+condition = "shell == 'bash' && lookPath('direnv') != ''"
+[[run]]
+on  = ['activate', 'refresh']
+src = '''
+declare -F _direnv_hook >/dev/null || eval "$(direnv hook bash)"
+_direnv_hook
+'''

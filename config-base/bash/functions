@@ -155,23 +155,6 @@ wsdir-get() {
   ws dir 2>/dev/null
 }
 
-# Workspace environments: the shell script in ~/.config/wsenv for the
-# workspace. See ws env.
-wsenv-edit() {
-  hash ws 2>/dev/null || return 0
-  local file
-  file=$(ws env -file) || return 1
-  mkdir -p "$(dirname "$file")"
-  e "$file"
-}
-
-wsenv-source() {
-  hash ws 2>/dev/null || return 0
-  local code
-  code=$(ws env 2>/dev/null) || return 1
-  eval "$code"
-}
-
 eless() {
   zless $(which ${1})
 }

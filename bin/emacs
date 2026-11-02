@@ -13,9 +13,9 @@
 # GUI all but emacsclient open in the terminal and wait.
 #
 # On X the server is named after the workspace prefix, as server-name
-# is in init-packages.el. With WS_LAUNCH set, as xmonad M-o e does, a
-# new emacs starts in the workspace directory with its environment (ws
-# dir, ws env). Wayland has no workspaces yet.
+# is in init-packages.el. With WS_LAUNCH set, as xmonad M-o e does, it
+# starts in the workspace directory (ws dir). Wayland has no workspaces
+# yet.
 #
 
 cmd=$(basename "$0")
@@ -38,20 +38,11 @@ find_in_path() {
   return 1
 }
 
-# Whether the server emacsclient would connect to is running.
-server_running() {
-  local args=(-a false -e nil)
-  [ -n "$server" ] && args=(-s "$server" "${args[@]}")
-  [ -n "$client_bin" ] && "$client_bin" "${args[@]}" >/dev/null 2>&1
-}
-
 # Started from a graphical launcher no shell has set up the
 # environment, so load what a login shell would. The interactive part
 # of the bash init is skipped, as this is no interactive shell.
-shell_init=''
 if [ -z "$__SHCOMMON" ] && [ -f ~/.bash_profile ]; then
   . ~/.bash_profile
-  shell_init=yes
 fi
 
 # Take emacs and emacsclient from the same build.
@@ -80,19 +71,12 @@ if [ -n "$WAYLAND_DISPLAY" ]; then
 elif [ -n "$DISPLAY" ]; then
   gui=yes
   server=$(ws name -p 2>/dev/null)
-  # From xmonad a new emacs starts in the workspace directory with its
-  # environment. A running one keeps its own, so then skip ws env,
-  # which may ask for passwords. Unset, so that nothing started from
-  # emacs sees it.
+  # From xmonad it starts in the workspace directory. Unset, so that
+  # nothing started from emacs sees it.
   launch=$WS_LAUNCH
   unset WS_LAUNCH
-  if [ -n "$launch" ] && ! server_running \
-       && dir=$(ws dir 2>/dev/null) && cd "$dir" 2>/dev/null \
-       && wsenv=$(ws env 2>/dev/null); then
-    # Environments use bash init functions such as workon, which are
-    # not inherited from the shell that loaded the init before.
-    [ -n "$shell_init" ] || [ ! -f ~/.bashrc ] || . ~/.bashrc
-    eval "$wsenv" >/dev/null 2>&1
+  if [ -n "$launch" ] && dir=$(ws dir 2>/dev/null); then
+    cd "$dir" 2>/dev/null
   fi
 elif [[ $OSTYPE == darwin* ]] && [ -z "$SSH_CONNECTION" ]; then
   gui=yes

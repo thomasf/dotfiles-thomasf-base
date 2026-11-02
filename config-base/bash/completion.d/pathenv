@@ -1,0 +1,8 @@
+# -*- mode: bash -*-
+
+_pathenv()
+{
+    COMPREPLY=()
+    __dotfiles_pathenv 1
+}
+complete -F _pathenv pathenv

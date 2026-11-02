@@ -103,6 +103,9 @@ dark  = 'selenized:dark'
 light = 'selenized:light'
 mode  = 'light'
 
+[pathenv]
+dirs = ['config-base/pathenv']
+
 # The colors of the theme in use for the Linux console (see bash/init).
 [[template]]
 condition = "os == 'linux'"

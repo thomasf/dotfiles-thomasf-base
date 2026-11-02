@@ -1,0 +1,8 @@
+# The virtualenv ~/.virtualenvs/<venv>, with workon from bash/init. A
+# configuration sets venv in [vars]. shell-prompt already shows
+# VIRTUAL_ENV, so no (venv) in PS1.
+condition = "shell == 'bash' && vars.venv != ''"
+[vars]
+venv = ''
+[[run]]
+src = 'VIRTUAL_ENV_DISABLE_PROMPT=1 workon {{shellQuote .vars.venv}}'

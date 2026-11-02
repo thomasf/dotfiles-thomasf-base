@@ -40,8 +40,8 @@ fi
 # ------------------------------------------------------------------------------
 # super minimal virtualenvwrapper replacement
 #
-# Defined for non-interactive shells too, since workspace environments
-# (ws env) use it and bin/emacs sources those.
+# Defined for non-interactive shells too, since pathenv entries use it and
+# pathenv exec sources only the non-interactive part.
 
 workon() {
   local name="${1}"
@@ -56,6 +56,18 @@ workon() {
     echo "script not found: ${activate}"
     return 1
   fi
+}
+
+
+# ------------------------------------------------------------------------------
+# pathenv: see dotfiles pathenv -h.
+
+pathenv() {
+  case ${1-} in
+    status | exec | -n | -h | help) dotfiles pathenv -shell bash "$@" ;;
+    *) local code
+       code=$(dotfiles pathenv -shell bash "$@") && eval "$code" ;;
+  esac
 }
 
 
@@ -288,15 +300,17 @@ case $TERM in
   *)
     if hash shell-prompt 2>/dev/null; then
       log "prompt"
-      eval "$(shell-prompt init bash)"
+      eval "$(shell-prompt init -pathenv bash)"
     fi
     ;;
 esac
 
-# Activate mise after the prompt since shell-prompt overwrites PROMPT_COMMAND
+# The global mise config: hook-env run from /, without the shims, which
+# would pick tool versions by directory. mise is activated through pathenv
+# (base:mise).
 log "mise"
 if hash mise 2>/dev/null; then
-  eval "$(mise activate bash)"
+  eval "$(cd / && MISE_ACTIVATE_SHIMS=false command mise hook-env -s bash --shell-pid $$ --force)"
 fi
 
 
@@ -314,20 +328,20 @@ case $TERM in
     ;;
 esac
 
-log "source wsenv"
-if [ ! "${TERM}" == "dumb" ] &&
-     [ "${PWD}" == "${HOME}" ]; then
-  if wsdir-cd >/dev/null || cdd  >/dev/null ; then
-    [ -z "${WSENV_SKIP}" ] && { wsenv-source >/dev/null || true; }
-    # [ -z $VIRTUAL_ENV ] &&
-    #   hash wsname 2>/dev/null &&
-    #   [ $(wsname -p >/dev/null ) ] &&
-    #   workon $(wsname -p) 2>/dev/null || true
+log "cd to workspace"
+if [ ! "${TERM}" == "dumb" ] && [ "${PWD}" == "${HOME}" ]; then
+  if wsdir-cd >/dev/null || cdd >/dev/null; then
     git status --short --branch 2>/dev/null || true
   fi
   history -n
   __pwd_logger
 fi
+
+# The only time pathenv runs untyped: once per shell, in whatever directory
+# it starts in. Not over SSH, with PATHENV_SKIP set, or without dotfiles.
+log "pathenv"
+[ ! "${TERM}" == "dumb" ] && [ -z "${PATHENV_SKIP}${SSH_CONNECTION}" ] &&
+  hash dotfiles 2>/dev/null && { pathenv -q >/dev/null || true; }
 
 log "maybe list tmux sessions"
 [ ! -z $SSH_TTY ] &&
