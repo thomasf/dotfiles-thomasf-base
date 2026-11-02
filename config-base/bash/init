@@ -305,15 +305,6 @@ case $TERM in
     ;;
 esac
 
-# The global mise config: hook-env run from /, without the shims, which
-# would pick tool versions by directory. mise is activated through pathenv
-# (base:mise).
-log "mise"
-if hash mise 2>/dev/null; then
-  eval "$(cd / && MISE_ACTIVATE_SHIMS=false command mise hook-env -s bash --shell-pid $$ --force)"
-fi
-
-
 log "set manpath"
 hash manpath 2>/dev/null &&
   unset MANPATH &&
