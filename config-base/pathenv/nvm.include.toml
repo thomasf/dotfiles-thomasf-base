@@ -1,0 +1,11 @@
+condition = "shell == 'bash' && isFile('.nvm/nvm.sh')"
+[[run]]
+on  = ['activate', 'refresh']
+src = '''
+export NVM_DIR="$HOME/.nvm"
+if ! declare -F nvm >/dev/null; then
+  . "$NVM_DIR/nvm.sh" --no-use
+  [ ! -s "$NVM_DIR/bash_completion" ] || . "$NVM_DIR/bash_completion"
+fi
+if [ -n "$(nvm_find_nvmrc)" ]; then nvm use; else nvm use --silent default; fi
+'''
