@@ -8,7 +8,6 @@ import (
 	"image"
 	"image/color"
 	"image/png"
-	"io"
 	"math"
 	"math/rand/v2"
 	"os"
@@ -622,13 +621,12 @@ func randomPattern(colors map[string]string, mode string, rng *rand.Rand, args [
 // themeBackground is dotfiles theme background-image: the path of the
 // background image of the theme variant a, a tile of bg_0 if it has none.
 func themeBackground(a *activeTheme, dpiVar string) (string, error) {
-	path, _, err := themeBackgroundExpr(a, dpiVar, "")
-	return path, err
+	return themeBackgroundExpr(a, dpiVar, "")
 }
 
 // themeBackgroundExpr renders the background for expression (or the variant's
-// default if expr is "") and returns the written image path and image.
-func themeBackgroundExpr(a *activeTheme, dpiVar string, expr string) (string, image.Image, error) {
+// default if expr is "") and returns the written image path.
+func themeBackgroundExpr(a *activeTheme, dpiVar string, expr string) (string, error) {
 	v := a.theme.Variants[a.variant]
 	value := cmp.Or(expr, v.Apps["background"], ":diagonal([bg_0, bg_0])") // a tile of bg_0
 	if expr != "" && !strings.HasPrefix(value, ":") && !strings.Contains(value, "/") && !strings.HasSuffix(value, ".png") {
@@ -636,13 +634,13 @@ func themeBackgroundExpr(a *activeTheme, dpiVar string, expr string) (string, im
 	}
 	draw, ok, err := generatedBackground(value, v.Colors, v.Mode, a.seed)
 	if err != nil {
-		return "", nil, fmt.Errorf("theme background-image: %s: apps.background: %w", a.ref(), err)
+		return "", fmt.Errorf("theme background-image: %s: apps.background: %w", a.ref(), err)
 	}
 	if !ok {
 		if filepath.IsAbs(value) {
-			return value, nil, nil
+			return value, nil
 		}
-		return filepath.Join(a.theme.Dir, value), nil, nil
+		return filepath.Join(a.theme.Dir, value), nil
 	}
 
 	dpi := float64(defaultDPI)
@@ -650,44 +648,18 @@ func themeBackgroundExpr(a *activeTheme, dpiVar string, expr string) (string, im
 		var parseErr error
 		dpi, parseErr = strconv.ParseFloat(dpiVar, 64)
 		if parseErr != nil || dpi <= 0 || math.IsInf(dpi, 0) {
-			return "", nil, fmt.Errorf("theme background-image: vars.dpi: %q is not a positive number", dpiVar)
+			return "", fmt.Errorf("theme background-image: vars.dpi: %q is not a positive number", dpiVar)
 		}
 	}
 	img := draw(dpi)
 	var buf bytes.Buffer
 	enc := png.Encoder{CompressionLevel: png.NoCompression}
 	if err := enc.Encode(&buf, img); err != nil {
-		return "", nil, fmt.Errorf("theme background-image: %w", err)
+		return "", fmt.Errorf("theme background-image: %w", err)
 	}
 	path := filepath.Join(backgroundDir(), "background.png")
 	if _, err := writeFile(path, buf.Bytes(), 0o644); err != nil {
-		return "", nil, fmt.Errorf("theme background-image: %w", err)
+		return "", fmt.Errorf("theme background-image: %w", err)
 	}
-	return path, img, nil
-}
-
-// renderTerminalBackground writes an ANSI 24-bit color half-block preview of img to w.
-func renderTerminalBackground(w io.Writer, img image.Image, cols, rows int) {
-	if img == nil {
-		return
-	}
-	b := img.Bounds()
-	bw, bh := b.Dx(), b.Dy()
-	if bw <= 0 || bh <= 0 {
-		return
-	}
-	// Each text row represents 2 vertical pixels (upper half block \u2580).
-	pixHeight := rows * 2
-	for y := 0; y < pixHeight; y += 2 {
-		var line strings.Builder
-		for x := range cols {
-			cTop := img.At(b.Min.X+(x%bw), b.Min.Y+(y%bh))
-			cBot := img.At(b.Min.X+(x%bw), b.Min.Y+((y+1)%bh))
-			r1, g1, b1, _ := cTop.RGBA()
-			r2, g2, b2, _ := cBot.RGBA()
-			fmt.Fprintf(&line, "\033[38;2;%d;%d;%dm\033[48;2;%d;%d;%dm▀", r1>>8, g1>>8, b1>>8, r2>>8, g2>>8, b2>>8)
-		}
-		line.WriteString("\033[0m\n")
-		io.WriteString(w, line.String())
-	}
+	return path, nil
 }

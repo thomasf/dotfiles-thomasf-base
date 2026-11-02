@@ -213,13 +213,13 @@ light = "test:light"
 		t.Errorf("the background is %dx%d, %v; want 28x28", cfg.Width, cfg.Height, err)
 	}
 
-	// Test -expr and -preview flags
+	// Test -expr flag
 	out.Reset()
-	if err := d.ThemeCommand([]string{"background-image", "-expr", ":chevron()", "-preview"}); err != nil {
-		t.Fatalf("theme background-image -expr :chevron() -preview: %v", err)
+	if err := d.ThemeCommand([]string{"background-image", "-expr", ":chevron()"}); err != nil {
+		t.Fatalf("theme background-image -expr :chevron(): %v", err)
 	}
-	if !strings.Contains(out.String(), "▀") {
-		t.Errorf("theme background-image -preview output does not contain ANSI blocks: %q", out.String())
+	if want := filepath.Join(os.Getenv("XDG_RUNTIME_DIR"), "dotfiles", "background.png"); out.String() != want+"\n" {
+		t.Errorf("theme background-image printed %q, want %s", out, want)
 	}
 
 	// Test -all flag

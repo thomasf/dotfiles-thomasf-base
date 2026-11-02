@@ -1,7 +1,6 @@
 package main
 
 import (
-	"cmp"
 	"encoding/json"
 	"errors"
 	"flag"
@@ -136,8 +135,6 @@ func (d *Dotfiles) themeBackgroundImage(dpi string, args []string) error {
 	fs.SetOutput(d.Stderr)
 	exprOpt := fs.String("expr", "", "expression to generate background (e.g. :dots(), :grid(), :checker())")
 	fs.StringVar(exprOpt, "e", "", "alias for -expr")
-	previewOpt := fs.Bool("preview", false, "display ANSI truecolor preview in terminal")
-	fs.BoolVar(previewOpt, "p", false, "alias for -preview")
 	allOpt := fs.Bool("all", false, "preview all pattern generators")
 	fs.Usage = func() {
 		fmt.Fprintf(d.Stderr, "Usage: dotfiles theme background-image [options] [<expression>]\n\n")
@@ -177,26 +174,18 @@ func (d *Dotfiles) themeBackgroundImage(dpi string, args []string) error {
 				fmt.Fprintln(d.Stdout)
 			}
 			fmt.Fprintf(d.Stdout, "\033[1m%s\033[0m (%s):\n", p.name, p.expr)
-			path, img, err := themeBackgroundExpr(d.active, dpi, p.expr)
+			path, err := themeBackgroundExpr(d.active, dpi, p.expr)
 			if err != nil {
 				return err
-			}
-			if img != nil {
-				renderTerminalBackground(d.Stdout, img, 60, 6)
 			}
 			fmt.Fprintf(d.Stdout, "path: %s\n", path)
 		}
 		return nil
 	}
 
-	path, img, err := themeBackgroundExpr(d.active, dpi, *exprOpt)
+	path, err := themeBackgroundExpr(d.active, dpi, *exprOpt)
 	if err != nil {
 		return err
-	}
-	if *previewOpt && img != nil {
-		exprName := cmp.Or(*exprOpt, d.active.theme.Variants[d.active.variant].Apps["background"], "background")
-		fmt.Fprintf(d.Stdout, "\033[1m%s\033[0m:\n", exprName)
-		renderTerminalBackground(d.Stdout, img, 60, 8)
 	}
 	fmt.Fprintln(d.Stdout, path)
 	return nil
