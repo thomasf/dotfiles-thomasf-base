@@ -4,9 +4,9 @@ source ~/.config-base/bash/common
 # ------------------------------------------------------------------------------
 # HOME DIR LOCAL ENVIRONMENTS
 #
-bash_start_time=$(date +%s)
+bash_start_time=${EPOCHSECONDS:-$(date +%s)}
 bash_uptime() {
-  echo "$(($(date +%s)-${bash_start_time})) seconds"
+  echo "$(( ${EPOCHSECONDS:-$(date +%s)} - bash_start_time )) seconds"
 }
 
 # log is supposed to help shell init performance debugging.
@@ -94,17 +94,17 @@ source ~/.config-base/bash/interactive
 # PRIVATE AND LOCAL
 #
 [ -e "${HOME}/.bashrc-private" ] \
-  && . "${HOME}/.bashrc-private" \
+  && source "${HOME}/.bashrc-private" \
   && log "loaded .bashrc-private"
 
 [ -e "${HOME}/.bashrc-local" ] \
-  && . "${HOME}/.bashrc-local" \
+  && source "${HOME}/.bashrc-local" \
   && log "loaded .bashrc-local"
 
 # The colors of the theme in use on the console, written by dotfiles
 if [ "$TERM" = "linux" ]; then
   [ -e "${HOME}/.config/theme/console.sh" ] \
-    && . "${HOME}/.config/theme/console.sh"
+    && source "${HOME}/.config/theme/console.sh"
   clear
   (
     [ -e /tmp/.X11-unix ] &&
@@ -181,29 +181,53 @@ hash stty 2>/dev/null &&
 #
 
 log "bash completion"
-[ -f "/etc/bash_completion" ] \
-  && ! shopt -oq posix \
-  && . "/etc/bash_completion"
+if ! declare -F _filedir >/dev/null 2>&1 && ! shopt -oq posix; then
+  if [ -f "/etc/bash_completion" ]; then
+    source "/etc/bash_completion"
+  elif [ -f "/usr/share/bash-completion/bash_completion" ]; then
+    source "/usr/share/bash-completion/bash_completion"
+  elif [ -f "/usr/local/etc/bash_completion" ]; then
+    source "/usr/local/etc/bash_completion"
+  elif [ -f "/opt/homebrew/etc/bash_completion" ]; then
+    source "/opt/homebrew/etc/bash_completion"
+  fi
+fi
 
-[ -f "/usr/local/etc/bash_completion" ] \
-  && ! shopt -oq posix \
-  && . "/usr/local/etc/bash_completion"
+if declare -F _filedir >/dev/null 2>&1 || [ -n "${BASH_COMPLETION_VERSINFO-}" ]; then
+  _lazy_load_completion() {
+    local file="${1}"; shift
+    local comp_func="${1}"; shift
+    for cmd in "${@}"; do
+      eval "_lazy_complete_${cmd}() {
+        complete -r ${cmd} 2>/dev/null
+        source \"${file}\"
+        if declare -F \"${comp_func}\" >/dev/null 2>&1; then
+          \"${comp_func}\" \"\$@\"
+        fi
+      }"
+      complete -o default -F "_lazy_complete_${cmd}" "${cmd}"
+    done
+  }
 
-[ -f "/opt/homebrew/etc/bash_completion" ] \
-  && ! shopt -oq posix \
-  && . "/opt/homebrew/etc/bash_completion"
+  for file in "${HOME}/.config-base/bash/completion.d/"*; do
+    [ -f "${file}" ] || continue
+    case "${file}" in
+      */kubectl|*/docker) continue ;;
+    esac
+    source "${file}"
+  done
 
-for file in $(find $HOME/.config-base/bash/completion.d/ -mindepth 1 -maxdepth 1 -not -type d  ); do
-  source $file
-done
+  _lazy_load_completion "${HOME}/.config-base/bash/completion.d/kubectl" __start_kubectl kubectl k
+  _lazy_load_completion "${HOME}/.config-base/bash/completion.d/docker" _docker docker docker.exe dockerd dockerd.exe
 
-# fzf must load after bash-completion
-if hash fzf 2>/dev/null; then
-  eval "$(fzf --bash)"
-  _fzf_setup_completion path o e ee g rg eza
-  _fzf_setup_completion dir tree bakdir dust fd tokei scc
-  _fzf_setup_completion proc gops
-  _fzf_setup_completion host ssh-copy-id
+  # fzf must load after bash-completion
+  if hash fzf 2>/dev/null; then
+    eval "$(fzf --bash)"
+    _fzf_setup_completion path o e ee g rg eza
+    _fzf_setup_completion dir tree bakdir dust fd tokei scc
+    _fzf_setup_completion proc gops
+    _fzf_setup_completion host ssh-copy-id
+  fi
 fi
 
 alias t=todo.sh
@@ -212,7 +236,7 @@ alias t=todo.sh
 # DIRCOLORS
 #
 log "dircolors"
-if [ -x /usr/bin/dircolors ]; then
+if [ -z "$LS_COLORS" ] && [ -x /usr/bin/dircolors ]; then
   test -r ~/.config-base/dircolors/default && eval "$(dircolors -b ~/.config-base/dircolors/default 2>/dev/null)" || eval "$(dircolors -b)"
   alias grep='grep --color=auto'
   alias fgrep='fgrep --color=auto'
@@ -246,7 +270,7 @@ mkvirtualenv() {
   dir="${HOME}/.virtualenvs/${1}"
   shift || return 1
   python3 -mvenv "${dir}" "${@}" || return 1
-  . "${dir}/bin/activate" || return 1
+  source "${dir}/bin/activate" || return 1
   pip install --upgrade wheel setuptools pip
   python-lsp-ensure
 }
@@ -277,16 +301,18 @@ _z() {
 }
 
 if [ -x /usr/bin/lesspipe ]; then
-  eval "$(SHELL=/bin/sh lesspipe)"
+  export LESSCLOSE="/usr/bin/lesspipe %s %s"
   if [ -f /usr/share/source-highlight/src-hilite-lesspipe.sh ]; then
     export LESSOPEN="| /usr/share/source-highlight/src-hilite-lesspipe.sh %s"
     export LESS=' -R '
+  else
+    export LESSOPEN="| /usr/bin/lesspipe %s"
   fi
 fi
 
 [ -f "${__SHBASE}/functions" ] \
   && log "functions" \
-  && . "${__SHBASE}/functions"
+  && source "${__SHBASE}/functions"
 
 
 # clipboard paste
@@ -315,9 +341,9 @@ case $TERM in
 esac
 
 log "set manpath"
-hash manpath 2>/dev/null &&
-  unset MANPATH &&
+if [ -z "${MANPATH}" ] && hash manpath 2>/dev/null; then
   export MANPATH=$(manpath -q)
+fi
 
 case $TERM in
   dumb)

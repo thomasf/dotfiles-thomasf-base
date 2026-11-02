@@ -31,8 +31,8 @@ ppath /usr/bin
 ppath /usr/local/bin
 
 if [ -d /var/lib/gems ]; then
-  for d in $(find /var/lib/gems/ -mindepth 1 -maxdepth 1 -type d | sort ); do
-    ppath ${d}/bin
+  for d in /var/lib/gems/*; do
+    [ -d "${d}" ] && ppath "${d}/bin"
   done
 fi
 
@@ -52,9 +52,9 @@ ppath ~/sdk/flutter/bin
 ppath ~/.cabal/bin
 ppath  ~/.ghcup/bin
 
-if [ -d ~/.gem/ruby ]; then
-  for d in $(find ~/.gem/ruby -mindepth 1 -maxdepth 1 -type d | sort ); do
-    ppath ${d}/bin
+if [ -d "${HOME}/.gem/ruby" ]; then
+  for d in "${HOME}/.gem/ruby"/*; do
+    [ -d "${d}" ] && ppath "${d}/bin"
   done
 fi
 
@@ -106,8 +106,8 @@ ppath ~/.config/perl5/bin
 ppath ~/bin
 
 # Add all ~/.bin and all ~/.bin-* directories to path
-for D in $(find $HOME -maxdepth 1 -name ".bin-*" -o -name ".bin" | sort); do
-    ppath ${D}
+for D in "${HOME}"/.bin "${HOME}"/.bin-*; do
+  [ -d "${D}" ] && ppath "${D}"
 done
 
 export PATH
