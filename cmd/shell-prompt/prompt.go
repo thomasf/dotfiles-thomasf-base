@@ -83,6 +83,7 @@ type Config struct {
 	Host       string
 	HostTags   string
 	VirtualEnv string
+	Pathenv    string // PATHENV_ACTIVE, if shown (--pathenv)
 	SSHClient  string
 	EUID       int
 	Time       time.Time
@@ -235,6 +236,9 @@ func BuildPrompt(cfg Config, vcs VCSProvider) string {
 		venv = " p:" + filepath.Base(cfg.VirtualEnv)
 	}
 
+	// Active pathenv configurations, by short name
+	venv += pathenvString(cfg.Pathenv)
+
 	// Version control string
 	vcsStr := cfg.VCS
 	if vcsStr == "" && vcs != nil {
@@ -314,4 +318,23 @@ func BuildPrompt(cfg Config, vcs VCSProvider) string {
 	sb.WriteString(cfg.Shell.Escape(colorReset))
 
 	return sb.String()
+}
+
+// pathenvString returns " e:" and the short names of the pathenv
+// configurations in active, a PATHENV_ACTIVE value such as
+// "work:api work:shop", joined with "+": " e:api+shop". It
+// returns "" if active lists none.
+func pathenvString(active string) string {
+	var names []string
+	for name := range strings.FieldsSeq(active) {
+		_, short, ok := strings.Cut(name, ":")
+		if !ok {
+			short = name
+		}
+		names = append(names, short)
+	}
+	if len(names) == 0 {
+		return ""
+	}
+	return " e:" + strings.Join(names, "+")
 }

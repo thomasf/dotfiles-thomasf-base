@@ -21,6 +21,7 @@ It replaces slow multi-process shell scripts (`whoami`, `hostname`, `date`, `pwd
   - Root user (`EUID=0`): `#` (yellow) on success, `!#` (red) on error.
 - **SSH indicator**: Displays black on cyan background `/\` when connected via SSH (`SSH_CLIENT`, `SSH_TTY`, or `SSH_CONNECTION`).
 - **Python virtualenv**: Shows ` p:<name>` when `VIRTUAL_ENV` is active.
+- **pathenv**: With `--pathenv`, shows ` e:` and the short names of the active pathenv configurations from `PATHENV_ACTIVE` joined with `+`, such as ` e:api+shop` (see `dotfiles doc pathenv`). `shell-prompt init -pathenv bash` turns it on.
 - **Window title**: Emits xterm/rxvt terminal titlebar sequences (`\033]0;bash: <user>@<host>: <title_pwd>\007`) when running under compatible terminals.
 - **Multi-shell support**: Supports `bash` (`\[...\]`), `zsh` (`%{...%}`), and `plain` escaping.
 
@@ -70,7 +71,7 @@ shell-prompt title-pwd [path]
 shell-prompt username
 shell-prompt hostname
 shell-prompt vcs [dir]
-shell-prompt init [bash|zsh]
+shell-prompt init [-pathenv] [bash|zsh]
 ```
 
 ### Flags
@@ -91,3 +92,4 @@ shell-prompt init [bash|zsh]
 | `--no-vcs` | | Disable VCS detection |
 | `--euid <int>` | `$EUID` | Effective UID override |
 | `--eval` | `false` | Output as `PS1='...'` for shell `eval` |
+| `--pathenv` | `false` | Show the active pathenv configurations (`PATHENV_ACTIVE`) as ` e:<names>` |

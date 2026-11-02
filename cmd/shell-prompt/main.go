@@ -49,7 +49,7 @@ Usage:
   shell-prompt username
   shell-prompt hostname
   shell-prompt vcs [dir]
-  shell-prompt init [bash|zsh]
+  shell-prompt init [-pathenv] [bash|zsh]
 
 Flags:
   --ret <int>        Exit code of last command (defaults to $RET or 0)
@@ -66,6 +66,7 @@ Flags:
   --no-vcs           Disable VCS detection
   --euid <int>       Override effective user ID
   --eval             Format output as PS1='...' for shell eval
+  --pathenv          Show the active pathenv configurations ($PATHENV_ACTIVE) as e:<names>
 `)
 }
 
@@ -89,6 +90,7 @@ func runPrompt(args []string) {
 		noVCSFlag   bool
 		euidFlag    int
 		evalFlag    bool
+		pathenvFlag bool
 	)
 
 	// Check if $RET is set in environment for default return code
@@ -113,6 +115,7 @@ func runPrompt(args []string) {
 	fs.BoolVar(&noVCSFlag, "no-vcs", false, "Disable VCS info")
 	fs.IntVar(&euidFlag, "euid", -1, "Effective UID override")
 	fs.BoolVar(&evalFlag, "eval", false, "Output as PS1='...' for eval")
+	fs.BoolVar(&pathenvFlag, "pathenv", false, "Show the active pathenv configurations ($PATHENV_ACTIVE)")
 
 	// Allow "prompt" or "print" as optional first argument
 	if len(args) > 0 && (args[0] == "prompt" || args[0] == "print") {
@@ -122,6 +125,9 @@ func runPrompt(args []string) {
 	_ = fs.Parse(args)
 
 	cfg.ReturnCode = retFlag
+	if pathenvFlag {
+		cfg.Pathenv = os.Getenv("PATHENV_ACTIVE")
+	}
 
 	if colsFlag > 0 {
 		cfg.Cols = colsFlag
@@ -238,24 +244,31 @@ func runVCS(args []string) {
 }
 
 func runInit(args []string) {
+	fs := flag.NewFlagSet("shell-prompt init", flag.ExitOnError)
+	pathenv := fs.Bool("pathenv", false, "the prompt shows the active pathenv configurations")
+	_ = fs.Parse(args)
 	shell := "bash"
-	if len(args) > 0 {
-		shell = strings.ToLower(args[0])
+	if fs.NArg() > 0 {
+		shell = strings.ToLower(fs.Arg(0))
 	}
+	os.Stdout.WriteString(initScript(shell, *pathenv))
+}
 
+// initScript returns the code that sets up the prompt in shell, bash or zsh.
+// With pathenv, the prompt shows the active pathenv configurations.
+func initScript(shell string, pathenv bool) string {
+	var script string
 	switch shell {
 	case "zsh":
-		os.Stdout.WriteString(`__prompt_precmd() {
+		script = `__prompt_precmd() {
   local ret=$?
   PROMPT="$(shell-prompt --shell=zsh --ret=$ret)"
 }
 autoload -Uz add-zsh-hook
 add-zsh-hook precmd __prompt_precmd
-`)
-	case "bash":
-		fallthrough
+`
 	default:
-		os.Stdout.WriteString(`__prompt_command() {
+		script = `__prompt_command() {
   local ret=$?
   export __RUNNING_PROMPT_COMMAND=1
   case $TERM in
@@ -297,6 +310,10 @@ printf "\e]0;%s\a" "bash: $(shell-prompt username)@$(shell-prompt hostname): $BA
 }
 
 __prompt_activate
-`)
+`
 	}
+	if pathenv {
+		script = strings.Replace(script, "--ret=$ret)", "--ret=$ret --pathenv)", 1)
+	}
+	return script
 }

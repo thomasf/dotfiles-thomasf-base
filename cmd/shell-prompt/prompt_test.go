@@ -152,6 +152,26 @@ func TestBuildPrompt(t *testing.T) {
 		}
 	})
 
+	t.Run("pathenv", func(t *testing.T) {
+		cfg := baseCfg
+		cfg.VirtualEnv = "/home/t/.virtualenvs/myproject"
+		for active, want := range map[string]string{
+			"":                      "",
+			"work:api":              " p:myproject e:api",
+			" work:api  work:shop ": " p:myproject e:api+shop",
+		} {
+			cfg.Pathenv = active
+			prompt := BuildPrompt(cfg, nil)
+			if want == "" {
+				if strings.Contains(prompt, " e:") {
+					t.Errorf("PATHENV_ACTIVE=%q: prompt shows pathenv: %s", active, prompt)
+				}
+			} else if !strings.Contains(prompt, want) {
+				t.Errorf("PATHENV_ACTIVE=%q: prompt missing %q: %s", active, want, prompt)
+			}
+		}
+	})
+
 	t.Run("xterm titlebar in bash", func(t *testing.T) {
 		cfg := baseCfg
 		cfg.ShowTitle = true
@@ -176,4 +196,15 @@ func TestBuildPrompt(t *testing.T) {
 			t.Errorf("zsh prompt color escaping incorrect: %s", prompt)
 		}
 	})
+}
+
+func TestInitScript(t *testing.T) {
+	for _, shell := range []string{"bash", "zsh"} {
+		if s := initScript(shell, false); !strings.Contains(s, "shell-prompt --") || strings.Contains(s, "--pathenv") {
+			t.Errorf("%s without -pathenv:\n%s", shell, s)
+		}
+		if s := initScript(shell, true); !strings.Contains(s, "--ret=$ret --pathenv)") {
+			t.Errorf("%s with -pathenv:\n%s", shell, s)
+		}
+	}
 }
