@@ -59,9 +59,75 @@ __dotfiles_ltrim_colon()
     fi
 }
 
+# __dotfiles_pathenv completes the arguments of dotfiles pathenv, or of the
+# pathenv function of bash/init, which start at COMP_WORDS[$1].
+__dotfiles_pathenv()
+{
+    local cur="${COMP_WORDS[COMP_CWORD]}" prev="${COMP_WORDS[COMP_CWORD-1]}"
+    local i sub="" words
+    for (( i = $1; i < COMP_CWORD; i++ )); do
+        case "${COMP_WORDS[i]}" in
+            -C|--C|-shell|--shell)
+                ((i++))
+                ;;
+            --)
+                if [[ "$sub" == exec ]]; then
+                    if type _command_offset &>/dev/null; then
+                        _command_offset $((i + 1))
+                    else
+                        COMPREPLY=( $(compgen -c -- "$cur") )
+                    fi
+                    return 0
+                fi
+                ;;
+            -*)
+                ;;
+            *)
+                [[ -z "$sub" ]] && sub="${COMP_WORDS[i]}"
+                ;;
+        esac
+    done
+
+    case "$prev" in
+        -C|--C)
+            if type _filedir &>/dev/null; then
+                _filedir -d
+            else
+                compopt -o filenames 2>/dev/null
+                COMPREPLY=( $(compgen -d -- "$cur") )
+            fi
+            return 0
+            ;;
+        -shell|--shell)
+            COMPREPLY=( $(compgen -W "bash" -- "$cur") )
+            return 0
+            ;;
+    esac
+
+    case "$sub" in
+        "")
+            if [[ "$cur" == -* ]]; then
+                words="-C --C -n --n -q --q -shell --shell -h --help"
+            else
+                words="reload exec status help"
+            fi
+            ;;
+        exec)
+            words="-C --C --"
+            ;;
+        status)
+            words="-C --C -json --json"
+            ;;
+        *)
+            return 0
+            ;;
+    esac
+    COMPREPLY=( $(compgen -W "${words}" -- "${cur}") )
+}
+
 _dotfiles()
 {
-    local cur prev cmd subcmd i skip_next repos_dir_arg
+    local cur prev cmd cmd_index subcmd i skip_next repos_dir_arg
     COMPREPLY=()
     cur="${COMP_WORDS[COMP_CWORD]}"
     prev="${COMP_WORDS[COMP_CWORD-1]}"
@@ -81,8 +147,11 @@ _dotfiles()
         fi
 
         case "$w" in
-            -dst|--dst|-n|--n|-format|--format)
+            -dst|--dst|-format|--format)
                 skip_next=1
+                ;;
+            -n|--n)
+                [[ "$cmd" == log ]] && skip_next=1
                 ;;
             -repos|--repos)
                 repos_dir_arg="${COMP_WORDS[i+1]}"
@@ -99,6 +168,8 @@ _dotfiles()
             *)
                 if [[ -z "$cmd" ]]; then
                     cmd="$w"
+                    cmd_index=$i
+                    [[ "$cmd" == pathenv ]] && break
                 elif [[ -z "$subcmd" ]]; then
                     subcmd="$w"
                 fi
@@ -141,7 +212,7 @@ _dotfiles()
             return 0
             ;;
         -n|--n)
-            return 0
+            [[ "$cmd" == log ]] && return 0
             ;;
     esac
 
@@ -150,13 +221,17 @@ _dotfiles()
             local global_opts="-copy --copy -dry-run --dry-run -dst --dst -f -repos --repos -repository --repository -theme --theme -v -h --help"
             COMPREPLY=( $(compgen -W "${global_opts}" -- "${cur}") )
         else
-            local commands="install plan push publish pull status diff magit log repos theme doc i s d"
+            local commands="install plan push publish pull status diff magit log repos theme pathenv doc i s d"
             COMPREPLY=( $(compgen -W "${commands}" -- "${cur}") )
         fi
         return 0
     fi
 
     case "$cmd" in
+        pathenv)
+            __dotfiles_pathenv $((cmd_index + 1))
+            return 0
+            ;;
         pull)
             local pull_opts="-no-install --no-install -h --help"
             COMPREPLY=( $(compgen -W "${pull_opts}" -- "${cur}") )
@@ -244,7 +319,7 @@ _dotfiles()
             esac
             ;;
         doc)
-            local topics="toc theme repositories vars git template starlark script appendices options"
+            local topics="toc theme pathenv repositories vars git template starlark script appendices options"
             COMPREPLY=( $(compgen -W "${topics}" -- "${cur}") )
             return 0
             ;;

@@ -587,6 +587,135 @@ entries with `on = "theme"` instead of the usual ones. `[[go]]` packages are
 not installed. Files whose content does not change are not written, so only
 what depends on the theme changes.
 
+### `[pathenv]`
+
+`dotfiles pathenv` sets up a shell's environment for the directory it is in,
+on request: pathenv files say which bash code runs under which paths.
+Nothing happens on `cd`, and nothing is undone; a second configuration in the
+same shell stacks on top of the first. `[pathenv]` lists the directories,
+relative to the repository, that contain pathenv files:
+
+```toml
+[pathenv]
+dirs = ['config-base/pathenv']
+```
+
+`dotfiles pathenv` prints the code for the bash function `pathenv` to
+evaluate:
+
+```bash
+pathenv() {
+  case ${1-} in
+    status | exec | -n | -h | help) dotfiles pathenv -shell bash "$@" ;;
+    *) local code
+       code=$(dotfiles pathenv -shell bash "$@") && eval "$code" ;;
+  esac
+}
+```
+
+| Command                             | What it does                                                           |
+|-------------------------------------|------------------------------------------------------------------------|
+| `pathenv [-q] [-C DIR]`             | `activate` or `refresh` the configuration for the directory.           |
+| `pathenv reload`                    | `activate` it again: new secrets, an edited file.                      |
+| `pathenv exec [-C DIR] -- CMD...`   | Run a command in the directory's environment; the shell is left alone. |
+| `pathenv status [-C DIR] [-json]`   | The matching configuration, its includes, and `PATHENV_ACTIVE`.        |
+
+`-q` says nothing where no configuration matches. `-shell` is the shell the
+code is for, by default the base name of `$SHELL`; only bash is supported.
+
+#### Pathenv Files
+
+Every `*.toml` directly in a `dirs` directory is a pathenv file. An
+`*.include.toml` file is an include file: it has no `paths` and is used
+through `[[run]] include`. Any other is a configuration and must have `paths`.
+A file's name is `repo:file`, without `.toml` or `.include.toml`, such as
+`base:direnv`; the same `file` twice, in any repositories, is an error, so the
+short name `direnv` means one file. A file that fails to load is reported and
+left out, with the files that include it; the others still apply. Files are
+read on every call; there is nothing to install.
+
+| Key         | Meaning                                                                                                     |
+|-------------|-------------------------------------------------------------------------------------------------------------|
+| `paths`     | Directory prefixes, templated. Relative ones are relative to the destination path (`$HOME`).                |
+| `condition` | Expression. If false, the file does not exist for this call: a shorter prefix can match, an include adds nothing. |
+| `[vars]`    | Strings for templates and conditions, on top of the repository's `[vars]`.                                  |
+| `[[run]]`   | The entries, in the order they run.                                                                         |
+
+A `[[run]]` entry has exactly one of `src`, `file` and `include`:
+
+| Key         | Meaning                                                                       |
+|-------------|-------------------------------------------------------------------------------|
+| `src`       | Bash code, a template.                                                        |
+| `file`      | A file to source, relative to the pathenv file.                               |
+| `include`   | The name of an include file, `repo:file` or `file`; its entries go here.      |
+| `on`        | `activate` (the default), `refresh`, or both. Not with `include`.             |
+| `condition` | Expression: whether the entry or include is used.                             |
+
+```toml
+# work/config-work/pathenv/api.toml
+paths = ['src/example.com/acme/api/']
+[[run]]
+src = 'export API_TOKEN=$(pass example.com/acme/api-token)'
+[[run]]
+include = 'direnv'
+
+# base/config-base/pathenv/direnv.include.toml
+condition = "shell == 'bash' && lookPath('direnv') != ''"
+[[run]]
+on  = ['activate', 'refresh']
+src = 'eval "$(direnv export bash)"'
+```
+
+Entries run in file order, an include standing for its entries, whatever their
+exit status. Includes can be nested; cycles, unknown names and including a
+configuration are errors. `[vars]` merge from the outside in: the include
+file's own are its defaults and the including file's win, whatever the
+conditions; a file's templates also see its repository's `[vars]`. The code
+is evaluated inside the `pathenv` function, so it sets variables with
+`export` or plain assignment, not `local` or `declare`.
+
+#### Matching and Location Variables
+
+A configuration matches a directory that is one of its `paths` or below it.
+The longest prefix wins, alone; two configurations with the same prefix are
+an error unless at most one has a true `condition`. A configuration without
+`[[run]]` matches and runs nothing, carving its directory out. In a worktree
+`<repo>@<name>`, the configurations of the main checkout `<repo>` match too.
+If the configuration that would match is broken, `dotfiles pathenv` fails.
+
+Conditions see `shell`, the shell the code is for. After matching, templates
+and conditions, other than `paths` and the configuration's own `condition`,
+also see where it matched:
+
+| Name       | Value                                                                                           |
+|------------|-------------------------------------------------------------------------------------------------|
+| `root`     | The nearest directory with `.git` at or above the directory, not above the prefix; else the prefix. |
+| `worktree` | After `@` in the base name of `root`, or empty.                                                 |
+| `prefix`   | The `paths` entry that matched, without a trailing `/`; for a worktree, the main checkout's.    |
+
+#### Events and Stacking
+
+`PATHENV_ACTIVE` lists the active configurations, separated by spaces, in
+activation order. Where the matching configuration is in it, `pathenv` runs
+its `refresh` entries. Where it is not, `pathenv` runs its `activate` entries
+and appends it, with a warning on stderr if others are active; `pathenv reload`
+always does that. Secrets read on `activate` are not asked again on
+`refresh`; code that follows the directory goes in a `refresh` entry, using
+`$PWD`.
+
+#### pathenv exec
+
+`dotfiles pathenv exec` runs `bash -c`, which sources `~/.bashrc` with
+`PATHENV_SKIP=1` (a non-interactive shell stops at its non-interactive
+part), changes to the directory, evaluates the code and runs the command,
+whose exit status is passed on; without a command it does nothing. Where
+the system allows it, dotfiles replaces itself with that `bash -c`, which
+replaces itself with the command, so the command gets the process of
+dotfiles; on Windows it runs as a child. If the directory is missing or the
+configuration is broken, the command does not run. The command inherits
+`PATHENV_ACTIVE`, so in a shell where the configuration is active it is a
+refresh.
+
 ### `[vars]` and `[default_vars]`
 
 `[vars]` defines variables for templates, templated paths, scripts, `[git]`

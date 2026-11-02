@@ -182,6 +182,12 @@ type ThemeConfig struct {
 	TerminalBright string   `toml:"terminal_bright,omitempty"` // "palette" or "accents"
 }
 
+// PathenvConfig is [pathenv]: the directories that contain pathenv files
+// (see dotfiles pathenv).
+type PathenvConfig struct {
+	Dirs []string `toml:"dirs"`
+}
+
 type Config struct {
 	Public       bool              `toml:"public,omitempty,omitzero"`
 	Ignore       []Ignore          `toml:"ignore"`
@@ -195,6 +201,7 @@ type Config struct {
 	Vars         map[string]string `toml:"vars"`
 	DefaultVars  map[string]string `toml:"default_vars"` // only for this repository
 	Theme        ThemeConfig       `toml:"theme"`
+	Pathenv      PathenvConfig     `toml:"pathenv"`
 }
 
 type Repository struct {
@@ -353,6 +360,11 @@ func (c *Config) validate() error {
 	for i, dir := range c.Theme.Dirs {
 		if dir == "" {
 			errs = append(errs, fmt.Errorf("theme.dirs[%d] is empty", i))
+		}
+	}
+	for i, dir := range c.Pathenv.Dirs {
+		if dir == "" {
+			errs = append(errs, fmt.Errorf("pathenv.dirs[%d] is empty", i))
 		}
 	}
 	for _, s := range []struct{ key, ref string }{{"dark", c.Theme.Dark}, {"light", c.Theme.Light}} {

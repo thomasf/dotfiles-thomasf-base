@@ -81,6 +81,7 @@ func (d *Dotfiles) Run(stdout, stderr io.Writer, args []string) error {
 		fmt.Fprintf(stderr, "  repos fix       Add missing remotes, correct remote URLs and create missing local backup repos\n")
 		fmt.Fprintf(stderr, "  repos clone [name...]  Clone missing known repos (all, or the named ones) from the upstream remote, then run repos fix\n")
 		fmt.Fprintf(stderr, "  theme [show|list|preview|color|set <variant>|toggle|apply]  Show, list, inspect, switch or apply the theme (see theme -h)\n")
+		fmt.Fprintf(stderr, "  pathenv [reload|exec|status|edit]  Print the shell code of the environment for the directory, or run a command in it (see pathenv -h)\n")
 		fmt.Fprintf(stderr, "  doc [topic]     Print the manual, or only the sections whose heading or number matches topic; doc toc lists them\n")
 		fmt.Fprintf(stderr, "\nOptions:\n")
 		fs.PrintDefaults()
@@ -138,6 +139,13 @@ func (d *Dotfiles) Run(stdout, stderr io.Writer, args []string) error {
 		}
 	case "theme":
 		if err := d.ThemeCommand(remainingArgs[1:]); err != nil {
+			if errors.Is(err, flag.ErrHelp) {
+				return nil
+			}
+			return err
+		}
+	case "pathenv":
+		if err := d.PathenvCommand(remainingArgs[1:]); err != nil {
 			if errors.Is(err, flag.ErrHelp) {
 				return nil
 			}
@@ -227,6 +235,9 @@ func (d *Dotfiles) discoverRepos() error {
 func main() {
 	d := &Dotfiles{}
 	if err := d.Run(os.Stdout, os.Stderr, os.Args[1:]); err != nil {
+		if code, ok := errors.AsType[exitStatus](err); ok {
+			os.Exit(int(code))
+		}
 		os.Exit(1)
 	}
 }
