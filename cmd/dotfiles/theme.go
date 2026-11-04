@@ -29,30 +29,40 @@ type Theme struct {
 	License     string              // palette license
 	Description string              // palette description
 	Ansi        map[string]string   // [ansi]: the terminal color mappings
+	LintIgnore  []string            // lint warning types to suppress
 	Variants    map[string]*Variant // by name
 }
 
 // A Variant is one palette of a [Theme].
 type Variant struct {
-	Mode   string            // "dark" or "light"
-	Colors map[string]string // [colors], and color0 to color15 from [ansi]
-	Apps   map[string]string // [apps]: names of app themes and other settings
+	Mode       string            // "dark" or "light"
+	Colors     map[string]string // [colors], and color0 to color15 from [ansi]
+	Apps       map[string]string // [apps]: names of app themes and other settings
+	LintIgnore []string          // variant-specific lint warning types to suppress
 }
 
 // themeFile is the content of theme.toml.
 type themeFile struct {
-	Creator     string            `toml:"creator,omitempty"`
-	URL         string            `toml:"url,omitempty"`
-	License     string            `toml:"license,omitempty"`
-	Description string            `toml:"description,omitempty"`
-	Ansi        map[string]string `toml:"ansi"`
+	Creator      string            `toml:"creator,omitempty"`
+	URL          string            `toml:"url,omitempty"`
+	License      string            `toml:"license,omitempty"`
+	Description  string            `toml:"description,omitempty"`
+	Ansi         map[string]string `toml:"ansi"`
+	LintIgnore   StringList        `toml:"lint_ignore,omitempty"`
+	LintSuppress StringList        `toml:"lint_suppress,omitempty"`
+	IgnoreLint   StringList        `toml:"ignore_lint,omitempty"`
+	SuppressLint StringList        `toml:"suppress_lint,omitempty"`
 }
 
 // variantFile is the content of a file in variants/.
 type variantFile struct {
-	Mode   string            `toml:"mode"`
-	Colors map[string]string `toml:"colors"`
-	Apps   map[string]string `toml:"apps"`
+	Mode         string            `toml:"mode"`
+	Colors       map[string]string `toml:"colors"`
+	Apps         map[string]string `toml:"apps"`
+	LintIgnore   StringList        `toml:"lint_ignore,omitempty"`
+	LintSuppress StringList        `toml:"lint_suppress,omitempty"`
+	IgnoreLint   StringList        `toml:"ignore_lint,omitempty"`
+	SuppressLint StringList        `toml:"suppress_lint,omitempty"`
 }
 
 // requiredColors are the colors that every variant defines: the neutral
@@ -161,8 +171,18 @@ func loadTheme(dir string) (*Theme, error) {
 	t.License = tf.License
 	t.Description = tf.Description
 	t.Ansi = tf.Ansi
+	t.LintIgnore = append([]string(tf.LintIgnore), tf.LintSuppress...)
+	t.LintIgnore = append(t.LintIgnore, tf.IgnoreLint...)
+	t.LintIgnore = append(t.LintIgnore, tf.SuppressLint...)
 	for name, vf := range files {
-		v := &Variant{Mode: vf.Mode, Colors: maps.Clone(vf.Colors), Apps: vf.Apps}
+		v := &Variant{
+			Mode:       vf.Mode,
+			Colors:     maps.Clone(vf.Colors),
+			Apps:       vf.Apps,
+			LintIgnore: append([]string(vf.LintIgnore), vf.LintSuppress...),
+		}
+		v.LintIgnore = append(v.LintIgnore, vf.IgnoreLint...)
+		v.LintIgnore = append(v.LintIgnore, vf.SuppressLint...)
 		if v.Apps == nil {
 			v.Apps = map[string]string{}
 		}

@@ -1,0 +1,36 @@
+mode = "dark"
+
+# Monochrome Green: Pure P1 CRT phosphor (~525nm cathode green).
+# Authentic hardware feel: tight CRT luminance range modeled after the 1-bit intensity pin
+# on vintage video controllers (Normal ~9.2:1, High Intensity ~11.3:1, Dim ~6.3:1).
+[colors]
+bg_0  = "#051006"
+bg_1  = "#102814"
+bg_2  = "#1c4020"
+dim_0 = "#38a84a"
+dim_1 = "#40be54"
+fg_0  = "#49cc5a"
+fg_1  = "#5ce06c"
+
+yellow  = "#5ce06c"
+orange  = "#5ce06c"
+red     = "#5ce06c"
+magenta = "#5ce06c"
+violet  = "#49cc5a"
+blue    = "#49cc5a"
+cyan    = "#49cc5a"
+green   = "#49cc5a"
+
+br_red     = "#66e876"
+br_green   = "#66e876"
+br_yellow  = "#66e876"
+br_blue    = "#66e876"
+br_magenta = "#66e876"
+br_cyan    = "#66e876"
+
+[apps]
+emacs        = "my-solarized-mono-green"
+color_scheme = "prefer-dark"
+
+background      = ":random()"
+background_mode = "tile"

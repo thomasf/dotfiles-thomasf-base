@@ -846,6 +846,26 @@ func TestThemeLintRules(t *testing.T) {
 	if !slices.ContainsFunc(warns, func(w lintWarning) bool { return strings.Contains(w.message, "invalid generated background") }) {
 		t.Errorf("expected invalid generated background warning, got: %v", warns)
 	}
+
+	// 8. Suppression via theme LintIgnore, variant LintIgnore, and extraIgnores
+	thmSuppressed := &Theme{
+		Name:       "test",
+		LintIgnore: []string{"accent-collision"},
+	}
+	if warns := lintVariant(thmSuppressed, vCollision); len(warns) > 0 {
+		t.Errorf("expected accent-collision to be suppressed by theme LintIgnore, got: %v", warns)
+	}
+	vCollisionSuppressed := &Variant{
+		Mode:       "dark",
+		Colors:     maps.Clone(vCollision.Colors),
+		LintIgnore: []string{"collision"},
+	}
+	if warns := lintVariant(thm, vCollisionSuppressed); len(warns) > 0 {
+		t.Errorf("expected accent-collision to be suppressed by variant LintIgnore alias 'collision', got: %v", warns)
+	}
+	if warns := lintVariant(thm, vCollision, "accent-collision"); len(warns) > 0 {
+		t.Errorf("expected accent-collision to be suppressed by extraIgnores, got: %v", warns)
+	}
 }
 
 func TestThemeColor(t *testing.T) {

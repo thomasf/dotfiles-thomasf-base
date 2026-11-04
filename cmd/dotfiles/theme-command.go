@@ -855,13 +855,36 @@ func (d *Dotfiles) lintTheme(args []string) error {
 		fmt.Fprintf(d.Stderr, "Usage: dotfiles theme lint [options] [<variant>]\n\n")
 		fmt.Fprintf(d.Stderr, "Lint a theme variant or all themes for contrast and styling issues.\n")
 		fmt.Fprintf(d.Stderr, "By default, lints the currently active theme.\n\n")
+		fmt.Fprintf(d.Stderr, "Lint Types:\n")
+		fmt.Fprintf(d.Stderr, "  accent-collision   accent colors that are identical or visually indistinguishable (ΔE < 0.030)\n")
+		fmt.Fprintf(d.Stderr, "  ansi-mismatch      ANSI mappings where target color name doesn't match expected hue\n")
+		fmt.Fprintf(d.Stderr, "  invisible-text     text in terminal examples with contrast ratio < 1.2:1\n")
+		fmt.Fprintf(d.Stderr, "  surface-hierarchy  inverted surface luminance or identical surface colors\n")
+		fmt.Fprintf(d.Stderr, "  mode-alignment     dark/light mode mismatch with background luminance\n")
+		fmt.Fprintf(d.Stderr, "  contrast-body      low body text contrast (fg_0 < 3.0:1 or fg_1 < 4.5:1 on bg_0)\n")
+		fmt.Fprintf(d.Stderr, "  contrast-dim       dim text contrast too low (dim_0 < 1.5:1 on bg_0)\n")
+		fmt.Fprintf(d.Stderr, "  contrast-accent    syntax accent contrast too low (< 2.0:1 on bg_0)\n")
+		fmt.Fprintf(d.Stderr, "  contrast-ansi      ANSI terminal color contrast too low (< 1.5:1 on bg_0)\n")
+		fmt.Fprintf(d.Stderr, "  background-asset   missing or invalid background asset\n\n")
+		fmt.Fprintf(d.Stderr, "Themes can suppress lint types in theme.toml or variants/*.toml with:\n")
+		fmt.Fprintf(d.Stderr, "  lint_ignore = [\"accent-collision\", \"ansi-mismatch\"]\n\n")
 		fmt.Fprintf(d.Stderr, "Options:\n")
 		fs.PrintDefaults()
 	}
 	allOpt := fs.Bool("all", false, "lint all themes and variants")
 	themeOpt := fs.String("theme", "", "theme to use (dark, light, theme:variant, or :variant)")
+	ignoreOpt := fs.String("ignore", "", "comma-separated lint types to ignore")
+	suppressOpt := fs.String("suppress", "", "comma-separated lint types to suppress (alias for -ignore)")
 	if err := fs.Parse(args); err != nil {
 		return err
+	}
+	var cliIgnores []string
+	for _, opt := range []string{*ignoreOpt, *suppressOpt} {
+		for _, part := range strings.Split(opt, ",") {
+			if s := strings.TrimSpace(part); s != "" {
+				cliIgnores = append(cliIgnores, s)
+			}
+		}
 	}
 	if *allOpt && (fs.NArg() > 0 || *themeOpt != "") {
 		fs.Usage()
@@ -890,7 +913,7 @@ func (d *Dotfiles) lintTheme(args []string) error {
 				totalVariants++
 				v := t.Variants[variantName]
 				ref := name + ":" + variantName
-				warnings := lintVariant(t, v)
+				warnings := lintVariant(t, v, cliIgnores...)
 				if len(warnings) > 0 {
 					totalIssues += len(warnings)
 					fmt.Fprintf(w, "%s:\n", ref)
@@ -926,7 +949,7 @@ func (d *Dotfiles) lintTheme(args []string) error {
 		return err
 	}
 
-	warnings := lintVariant(t, v)
+	warnings := lintVariant(t, v, cliIgnores...)
 	if len(warnings) == 0 {
 		fmt.Fprintf(w, "%s: ok\n", ref)
 	} else {
@@ -966,6 +989,7 @@ func styleText(fg, bg, text string, styles ...string) string {
 }
 
 type lintWarning struct {
+	kind    string
 	message string
 	c1      string
 	c2      string
@@ -1149,16 +1173,92 @@ func lintTerminalVisibility(v *Variant) []sampleWarning {
 	return warnings
 }
 
+func matchesLintType(pattern, kind string) bool {
+	p := strings.ToLower(strings.TrimSpace(pattern))
+	k := strings.ToLower(strings.TrimSpace(kind))
+	if p == "" {
+		return false
+	}
+	if p == "all" || p == "*" || p == k {
+		return true
+	}
+	switch k {
+	case "accent-collision":
+		return p == "collision" || p == "collisions" || p == "accent-collisions" || p == "accent"
+	case "ansi-mismatch":
+		return p == "ansi" || p == "ansi-mapping" || p == "mismatch"
+	case "invisible-text":
+		return p == "visibility" || p == "invisible" || p == "terminal-visibility"
+	case "surface-hierarchy":
+		return p == "surface" || p == "surfaces" || p == "hierarchy"
+	case "mode-alignment":
+		return p == "mode"
+	case "contrast-body", "contrast-dim", "contrast-accent", "contrast-ansi":
+		if p == "contrast" {
+			return true
+		}
+		if k == "contrast-body" && (p == "body" || p == "body-contrast") {
+			return true
+		}
+		if k == "contrast-dim" && (p == "dim" || p == "dim-contrast") {
+			return true
+		}
+		if k == "contrast-accent" && (p == "accent-contrast") {
+			return true
+		}
+		if k == "contrast-ansi" && (p == "ansi-contrast") {
+			return true
+		}
+	case "background-asset":
+		return p == "background" || p == "asset" || p == "background-assets"
+	}
+	return false
+}
+
 // lintVariant runs styling, accessibility, and consistency lint checks on a variant,
-// returning any warning messages.
-func lintVariant(t *Theme, v *Variant) []lintWarning {
+// returning any warning messages. Any lint types matching suppressed patterns
+// in t.LintIgnore, v.LintIgnore, or extraIgnores are excluded.
+func lintVariant(t *Theme, v *Variant, extraIgnores ...string) []lintWarning {
 	var msgs []lintWarning
+
+	shouldIgnore := func(kind string) bool {
+		check := func(p string) bool {
+			return matchesLintType(p, kind)
+		}
+		if t != nil {
+			for _, p := range t.LintIgnore {
+				if check(p) {
+					return true
+				}
+			}
+		}
+		if v != nil {
+			for _, p := range v.LintIgnore {
+				if check(p) {
+					return true
+				}
+			}
+		}
+		for _, p := range extraIgnores {
+			if check(p) {
+				return true
+			}
+		}
+		return false
+	}
+
+	addWarn := func(kind string, w lintWarning) {
+		if !shouldIgnore(kind) {
+			w.kind = kind
+			msgs = append(msgs, w)
+		}
+	}
 
 	// 1. Invisible text in terminal examples
 	for _, warn := range lintTerminalVisibility(v) {
 		crStr := fmt.Sprintf("%.1f:1", warn.cr)
 		limitStr := fmt.Sprintf("%.2f:1", warn.minCR)
-		msgs = append(msgs, lintWarning{
+		addWarn("invisible-text", lintWarning{
 			message: fmt.Sprintf("invisible text in terminal examples: '%s' (%s %s on %s %s) has contrast ratio %s (< %s)", warn.text, warn.fgName, warn.fgHex, warn.bgName, warn.bgHex, crStr, limitStr),
 			c1:      warn.fgHex,
 			c2:      warn.bgHex,
@@ -1179,14 +1279,14 @@ func lintVariant(t *Theme, v *Variant) []lintWarning {
 		l2 := relativeLuminance(bg2)
 		if v.Mode == "dark" {
 			if l1 < l0-0.001 {
-				msgs = append(msgs, lintWarning{
+				addWarn("surface-hierarchy", lintWarning{
 					message: fmt.Sprintf("surface hierarchy inverted in dark mode: bg_1 (%s) is darker than bg_0 (%s)", bg1, bg0),
 					c1:      bg1,
 					c2:      bg0,
 				})
 			}
 			if l2 < l1-0.001 {
-				msgs = append(msgs, lintWarning{
+				addWarn("surface-hierarchy", lintWarning{
 					message: fmt.Sprintf("surface hierarchy inverted in dark mode: bg_2 (%s) is darker than bg_1 (%s)", bg2, bg1),
 					c1:      bg2,
 					c2:      bg1,
@@ -1194,14 +1294,14 @@ func lintVariant(t *Theme, v *Variant) []lintWarning {
 			}
 		} else if v.Mode == "light" {
 			if l1 > l0+0.001 {
-				msgs = append(msgs, lintWarning{
+				addWarn("surface-hierarchy", lintWarning{
 					message: fmt.Sprintf("surface hierarchy inverted in light mode: bg_1 (%s) is lighter than bg_0 (%s)", bg1, bg0),
 					c1:      bg1,
 					c2:      bg0,
 				})
 			}
 			if l2 > l1+0.001 {
-				msgs = append(msgs, lintWarning{
+				addWarn("surface-hierarchy", lintWarning{
 					message: fmt.Sprintf("surface hierarchy inverted in light mode: bg_2 (%s) is lighter than bg_1 (%s)", bg2, bg1),
 					c1:      bg2,
 					c2:      bg1,
@@ -1209,14 +1309,14 @@ func lintVariant(t *Theme, v *Variant) []lintWarning {
 			}
 		}
 		if bg0 == bg1 {
-			msgs = append(msgs, lintWarning{
+			addWarn("surface-hierarchy", lintWarning{
 				message: fmt.Sprintf("surfaces bg_0 and bg_1 have identical color (%s)", bg0),
 				c1:      bg0,
 				c2:      bg1,
 			})
 		}
 		if bg1 == bg2 {
-			msgs = append(msgs, lintWarning{
+			addWarn("surface-hierarchy", lintWarning{
 				message: fmt.Sprintf("surfaces bg_1 and bg_2 have identical color (%s)", bg1),
 				c1:      bg1,
 				c2:      bg2,
@@ -1230,26 +1330,26 @@ func lintVariant(t *Theme, v *Variant) []lintWarning {
 		lfg := relativeLuminance(fg0)
 		if v.Mode == "dark" {
 			if l0 >= lfg {
-				msgs = append(msgs, lintWarning{
+				addWarn("mode-alignment", lintWarning{
 					message: fmt.Sprintf("mode is \"dark\" but background bg_0 (%s) is brighter than text fg_0 (%s)", bg0, fg0),
 					c1:      fg0,
 					c2:      bg0,
 				})
 			} else if l0 > 0.4 {
-				msgs = append(msgs, lintWarning{
+				addWarn("mode-alignment", lintWarning{
 					message: fmt.Sprintf("mode is \"dark\" but background bg_0 (%s) has high luminance (%.2f > 0.40)", bg0, l0),
 					c1:      bg0,
 				})
 			}
 		} else if v.Mode == "light" {
 			if l0 <= lfg {
-				msgs = append(msgs, lintWarning{
+				addWarn("mode-alignment", lintWarning{
 					message: fmt.Sprintf("mode is \"light\" but background bg_0 (%s) is darker than text fg_0 (%s)", bg0, fg0),
 					c1:      fg0,
 					c2:      bg0,
 				})
 			} else if l0 < 0.4 {
-				msgs = append(msgs, lintWarning{
+				addWarn("mode-alignment", lintWarning{
 					message: fmt.Sprintf("mode is \"light\" but background bg_0 (%s) has low luminance (%.2f < 0.40)", bg0, l0),
 					c1:      bg0,
 				})
@@ -1262,7 +1362,7 @@ func lintVariant(t *Theme, v *Variant) []lintWarning {
 		if hasFg0 {
 			cr := contrast(fg0, bg0)
 			if cr < 3.0 {
-				msgs = append(msgs, lintWarning{
+				addWarn("contrast-body", lintWarning{
 					message: fmt.Sprintf("low body text contrast: fg_0 (%s) on bg_0 (%s) has contrast ratio %3.1f:1 (< 3.0:1)", fg0, bg0, cr),
 					c1:      fg0,
 					c2:      bg0,
@@ -1272,7 +1372,7 @@ func lintVariant(t *Theme, v *Variant) []lintWarning {
 		if hasFg1 {
 			cr := contrast(fg1, bg0)
 			if cr < 4.5 {
-				msgs = append(msgs, lintWarning{
+				addWarn("contrast-body", lintWarning{
 					message: fmt.Sprintf("low body text contrast: fg_1 (%s) on bg_0 (%s) has contrast ratio %3.1f:1 (< 4.5:1)", fg1, bg0, cr),
 					c1:      fg1,
 					c2:      bg0,
@@ -1286,7 +1386,7 @@ func lintVariant(t *Theme, v *Variant) []lintWarning {
 		if dim0, ok := v.Colors["dim_0"]; ok {
 			cr := contrast(dim0, bg0)
 			if cr < 1.5 {
-				msgs = append(msgs, lintWarning{
+				addWarn("contrast-dim", lintWarning{
 					message: fmt.Sprintf("dim text contrast too low: dim_0 (%s) on bg_0 (%s) has contrast ratio %3.1f:1 (< 1.5:1)", dim0, bg0, cr),
 					c1:      dim0,
 					c2:      bg0,
@@ -1302,7 +1402,7 @@ func lintVariant(t *Theme, v *Variant) []lintWarning {
 			if c, ok := v.Colors[acc]; ok {
 				cr := contrast(c, bg0)
 				if cr < 2.0 {
-					msgs = append(msgs, lintWarning{
+					addWarn("contrast-accent", lintWarning{
 						message: fmt.Sprintf("syntax accent has very low contrast: %s (%s) on bg_0 (%s) has contrast ratio %3.1f:1 (< 2.0:1)", acc, c, bg0, cr),
 						c1:      c,
 						c2:      bg0,
@@ -1319,7 +1419,7 @@ func lintVariant(t *Theme, v *Variant) []lintWarning {
 			if c, ok := v.Colors[name]; ok {
 				cr := contrast(c, bg0)
 				if cr < 1.5 {
-					msgs = append(msgs, lintWarning{
+					addWarn("contrast-ansi", lintWarning{
 						message: fmt.Sprintf("ANSI accent on terminal background has very low contrast: %s (%s) on bg_0 (%s) has contrast ratio %3.1f:1 (< 1.5:1)", name, c, bg0, cr),
 						c1:      c,
 						c2:      bg0,
@@ -1332,7 +1432,7 @@ func lintVariant(t *Theme, v *Variant) []lintWarning {
 			if c, ok := v.Colors[name]; ok {
 				cr := contrast(c, bg0)
 				if cr < 1.5 {
-					msgs = append(msgs, lintWarning{
+					addWarn("contrast-ansi", lintWarning{
 						message: fmt.Sprintf("ANSI bright accent on terminal background has very low contrast: %s (%s) on bg_0 (%s) has contrast ratio %3.1f:1 (< 1.5:1)", name, c, bg0, cr),
 						c1:      c,
 						c2:      bg0,
@@ -1343,7 +1443,7 @@ func lintVariant(t *Theme, v *Variant) []lintWarning {
 		if c, ok := v.Colors["color7"]; ok {
 			cr := contrast(c, bg0)
 			if cr < 1.5 {
-				msgs = append(msgs, lintWarning{
+				addWarn("contrast-ansi", lintWarning{
 					message: fmt.Sprintf("ANSI muted foreground on terminal background has very low contrast: color7 (%s) on bg_0 (%s) has contrast ratio %3.1f:1 (< 1.5:1)", c, bg0, cr),
 					c1:      c,
 					c2:      bg0,
@@ -1353,7 +1453,7 @@ func lintVariant(t *Theme, v *Variant) []lintWarning {
 		if c, ok := v.Colors["color15"]; ok {
 			cr := contrast(c, bg0)
 			if cr < 3.0 {
-				msgs = append(msgs, lintWarning{
+				addWarn("contrast-ansi", lintWarning{
 					message: fmt.Sprintf("ANSI bright foreground on terminal background has low contrast: color15 (%s) on bg_0 (%s) has contrast ratio %3.1f:1 (< 3.0:1)", c, bg0, cr),
 					c1:      c,
 					c2:      bg0,
@@ -1370,7 +1470,7 @@ func lintVariant(t *Theme, v *Variant) []lintWarning {
 			c2, ok2 := v.Colors[a2]
 			if ok1 && ok2 {
 				if c1 == c2 {
-					msgs = append(msgs, lintWarning{
+					addWarn("accent-collision", lintWarning{
 						message: fmt.Sprintf("accent color collision: %s (%s) and %s (%s) have identical color", a1, c1, a2, c2),
 						c1:      c1,
 						c2:      c2,
@@ -1381,7 +1481,7 @@ func lintVariant(t *Theme, v *Variant) []lintWarning {
 					if err1 == nil && err2 == nil {
 						d := col1.DistanceCIEDE2000(col2)
 						if d < 0.03 {
-							msgs = append(msgs, lintWarning{
+							addWarn("accent-collision", lintWarning{
 								message: fmt.Sprintf("accent color collision: %s (%s) and %s (%s) are visually indistinguishable (ΔE = %.3f < 0.030)", a1, c1, a2, c2, d),
 								c1:      c1,
 								c2:      c2,
@@ -1424,7 +1524,7 @@ func lintVariant(t *Theme, v *Variant) []lintWarning {
 			}
 			if !matched {
 				colVal := v.Colors[name]
-				msgs = append(msgs, lintWarning{
+				addWarn("ansi-mismatch", lintWarning{
 					message: fmt.Sprintf("ANSI mapping mismatch: ansi.%s maps to %q (%s, expected a %s color)", name, target, colVal, strings.Join(roots, "/")),
 					c1:      colVal,
 					c2:      bg0,
@@ -1438,7 +1538,7 @@ func lintVariant(t *Theme, v *Variant) []lintWarning {
 	if bgAsset := v.Apps["background"]; bgAsset != "" {
 		_, generated, err := generatedBackground(bgAsset, v.Colors, v.Mode, 0)
 		if err != nil {
-			msgs = append(msgs, lintWarning{message: fmt.Sprintf("invalid generated background: %v", err)})
+			addWarn("background-asset", lintWarning{message: fmt.Sprintf("invalid generated background: %v", err)})
 		}
 		if !generated && t != nil && t.Dir != "" {
 			assetPath := bgAsset
@@ -1446,7 +1546,7 @@ func lintVariant(t *Theme, v *Variant) []lintWarning {
 				assetPath = filepath.Join(t.Dir, bgAsset)
 			}
 			if _, err := os.Stat(assetPath); err != nil {
-				msgs = append(msgs, lintWarning{
+				addWarn("background-asset", lintWarning{
 					message: fmt.Sprintf("missing background asset: %s (not found at %s)", bgAsset, assetPath),
 				})
 			}

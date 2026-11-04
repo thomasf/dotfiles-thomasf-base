@@ -1,0 +1,36 @@
+mode = "dark"
+
+# Monochrome Amber: Pure P3 CRT phosphor (~590nm golden amber).
+# Authentic hardware feel: tight CRT luminance range modeled after the 1-bit intensity pin
+# on vintage video controllers (Normal ~8.5:1, High Intensity ~10.5:1, Dim ~6.0:1).
+[colors]
+bg_0  = "#120d04"
+bg_1  = "#322008"
+bg_2  = "#4a320c"
+dim_0 = "#b8861c"
+dim_1 = "#c8941f"
+fg_0  = "#dea023"
+fg_1  = "#f5b52c"
+
+yellow  = "#f5b52c"
+orange  = "#f5b52c"
+red     = "#f5b52c"
+magenta = "#f5b52c"
+violet  = "#dea023"
+blue    = "#dea023"
+cyan    = "#dea023"
+green   = "#dea023"
+
+br_red     = "#fabc32"
+br_green   = "#fabc32"
+br_yellow  = "#fabc32"
+br_blue    = "#fabc32"
+br_magenta = "#fabc32"
+br_cyan    = "#fabc32"
+
+[apps]
+emacs        = "my-solarized-mono-amber"
+color_scheme = "prefer-dark"
+
+background      = ":random()"
+background_mode = "tile"

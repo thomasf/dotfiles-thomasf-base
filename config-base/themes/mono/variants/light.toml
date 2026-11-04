@@ -1,0 +1,34 @@
+mode = "light"
+
+# Monochrome Black on White: Clean paper-white reverse video CRT / e-ink terminal.
+[colors]
+bg_0  = "#f5f6f8"
+bg_1  = "#e0e3e6"
+bg_2  = "#cacfd4"
+dim_0 = "#848c94"
+dim_1 = "#626a72"
+fg_0  = "#282c30"
+fg_1  = "#0c0e10"
+
+yellow  = "#40464c"
+orange  = "#343a40"
+red     = "#181c20"
+magenta = "#4c5258"
+violet  = "#6a727a"
+blue    = "#3a4046"
+cyan    = "#545a60"
+green   = "#5c646c"
+
+br_red     = "#000000"
+br_green   = "#444a50"
+br_yellow  = "#2a2e32"
+br_blue    = "#202428"
+br_magenta = "#363c42"
+br_cyan    = "#40464c"
+
+[apps]
+emacs        = "my-solarized-mono-light"
+color_scheme = "prefer-light"
+
+background      = ":random()"
+background_mode = "tile"
