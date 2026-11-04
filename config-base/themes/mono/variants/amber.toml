@@ -28,6 +28,8 @@ br_blue    = "#fabc32"
 br_magenta = "#fabc32"
 br_cyan    = "#fabc32"
 
+urgent = "#38bdf8"
+
 [apps]
 emacs        = "my-solarized-mono-amber"
 color_scheme = "prefer-dark"

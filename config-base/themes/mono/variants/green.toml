@@ -28,6 +28,8 @@ br_blue    = "#66e876"
 br_magenta = "#66e876"
 br_cyan    = "#66e876"
 
+urgent = "#4da6ff"
+
 [apps]
 emacs        = "my-solarized-mono-green"
 color_scheme = "prefer-dark"
