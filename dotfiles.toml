@@ -117,6 +117,16 @@ dst = '.config/theme/console.sh'
 src = 'config-base/eza/theme.yml.tmpl'
 dst = '.config/eza/theme.yml'
 
+# glow configuration.
+[[template]]
+src = 'config-base/glow/glow.yml.tmpl'
+dst = '.config/glow/glow.yml'
+
+# The theme in use for glow: markdown style generated from theme palette.
+[[template]]
+src = 'config-base/glow/style.json.tmpl'
+dst = '.config/glow/style.json'
+
 # The theme in use, for programs that read their colors themselves, such as
 # ws and panels in xmonad.
 [[starlark]]

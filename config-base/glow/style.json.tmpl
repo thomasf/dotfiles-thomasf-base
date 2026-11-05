@@ -1,0 +1,213 @@
+{
+  "document": {
+    "block_prefix": "\n",
+    "block_suffix": "\n",
+    "color": "{{.theme.colors.fg_0}}",
+    "margin": 2
+  },
+  "block_quote": {
+    "color": "{{or (index .theme.colors "dim_1") .theme.colors.dim_0}}",
+    "indent": 1,
+    "indent_token": "│ "
+  },
+  "paragraph": {},
+  "list": {
+    "level_indent": 2
+  },
+  "heading": {
+    "block_suffix": "\n",
+    "color": "{{.theme.colors.blue}}",
+    "bold": true
+  },
+  "h1": {
+    "prefix": " ",
+    "suffix": " ",
+    "color": "{{.theme.colors.bg_0}}",
+    "background_color": "{{.theme.colors.blue}}",
+    "bold": true
+  },
+  "h2": {
+    "prefix": "## ",
+    "color": "{{.theme.colors.cyan}}",
+    "bold": true
+  },
+  "h3": {
+    "prefix": "### ",
+    "color": "{{.theme.colors.green}}",
+    "bold": true
+  },
+  "h4": {
+    "prefix": "#### ",
+    "color": "{{.theme.colors.yellow}}",
+    "bold": true
+  },
+  "h5": {
+    "prefix": "##### ",
+    "color": "{{.theme.colors.orange}}",
+    "bold": true
+  },
+  "h6": {
+    "prefix": "###### ",
+    "color": "{{or (index .theme.colors "dim_1") .theme.colors.dim_0}}",
+    "bold": false
+  },
+  "text": {},
+  "strikethrough": {
+    "crossed_out": true
+  },
+  "emph": {
+    "italic": true
+  },
+  "strong": {
+    "color": "{{.theme.colors.fg_1}}",
+    "bold": true
+  },
+  "hr": {
+    "color": "{{.theme.colors.dim_0}}",
+    "format": "\n--------\n"
+  },
+  "item": {
+    "block_prefix": "• ",
+    "color": "{{.theme.colors.cyan}}"
+  },
+  "enumeration": {
+    "block_prefix": ". ",
+    "color": "{{.theme.colors.cyan}}"
+  },
+  "task": {
+    "ticked": "[✓] ",
+    "unticked": "[ ] "
+  },
+  "link": {
+    "color": "{{.theme.colors.blue}}",
+    "underline": true
+  },
+  "link_text": {
+    "color": "{{.theme.colors.cyan}}",
+    "bold": true
+  },
+  "image": {
+    "color": "{{.theme.colors.magenta}}",
+    "underline": true
+  },
+  "image_text": {
+    "color": "{{or (index .theme.colors "dim_1") .theme.colors.dim_0}}",
+    "format": "Image: {{`{{.text}}`}} →"
+  },
+  "code": {
+    "prefix": " ",
+    "suffix": " ",
+    "color": "{{.theme.colors.orange}}",
+    "background_color": "{{.theme.colors.bg_1}}"
+  },
+  "code_block": {
+    "color": "{{.theme.colors.fg_0}}",
+    "margin": 2,
+    "chroma": {
+      "text": {
+        "color": "{{.theme.colors.fg_0}}"
+      },
+      "error": {
+        "color": "{{.theme.colors.bg_0}}",
+        "background_color": "{{.theme.colors.red}}"
+      },
+      "comment": {
+        "color": "{{.theme.colors.dim_0}}"
+      },
+      "comment_preproc": {
+        "color": "{{.theme.colors.orange}}"
+      },
+      "keyword": {
+        "color": "{{.theme.colors.magenta}}",
+        "bold": true
+      },
+      "keyword_reserved": {
+        "color": "{{.theme.colors.magenta}}"
+      },
+      "keyword_namespace": {
+        "color": "{{.theme.colors.red}}"
+      },
+      "keyword_type": {
+        "color": "{{.theme.colors.violet}}"
+      },
+      "operator": {
+        "color": "{{.theme.colors.orange}}"
+      },
+      "punctuation": {
+        "color": "{{or (index .theme.colors "dim_1") .theme.colors.dim_0}}"
+      },
+      "name": {
+        "color": "{{.theme.colors.fg_0}}"
+      },
+      "name_builtin": {
+        "color": "{{.theme.colors.blue}}"
+      },
+      "name_tag": {
+        "color": "{{.theme.colors.blue}}"
+      },
+      "name_attribute": {
+        "color": "{{.theme.colors.cyan}}"
+      },
+      "name_class": {
+        "color": "{{.theme.colors.yellow}}",
+        "bold": true,
+        "underline": true
+      },
+      "name_constant": {
+        "color": "{{.theme.colors.orange}}"
+      },
+      "name_decorator": {
+        "color": "{{.theme.colors.yellow}}"
+      },
+      "name_exception": {
+        "color": "{{.theme.colors.red}}"
+      },
+      "name_function": {
+        "color": "{{.theme.colors.green}}"
+      },
+      "name_other": {},
+      "literal": {},
+      "literal_number": {
+        "color": "{{.theme.colors.violet}}"
+      },
+      "literal_date": {},
+      "literal_string": {
+        "color": "{{.theme.colors.cyan}}"
+      },
+      "literal_string_escape": {
+        "color": "{{.theme.colors.green}}"
+      },
+      "generic_deleted": {
+        "color": "{{.theme.colors.red}}"
+      },
+      "generic_emph": {
+        "italic": true
+      },
+      "generic_inserted": {
+        "color": "{{.theme.colors.green}}"
+      },
+      "generic_strong": {
+        "bold": true
+      },
+      "generic_subheading": {
+        "color": "{{.theme.colors.dim_0}}"
+      },
+      "background": {
+        "background_color": "{{.theme.colors.bg_1}}"
+      }
+    }
+  },
+  "table": {
+    "center_separator": "+",
+    "column_separator": "|",
+    "row_separator": "-",
+    "color": "{{.theme.colors.dim_0}}"
+  },
+  "definition_list": {},
+  "definition_term": {},
+  "definition_description": {
+    "block_prefix": "\n🠶 "
+  },
+  "html_block": {},
+  "html_span": {}
+}
