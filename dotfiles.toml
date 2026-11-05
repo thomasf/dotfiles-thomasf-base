@@ -3,6 +3,9 @@ public = true
 [[ignore]]
 match = ["context.md"]
 
+[default_vars]
+default_terminal_width = "120"
+  
 [[script]]
 src = '''
 bin/home-fix
