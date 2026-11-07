@@ -20,10 +20,6 @@ src = 'config-base/pep8'
 dst = '.config/pep8'
 
 [[mount]]
-src = 'config-base/rpmc'
-dst = '.config/rpmc'
-
-[[mount]]
 src = 'config-base/pulse/default.pa'
 dst = '.pulse/default.pa'
 
