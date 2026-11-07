@@ -128,7 +128,8 @@ is then skipped. A second Ctrl-C quits at once.
 install first plans every action of every repository, then runs them. plan
 prints the same list, in the same order, without running anything. Pass -diff
 to plan (dotfiles plan -diff) to show a unified diff of rendered templates,
-modified files and copies against their destination targets.
+modified files and copies against their destination targets (templates configured
+with existing = "skip" are omitted unless -overwrite-skipped is also passed).
 
 ### Planning
 
@@ -995,7 +996,7 @@ different content:
 • overwrite (default): replace it.
 • skip: leave an existing destination alone, permissions included. Only a
 missing destination is written, so the template is a starting point that can
-be edited afterwards.
+be edited afterwards. Pass -overwrite-skipped to overwrite it anyway.
 • error: fail, unless dotfiles runs with -f. A destination with the same
 content is fine. Changing the template also counts as different content,
 because dotfiles does not keep track of what it wrote earlier.

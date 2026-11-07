@@ -15,16 +15,18 @@ import (
 // TemplateAction renders the template Src, evaluated with Eval, and
 // writes the result to Dst. Dst gets the permission bits Mode, or those of Src
 // if Mode is 0. Existing says what happens when Dst exists with different
-// content; Force turns ExistingError into ExistingOverwrite.
+// content; Force turns ExistingError into ExistingOverwrite, and
+// OverwriteSkipped turns ExistingSkip into ExistingOverwrite.
 type TemplateAction struct {
-	SrcRoot  string
-	Src      string
-	DstRoot  string
-	Dst      string
-	Mode     fs.FileMode
-	Existing ExistingAction
-	Force    bool
-	Eval     evalContext
+	SrcRoot          string
+	Src              string
+	DstRoot          string
+	Dst              string
+	Mode             fs.FileMode
+	Existing         ExistingAction
+	Force            bool
+	OverwriteSkipped bool
+	Eval             evalContext
 }
 
 func (t *TemplateAction) DstAbsolutePath() string {
@@ -45,7 +47,7 @@ func (t *TemplateAction) String() string {
 
 func (t *TemplateAction) Run() error {
 	dst := t.DstAbsolutePath()
-	if t.Existing == ExistingSkip {
+	if t.Existing == ExistingSkip && !t.OverwriteSkipped {
 		if _, err := os.Lstat(dst); err == nil {
 			return nil
 		} else if !errors.Is(err, fs.ErrNotExist) {
@@ -106,6 +108,12 @@ func validateFormat(path string, data []byte) error {
 }
 
 func (t *TemplateAction) Diff() (string, error) {
+	dst := t.DstAbsolutePath()
+	if t.Existing == ExistingSkip && !t.OverwriteSkipped {
+		if _, err := os.Lstat(dst); err == nil {
+			return "", nil
+		}
+	}
 	src := filepath.Join(t.SrcRoot, t.Src)
 	text, err := os.ReadFile(src)
 	if err != nil {
@@ -115,7 +123,6 @@ func (t *TemplateAction) Diff() (string, error) {
 	if err != nil {
 		return "", err
 	}
-	dst := t.DstAbsolutePath()
 	var old []byte
 	if info, err := os.Lstat(dst); err == nil && info.Mode().IsRegular() {
 		old, _ = os.ReadFile(dst)

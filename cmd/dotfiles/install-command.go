@@ -57,7 +57,7 @@ func (d *Dotfiles) sync(isPlan bool, showDiff bool, sel selection, event string)
 		allPostScripts []Action
 	)
 
-	for _, r := range d.loadRepos(allParts, WithForce(d.Force), WithCopy(d.Copy), WithEvent(event)) {
+	for _, r := range d.loadRepos(allParts, WithForce(d.Force), WithOverwriteSkipped(d.OverwriteSkipped), WithCopy(d.Copy), WithEvent(event)) {
 		name := filepath.Base(r.srcRoot)
 		actions, err := r.Sync()
 		if err != nil {

@@ -205,8 +205,9 @@ type Config struct {
 }
 
 type Repository struct {
-	force      bool
-	copy       bool
+	force            bool
+	overwriteSkipped bool
+	copy             bool
 	srcRoot    string
 	dstRoot    string
 	configPath string
@@ -221,6 +222,12 @@ type Option func(*Repository)
 func WithForce(force bool) Option {
 	return func(r *Repository) {
 		r.force = force
+	}
+}
+
+func WithOverwriteSkipped(overwriteSkipped bool) Option {
+	return func(r *Repository) {
+		r.overwriteSkipped = overwriteSkipped
 	}
 }
 

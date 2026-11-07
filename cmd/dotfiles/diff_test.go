@@ -96,3 +96,53 @@ dst = "settings.json"
 		t.Errorf("expected no diff output when semantic values are equal, got:\n%s", out)
 	}
 }
+
+func TestPlanDiffExistingSkip(t *testing.T) {
+	repoDir := t.TempDir()
+	dstDir := t.TempDir()
+
+	mfs := fstest.MapFS{
+		"repo/dotfiles.toml": &fstest.MapFile{Data: []byte(`
+[[template]]
+src = "test.tmpl"
+dst = ".seedrc"
+existing = "skip"
+`), Mode: 0o644},
+		"repo/test.tmpl": &fstest.MapFile{Data: []byte("val = template\n"), Mode: 0o644},
+	}
+	if err := os.CopyFS(repoDir, mfs); err != nil {
+		t.Fatal(err)
+	}
+
+	dstFile := filepath.Join(dstDir, ".seedrc")
+	if err := os.WriteFile(dstFile, []byte("val = custom\n"), 0o644); err != nil {
+		t.Fatal(err)
+	}
+
+	// Default plan -diff: destination exists, so template is skipped, no diff shown
+	d := &Dotfiles{}
+	stdout := &strings.Builder{}
+	stderr := &strings.Builder{}
+	if err := d.Run(stdout, stderr, []string{"-repos", repoDir, "-dst", dstDir, "plan", "-diff"}); err != nil {
+		t.Fatalf("d.Run failed: %v", err)
+	}
+	out := stdout.String()
+	if !strings.Contains(out, "plan: [repo] template: test.tmpl -> .seedrc") {
+		t.Errorf("missing plan line in output: %s", out)
+	}
+	if strings.Contains(out, "---") || strings.Contains(out, "+++") {
+		t.Errorf("expected no diff for existing skipped template, got:\n%s", out)
+	}
+
+	// With -overwrite-skipped: diff is shown
+	d = &Dotfiles{}
+	stdout = &strings.Builder{}
+	stderr = &strings.Builder{}
+	if err := d.Run(stdout, stderr, []string{"-repos", repoDir, "-dst", dstDir, "-overwrite-skipped", "plan", "-diff"}); err != nil {
+		t.Fatalf("d.Run failed: %v", err)
+	}
+	out = stdout.String()
+	if !strings.Contains(out, "-val = custom") || !strings.Contains(out, "+val = template") {
+		t.Errorf("expected diff with -overwrite-skipped, got:\n%s", out)
+	}
+}

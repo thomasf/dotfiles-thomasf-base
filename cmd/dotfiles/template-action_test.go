@@ -201,13 +201,14 @@ func TestTemplateActionSymlink(t *testing.T) {
 func TestTemplateActionExisting(t *testing.T) {
 	t.Parallel()
 	tests := []struct {
-		existing ExistingAction
-		force    bool
-		old      string // "" means dst does not exist
-		oldPerm  fs.FileMode
-		want     string
-		wantPerm fs.FileMode
-		wantErr  bool
+		existing         ExistingAction
+		force            bool
+		overwriteSkipped bool
+		old              string // "" means dst does not exist
+		oldPerm          fs.FileMode
+		want             string
+		wantPerm         fs.FileMode
+		wantErr          bool
 	}{
 		{existing: "", old: "old", oldPerm: 0o600, want: "new", wantPerm: 0o644},
 		{existing: ExistingOverwrite, old: "old", oldPerm: 0o600, want: "new", wantPerm: 0o644},
@@ -215,6 +216,7 @@ func TestTemplateActionExisting(t *testing.T) {
 
 		{existing: ExistingSkip, old: "", want: "new", wantPerm: 0o644},
 		{existing: ExistingSkip, old: "old", oldPerm: 0o600, want: "old", wantPerm: 0o600},
+		{existing: ExistingSkip, overwriteSkipped: true, old: "old", oldPerm: 0o600, want: "new", wantPerm: 0o644},
 		{existing: ExistingSkip, old: "new", oldPerm: 0o600, want: "new", wantPerm: 0o600},
 
 		{existing: ExistingError, old: "", want: "new", wantPerm: 0o644},
@@ -223,10 +225,11 @@ func TestTemplateActionExisting(t *testing.T) {
 		{existing: ExistingError, force: true, old: "old", oldPerm: 0o600, want: "new", wantPerm: 0o644},
 	}
 	for _, tt := range tests {
-		name := fmt.Sprintf("existing=%q force=%v old=%q", tt.existing, tt.force, tt.old)
+		name := fmt.Sprintf("existing=%q force=%v overwriteSkipped=%v old=%q", tt.existing, tt.force, tt.overwriteSkipped, tt.old)
 		a := newTemplateAction(t, "new", "out")
 		a.Existing = tt.existing
 		a.Force = tt.force
+		a.OverwriteSkipped = tt.overwriteSkipped
 		dst := a.DstAbsolutePath()
 		if tt.old != "" {
 			if err := os.WriteFile(dst, []byte(tt.old), tt.oldPerm); err != nil {
@@ -254,5 +257,42 @@ func TestTemplateActionExisting(t *testing.T) {
 		if info.Mode().Perm() != tt.wantPerm {
 			t.Errorf("%s: mode %v, want %v", name, info.Mode().Perm(), tt.wantPerm)
 		}
+	}
+}
+
+func TestTemplateActionDiffExisting(t *testing.T) {
+	t.Parallel()
+	tests := []struct {
+		name             string
+		existing         ExistingAction
+		overwriteSkipped bool
+		old              string // "" means dst does not exist
+		wantDiff         bool
+	}{
+		{name: "skip, exists, no overwrite-skipped", existing: ExistingSkip, overwriteSkipped: false, old: "old", wantDiff: false},
+		{name: "skip, not exists", existing: ExistingSkip, overwriteSkipped: false, old: "", wantDiff: true},
+		{name: "skip, exists, overwrite-skipped", existing: ExistingSkip, overwriteSkipped: true, old: "old", wantDiff: true},
+		{name: "overwrite, exists", existing: ExistingOverwrite, old: "old", wantDiff: true},
+		{name: "overwrite, identical", existing: ExistingOverwrite, old: "new", wantDiff: false},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			a := newTemplateAction(t, "new", "out")
+			a.Existing = tt.existing
+			a.OverwriteSkipped = tt.overwriteSkipped
+			dst := a.DstAbsolutePath()
+			if tt.old != "" {
+				if err := os.WriteFile(dst, []byte(tt.old), 0o644); err != nil {
+					t.Fatal(err)
+				}
+			}
+			diff, err := a.Diff()
+			if err != nil {
+				t.Fatalf("unexpected Diff error: %v", err)
+			}
+			if (diff != "") != tt.wantDiff {
+				t.Errorf("got diff %q, wantDiff=%v", diff, tt.wantDiff)
+			}
+		})
 	}
 }

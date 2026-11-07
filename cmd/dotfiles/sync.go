@@ -140,14 +140,15 @@ func (r *Repository) Sync() ([]Action, error) {
 		mode, _ := parseFileMode(t.Mode) // checked by LoadConfig
 		for _, dst := range t.Dst {
 			actions = append(actions, &TemplateAction{
-				SrcRoot:  r.srcRoot,
-				Src:      t.Src,
-				DstRoot:  r.dstRoot,
-				Dst:      dst,
-				Mode:     mode,
-				Existing: t.Existing,
-				Force:    r.force,
-				Eval:     r.evalContext(),
+				SrcRoot:          r.srcRoot,
+				Src:              t.Src,
+				DstRoot:          r.dstRoot,
+				Dst:              dst,
+				Mode:             mode,
+				Existing:         t.Existing,
+				Force:            r.force,
+				OverwriteSkipped: r.overwriteSkipped,
+				Eval:             r.evalContext(),
 			})
 		}
 	}
