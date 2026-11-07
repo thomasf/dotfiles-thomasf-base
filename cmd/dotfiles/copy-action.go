@@ -103,3 +103,21 @@ func (c *CopyAction) clear(dst string, dir bool) error {
 	}
 	return os.RemoveAll(dst)
 }
+
+func (c *CopyAction) Diff() (string, error) {
+	src := filepath.Join(c.SrcRoot, c.Src)
+	info, err := os.Lstat(src)
+	if err != nil || !info.Mode().IsRegular() {
+		return "", nil
+	}
+	srcData, err := os.ReadFile(src)
+	if err != nil {
+		return "", err
+	}
+	dst := c.DstAbsolutePath()
+	var old []byte
+	if dInfo, err := os.Lstat(dst); err == nil && dInfo.Mode().IsRegular() {
+		old, _ = os.ReadFile(dst)
+	}
+	return unifiedDiff("a/"+c.Dst, old, "b/"+c.Dst, srcData), nil
+}

@@ -103,7 +103,7 @@ func (d *Dotfiles) ThemeCommand(args []string) error {
 			return err
 		}
 		fmt.Fprintf(d.Stdout, "theme: %s (%s mode)\n", next.ref(), next.mode())
-		d.sync(false, nil, eventTheme)
+		d.sync(false, false, nil, eventTheme)
 	case "apply":
 		if d.active == nil {
 			return errors.New("theme: no theme is configured")
@@ -118,7 +118,7 @@ func (d *Dotfiles) ThemeCommand(args []string) error {
 			return err
 		}
 		fmt.Fprintf(d.Stdout, "theme: %s (%s mode)\n", d.active.ref(), d.active.mode())
-		d.sync(false, nil, eventTheme)
+		d.sync(false, false, nil, eventTheme)
 	case "background-image":
 		var dpi string
 		if len(repos) > 0 {

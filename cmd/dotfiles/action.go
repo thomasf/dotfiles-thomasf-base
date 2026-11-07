@@ -45,6 +45,12 @@ type Sourcer interface {
 	SrcAbsolutePath() string
 }
 
+// A Differ is an [Action] that can produce a diff between its intended
+// output and the existing destination file.
+type Differ interface {
+	Diff() (string, error)
+}
+
 // A Pather is an [Action] that reads or writes files at known paths, so that
 // install and plan can select it by path. Actions that are not Pathers, such
 // as scripts, are only selected with their whole repository.

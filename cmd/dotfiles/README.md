@@ -128,7 +128,9 @@ is then skipped. A second Ctrl-C quits at once.
 ## Order of Execution
 
 `install` first plans every action of every repository, then runs them. `plan`
-prints the same list, in the same order, without running anything.
+prints the same list, in the same order, without running anything. Pass `-diff`
+to `plan` (`dotfiles plan -diff`) to show a unified diff of rendered templates,
+modified files and copies against their destination targets.
 
 ### Planning
 
@@ -207,6 +209,7 @@ dotfiles install .                # what is in the current directory
 dotfiles install base private     # the repositories base and private
 dotfiles install ./mpdconf.tmpl   # the actions that read this file
 dotfiles install ~/.mpdconf       # the actions that write this path
+dotfiles plan -diff ~/.mpdconf    # show actions and unified diff of changes
 ```
 
 Every repository is still loaded and planned, so variables and conditions are

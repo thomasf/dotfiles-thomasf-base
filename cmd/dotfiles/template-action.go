@@ -104,3 +104,21 @@ func validateFormat(path string, data []byte) error {
 	}
 	return nil
 }
+
+func (t *TemplateAction) Diff() (string, error) {
+	src := filepath.Join(t.SrcRoot, t.Src)
+	text, err := os.ReadFile(src)
+	if err != nil {
+		return "", err
+	}
+	out, err := renderTemplate(t.Src, string(text), t.Eval)
+	if err != nil {
+		return "", err
+	}
+	dst := t.DstAbsolutePath()
+	var old []byte
+	if info, err := os.Lstat(dst); err == nil && info.Mode().IsRegular() {
+		old, _ = os.ReadFile(dst)
+	}
+	return unifiedDiff("a/"+t.Dst, old, "b/"+t.Dst, out), nil
+}

@@ -175,3 +175,80 @@ func (t *StarlarkAction) apply(dst, format string, data []byte) ([]byte, error) 
 	}
 	return encodeDocument(format, doc, cmp.Or(t.Indent, defaultIndent))
 }
+
+func (t *StarlarkAction) Diff() (string, error) {
+	if strings.ContainsAny(t.Dst, "*?[") {
+		matches, err := filepath.Glob(filepath.Join(t.DstRoot, t.Dst))
+		if err != nil {
+			return "", err
+		}
+		var sb strings.Builder
+		for _, m := range matches {
+			dst, err := filepath.Rel(t.DstRoot, m)
+			if err == nil {
+				d, err := t.diffFile(dst)
+				if err != nil {
+					return "", err
+				}
+				sb.WriteString(d)
+			}
+		}
+		return sb.String(), nil
+	}
+	return t.diffFile(t.Dst)
+}
+
+func (t *StarlarkAction) diffFile(dst string) (string, error) {
+	format := t.Format
+	if format == "" {
+		var err error
+		if format, err = formatOf(dst); err != nil {
+			return "", err
+		}
+	}
+	path := filepath.Join(t.DstRoot, dst)
+	var old []byte
+	info, err := os.Lstat(path)
+	exists := err == nil
+	switch {
+	case exists:
+		if info.Mode()&fs.ModeSymlink != 0 || !info.Mode().IsRegular() {
+			return "", nil
+		}
+		if old, err = os.ReadFile(path); err != nil {
+			return "", err
+		}
+	case errors.Is(err, fs.ErrNotExist):
+		switch t.Missing {
+		case MissingCreate:
+		default:
+			return "", nil
+		}
+	default:
+		return "", err
+	}
+
+	out, err := t.apply(dst, format, old)
+	if err != nil {
+		return "", err
+	}
+
+	if exists {
+		cur, err := decodeDocument(format, old)
+		if err != nil {
+			return "", err
+		}
+		result, err := decodeDocument(format, out)
+		if err != nil {
+			return "", err
+		}
+		if valuesEqual(cur, result) {
+			return "", nil
+		}
+		if normOld, err := encodeDocument(format, cur, cmp.Or(t.Indent, defaultIndent)); err == nil {
+			return unifiedDiff("a/"+dst, normOld, "b/"+dst, out), nil
+		}
+	}
+
+	return unifiedDiff("a/"+dst, old, "b/"+dst, out), nil
+}
