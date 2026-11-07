@@ -38,6 +38,26 @@ type Targeter interface {
 	DstAbsolutePath() string
 }
 
+// hasCollision reports whether multiple actions targeting the same destination
+// conflict with each other. Multiple Starlark actions modifying the same file
+// are not a conflict because each applies sequential edits in place.
+func hasCollision(actions []Action) bool {
+	if len(actions) <= 1 {
+		return false
+	}
+	nonStarlark := 0
+	hasSymlink := false
+	for _, a := range actions {
+		if _, ok := a.(*StarlarkAction); !ok {
+			nonStarlark++
+		}
+		if _, ok := a.(*SymlinkAction); ok {
+			hasSymlink = true
+		}
+	}
+	return nonStarlark > 1 || (hasSymlink && len(actions) > nonStarlark)
+}
+
 // A Sourcer is an [Action] that reads a single source path from a repository.
 type Sourcer interface {
 	// SrcAbsolutePath returns the path that Run reads, joined to the

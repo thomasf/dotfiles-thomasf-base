@@ -91,7 +91,7 @@ func (d *Dotfiles) sync(isPlan bool, showDiff bool, sel selection, event string)
 	}
 
 	for dst, actions := range destMap {
-		if len(actions) > 1 {
+		if hasCollision(actions) {
 			fmt.Fprintf(d.Stderr, "Warning: multiple actions target the same destination: %s\n", dst)
 			for _, action := range actions {
 				fmt.Fprintf(d.Stderr, "  - %s\n", action.String())

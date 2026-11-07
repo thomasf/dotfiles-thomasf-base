@@ -251,6 +251,22 @@ Options:
 
 • -v: verbose output including the repository name, action type, and mapping.
 
+### Validating Repositories with lint
+
+dotfiles lint [repo...] validates configurations, template syntax, and
+referenced source files across all repositories or only the specified ones,
+without making any changes:
+
+• checks each repository's dotfiles.toml for syntax errors, unrecognized
+keys, and invalid expressions in conditions;
+• verifies that every source file referenced in [[mount]] and [[template]]
+exists, and that wildcards match at least one file;
+• validates Go template syntax in [[template]] files;
+• checks Starlark code in [[starlark]] entries;
+• checks that multiple actions do not conflict on the same destination path
+(multiple Starlark actions editing the same file compose together and are
+allowed).
+
 ## dotfiles.toml Configuration
 
 Each repository can contain a dotfiles.toml or .dotfiles.toml file to
