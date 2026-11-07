@@ -102,10 +102,12 @@ upgrader-cargo() {
         gitui \
         hexyl \
         hyperfine \
+        jj-cli \
         just \
         mise \
         pastel \
         ripgrep \
+        stgit \
         tokei \
         usage-cli \
         vcprompt \
