@@ -20,6 +20,10 @@ func (c *CopyAction) DstAbsolutePath() string {
 	return filepath.Join(c.DstRoot, c.Dst)
 }
 
+func (c *CopyAction) SrcAbsolutePath() string {
+	return filepath.Join(c.SrcRoot, c.Src)
+}
+
 func (c *CopyAction) Paths() []string {
 	return []string{filepath.Join(c.SrcRoot, c.Src), c.DstAbsolutePath()}
 }

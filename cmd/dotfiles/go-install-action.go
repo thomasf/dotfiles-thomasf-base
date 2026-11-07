@@ -17,6 +17,10 @@ func (g *GoInstallAction) Paths() []string {
 	return []string{filepath.Join(g.SrcRoot, g.Path)}
 }
 
+func (g *GoInstallAction) SrcAbsolutePath() string {
+	return filepath.Join(g.SrcRoot, g.Path)
+}
+
 func (g *GoInstallAction) String() string {
 	return fmt.Sprintf("[%s] go install %s", filepath.Base(g.SrcRoot), g.Path)
 }

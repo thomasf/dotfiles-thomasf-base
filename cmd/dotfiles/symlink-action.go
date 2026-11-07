@@ -18,6 +18,10 @@ func (s *SymlinkAction) DstAbsolutePath() string {
 	return filepath.Join(s.DstRoot, s.Dst)
 }
 
+func (s *SymlinkAction) SrcAbsolutePath() string {
+	return filepath.Join(s.SrcRoot, s.Src)
+}
+
 func (s *SymlinkAction) Paths() []string {
 	return []string{filepath.Join(s.SrcRoot, s.Src), s.DstAbsolutePath()}
 }

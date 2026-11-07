@@ -231,6 +231,29 @@ selects:
 are not files, so a path selects them only together with their whole
 repository. An argument that selects nothing is an error.
 
+### Path Lookup with which
+
+`dotfiles which <path...>` prints the source file in a repository for a
+destination path, or the destination path for a source file in a repository:
+
+```sh
+dotfiles which ~/.bashrc
+# /home/t/src/dotfiles/base/bashrc
+dotfiles which ~/.config/git/config
+# /home/t/src/dotfiles/base/config-git/config.tmpl
+dotfiles which ~/.config/fish/config.fish
+# /home/t/src/dotfiles/base/config-fish/config.fish
+dotfiles which ~/src/dotfiles/base/bashrc
+# /home/t/.bashrc
+```
+
+Paths inside directories mounted by a `[[mount]]` entry are resolved to their
+corresponding file inside the mounted source directory.
+
+Options:
+
+- `-v`: verbose output including the repository name, action type, and mapping.
+
 ## dotfiles.toml Configuration
 
 Each repository can contain a `dotfiles.toml` or `.dotfiles.toml` file to

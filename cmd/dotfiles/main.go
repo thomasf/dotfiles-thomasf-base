@@ -70,6 +70,7 @@ func (d *Dotfiles) Run(stdout, stderr io.Writer, args []string) error {
 		fmt.Fprintf(stderr, "\nCommands:\n")
 		fmt.Fprintf(stderr, "  install, i [repo|path...]  Synchronize dotfiles (create symlinks), or only part of them (see install -h)\n")
 		fmt.Fprintf(stderr, "  plan [repo|path...]  Print synchronization plan without taking action\n")
+		fmt.Fprintf(stderr, "  which [options] <path...>  Print the source or destination path of dotfile targets\n")
 		fmt.Fprintf(stderr, "  push      Run git push on all repos in parallel\n")
 		fmt.Fprintf(stderr, "  publish   Run git push publish on all repos in parallel\n")
 		fmt.Fprintf(stderr, "  pull [options]  Run git pull origin on all repos in parallel, summarize the changes and install (see pull -h)\n")
@@ -157,6 +158,13 @@ func (d *Dotfiles) Run(stdout, stderr io.Writer, args []string) error {
 			cmd = d.PlanCommand
 		}
 		if err := cmd(remainingArgs[1:]); err != nil {
+			if errors.Is(err, flag.ErrHelp) {
+				return nil
+			}
+			return err
+		}
+	case "which":
+		if err := d.WhichCommand(remainingArgs[1:]); err != nil {
 			if errors.Is(err, flag.ErrHelp) {
 				return nil
 			}

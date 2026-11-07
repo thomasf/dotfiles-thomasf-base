@@ -37,6 +37,14 @@ func (t *StarlarkAction) Paths() []string {
 	return []string{filepath.Join(t.DstRoot, t.Dst)}
 }
 
+func (t *StarlarkAction) DstAbsolutePath() string {
+	return filepath.Join(t.DstRoot, t.Dst)
+}
+
+func (t *StarlarkAction) SrcAbsolutePath() string {
+	return filepath.Join(t.SrcRoot, t.Src)
+}
+
 func (t *StarlarkAction) String() string {
 	return fmt.Sprintf("[%s] starlark: %s", filepath.Base(t.SrcRoot), t.Dst)
 }

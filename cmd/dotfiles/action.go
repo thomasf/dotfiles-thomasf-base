@@ -38,6 +38,13 @@ type Targeter interface {
 	DstAbsolutePath() string
 }
 
+// A Sourcer is an [Action] that reads a single source path from a repository.
+type Sourcer interface {
+	// SrcAbsolutePath returns the path that Run reads, joined to the
+	// source root.
+	SrcAbsolutePath() string
+}
+
 // A Pather is an [Action] that reads or writes files at known paths, so that
 // install and plan can select it by path. Actions that are not Pathers, such
 // as scripts, are only selected with their whole repository.
