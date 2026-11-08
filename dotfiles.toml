@@ -139,5 +139,8 @@ merge(doc, {
     "mode": theme["mode"],
     "colors": theme["colors"],
     "apps": theme["apps"],
+    "dpi": int(vars.get("dpi", "96")),
+    "dpi_scale": float(vars.get("dpi_scale", "1.0")),
+    "dpi_scale_int": int(vars.get("dpi_scale_int", "1")),
 })
 '''
