@@ -110,6 +110,7 @@ upgrader-cargo() {
         ripgrep \
         stgit \
         tokei \
+        typst-cli \
         usage-cli \
         vcprompt \
         watchexec-cli \
