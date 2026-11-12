@@ -110,6 +110,38 @@ func TestDefaultStripesLightness(t *testing.T) {
 	}
 }
 
+func TestDefaultStripesStep(t *testing.T) {
+	t.Parallel()
+	// On black, maxStripesLightness is less than one sRGB step, so bg_1 is
+	// mixed toward bg_0 only until they differ by minStripesStep.
+	colors := map[string]string{"bg_0": "#000000", "bg_1": "#2a2a2a"}
+	for _, expr := range []string{":diagonal()", ":chevron()"} {
+		draw, _, err := generatedBackground(expr, colors, "dark", 0)
+		if err != nil {
+			t.Fatal(err)
+		}
+		img := draw(96).(*image.RGBA)
+		steps := 0
+		for y := range img.Bounds().Dy() {
+			for x := range img.Bounds().Dx() {
+				steps = max(steps, int(img.RGBAAt(x, y).R))
+			}
+		}
+		if steps < minStripesStep || steps > 2*minStripesStep {
+			t.Errorf("%s on black: the stripes differ by %d steps, want %d to %d", expr, steps, minStripesStep, 2*minStripesStep)
+		}
+	}
+	// Above black, the floor does not apply: the lightness limit does.
+	list := defaultStripeColors(map[string]string{"bg_0": "#103c48", "bg_1": "#ffffff"})
+	bg0, _ := colorful.Hex("#103c48")
+	mixed, _ := colorful.Hex(list[1].(string))
+	l0, _, _ := bg0.OkLab()
+	l, _, _ := mixed.OkLab()
+	if d := l - l0; math.Abs(d-maxStripesLightness) > 0.005 {
+		t.Errorf("the stripes differ in lightness by %.3f, want %.3f", d, maxStripesLightness)
+	}
+}
+
 func TestStripesBackground(t *testing.T) {
 	t.Parallel()
 	pix := func(seed uint64) string {

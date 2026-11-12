@@ -1,0 +1,38 @@
+mode = "dark"
+
+# Pure primaries on black. Pure blue #0000ff is 2.4:1 on black, so blue is
+# azure #0080ff; violet is #8080ff for the same reason. The grays are 50%
+# dithers between black, #555555, #aaaaaa and white.
+[colors]
+bg_0  = "#000000"
+bg_1  = "#2a2a2a"
+bg_2  = "#555555"
+dim_0 = "#808080"
+dim_1 = "#aaaaaa"
+fg_0  = "#aaaaaa"
+fg_1  = "#ffffff"
+
+yellow  = "#ffff00"
+orange  = "#ff8000"
+red     = "#ff0000"
+magenta = "#ff00ff"
+violet  = "#8080ff"
+blue    = "#0080ff"
+cyan    = "#00ffff"
+green   = "#00ff00"
+
+br_red     = "#ff0000"
+br_green   = "#00ff00"
+br_yellow  = "#ffff00"
+br_blue    = "#0080ff"
+br_magenta = "#ff00ff"
+br_cyan    = "#00ffff"
+
+urgent = "#ff0000"
+
+[apps]
+emacs        = "my-solarized-primary-dark"
+color_scheme = "prefer-dark"
+
+background      = ":random()"
+background_mode = "tile"

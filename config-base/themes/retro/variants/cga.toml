@@ -1,0 +1,38 @@
+mode = "dark"
+
+# CGA high-intensity colors on black. Bright blue #5555ff is 2.5:1 on black,
+# so blue is #8080ff; brown #aa5500 is lifted to #ffaa55 for orange. The grays
+# are 50% dithers between black, #555555, #aaaaaa and white.
+[colors]
+bg_0  = "#000000"
+bg_1  = "#2a2a2a"
+bg_2  = "#555555"
+dim_0 = "#808080"
+dim_1 = "#aaaaaa"
+fg_0  = "#aaaaaa"
+fg_1  = "#ffffff"
+
+yellow  = "#ffff55"
+orange  = "#ffaa55"
+red     = "#ff5555"
+magenta = "#ff55ff"
+violet  = "#ff55ff"
+blue    = "#8080ff"
+cyan    = "#55ffff"
+green   = "#55ff55"
+
+br_red     = "#ff5555"
+br_green   = "#55ff55"
+br_yellow  = "#ffff55"
+br_blue    = "#8080ff"
+br_magenta = "#ff55ff"
+br_cyan    = "#55ffff"
+
+urgent = "#ff5555"
+
+[apps]
+emacs        = "my-solarized-retro-cga"
+color_scheme = "prefer-dark"
+
+background      = ":random()"
+background_mode = "tile"

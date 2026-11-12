@@ -34,6 +34,55 @@ const defaultDPI = 160
 // weighs a difference between dark colors as it looks.
 const maxStripesLightness = 0.03
 
+// minStripesStep is the least difference, in 8-bit sRGB steps in some channel,
+// between the default stripes. Near black, maxStripesLightness is less than
+// one step and the stripes would vanish, as a lightness that small is a
+// linear value that rounds to zero.
+const minStripesStep = 10
+
+// defaultStripeColors returns bg_0 and bg_1 of colors for the default
+// stripes and patterns: bg_1 mixed toward bg_0 just enough that they differ
+// in lightness by no more than maxStripesLightness, but by at least
+// minStripesStep in some channel. Colors that are not #rrggbb are returned
+// as they are.
+func defaultStripeColors(colors map[string]string) []any {
+	list := []any{colors["bg_0"], colors["bg_1"]}
+	bg0, err0 := parseColor(colors["bg_0"])
+	bg1, err1 := parseColor(colors["bg_1"])
+	if err0 != nil || err1 != nil {
+		return list
+	}
+	l0, _, _ := bg0.OkLab()
+	l1, _, _ := bg1.OkLab()
+	d := math.Abs(l1 - l0)
+	if d <= maxStripesLightness {
+		return list
+	}
+	t := maxStripesLightness / d
+	mixed := bg0.BlendOkLab(bg1, t).Clamped()
+	for t < 1 && channelDistance(bg0, mixed) < minStripesStep {
+		t = min(1, t+0.01)
+		mixed = bg0.BlendOkLab(bg1, t).Clamped()
+	}
+	list[1] = mixed.Hex()
+	return list
+}
+
+// channelDistance is the most a and b differ in any channel, in 8-bit steps.
+func channelDistance(a, b colorful.Color) int {
+	ar, ag, ab := a.RGB255()
+	br, bg, bb := b.RGB255()
+	d := 0
+	for _, pair := range [][2]uint8{{ar, br}, {ag, bg}, {ab, bb}} {
+		if diff := int(pair[0]) - int(pair[1]); diff > d {
+			d = diff
+		} else if -diff > d {
+			d = -diff
+		}
+	}
+	return d
+}
+
 // backgroundDir returns the directory that the generated background is
 // written to: dotfiles in $XDG_RUNTIME_DIR, or a directory of the user in the
 // temporary directory without it.
@@ -98,9 +147,8 @@ func generatedBackground(value string, colors map[string]string, mode string, se
 // stripes is the generator name, diagonal(colors) or stripes(colors):
 // stripes of bands of equal width, with sharp edges. Across them, the bands
 // go through colors, a list of at least two #rrggbb colors, and back, so
-// a,b,c is the cycle a,b,c,b. Without colors, they are bg_0 and bg_1 of the
-// variant, with bg_1 mixed toward bg_0 just enough that they differ in
-// lightness by no more than maxStripesLightness. Without rng, for diagonal,
+// a,b,c is the cycle a,b,c,b. Without colors, they are the defaultStripeColors
+// of the variant. Without rng, for diagonal,
 // they run from the top left to the bottom right, 20 pixels apart at 96 DPI.
 // With it, for stripes, they run from the top left or the top right, tilted
 // by up to 10 degrees, 20 to 29 pixels apart. mode is that of the variant,
@@ -109,16 +157,7 @@ func stripes(name string, colors map[string]string, mode string, rng *rand.Rand,
 	if len(args) > 1 {
 		return nil, fmt.Errorf("%s: got %d arguments, want colors", name, len(args))
 	}
-	list := []any{colors["bg_0"], colors["bg_1"]}
-	bg0, err0 := parseColor(colors["bg_0"])
-	bg1, err1 := parseColor(colors["bg_1"])
-	if err0 == nil && err1 == nil {
-		l0, _, _ := bg0.OkLab()
-		l1, _, _ := bg1.OkLab()
-		if d := math.Abs(l1 - l0); d > maxStripesLightness {
-			list[1], _ = mixColors(colors["bg_0"], colors["bg_1"], maxStripesLightness/d)
-		}
-	}
+	list := defaultStripeColors(colors)
 	if len(args) > 0 {
 		var ok bool
 		if list, ok = args[0].([]any); !ok {
@@ -172,23 +211,13 @@ func stripes(name string, colors map[string]string, mode string, rng *rand.Rand,
 }
 
 // patternColors extracts c0 and c1 for patterns of two colors: c0 as background,
-// c1 as foreground. Without colors, they are bg_0 and bg_1 of the variant,
-// with bg_1 mixed toward bg_0 just enough that they differ in lightness by no
-// more than maxStripesLightness.
+// c1 as foreground. Without colors, they are the defaultStripeColors of the
+// variant.
 func patternColors(name string, colors map[string]string, args []any) (c0, c1 color.RGBA, err error) {
 	if len(args) > 1 {
 		return color.RGBA{}, color.RGBA{}, fmt.Errorf("%s: got %d arguments, want colors", name, len(args))
 	}
-	list := []any{colors["bg_0"], colors["bg_1"]}
-	bg0, err0 := parseColor(colors["bg_0"])
-	bg1, err1 := parseColor(colors["bg_1"])
-	if err0 == nil && err1 == nil {
-		l0, _, _ := bg0.OkLab()
-		l1, _, _ := bg1.OkLab()
-		if d := math.Abs(l1 - l0); d > maxStripesLightness {
-			list[1], _ = mixColors(colors["bg_0"], colors["bg_1"], maxStripesLightness/d)
-		}
-	}
+	list := defaultStripeColors(colors)
 	if len(args) > 0 {
 		var ok bool
 		if list, ok = args[0].([]any); !ok {
