@@ -238,7 +238,7 @@ _dotfiles()
             return 0
             ;;
         log)
-            local log_opts="-compact --compact -short --short -patch --patch -textconv --textconv -n --n -h --help"
+            local log_opts="-short --short -patch --patch -textconv --textconv -n --n -h --help"
             COMPREPLY=( $(compgen -W "${log_opts}" -- "${cur}") )
             return 0
             ;;

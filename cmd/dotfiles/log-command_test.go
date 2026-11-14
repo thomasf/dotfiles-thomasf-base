@@ -89,28 +89,33 @@ func TestLog(t *testing.T) {
 	}
 }
 
-func TestLogCompactShort(t *testing.T) {
+func TestLogShort(t *testing.T) {
 	a, b := logTestRepos(t)
-	line := func(repo, file, time string) string {
+	shortLine := func(repo, file, time string) string {
 		hash := gitOutput(t, filepath.Join(filepath.Dir(a), repo), "rev-parse", "--short", ":/"+file)
-		return time + " " + repo + " " + hash + " test@example.com " + file + "\n"
+		return hash + " " + time + " " + repo + "    +1/-0    " + file + "\n"
 	}
-	shortstat := " 1 file changed, 1 insertion(+)\n"
-	for _, tt := range []struct {
-		flag, want string
-	}{
-		{"-compact", line("a", "a2", "1000000300") + line("b", "b2", "1000000200")},
-		{"-short", line("a", "a2", "1000000300") + shortstat + line("b", "b2", "1000000200") + shortstat},
-	} {
-		if got := runLog(t, []string{a, b}, tt.flag, "-n", "2"); got != tt.want {
-			t.Errorf("%s:\n%s\nwant:\n%s", tt.flag, got, tt.want)
-		}
+	want := shortLine("a", "a2", "2001-09-09 01:51") + shortLine("b", "b2", "2001-09-09 01:50")
+	if got := runLog(t, []string{a, b}, "-short", "-n", "2"); got != want {
+		t.Errorf("-short:\n%s\nwant:\n%s", got, want)
+	}
+
+	cmd := exec.Command("git", "commit", "-q", "--allow-empty", "-m", "empty")
+	cmd.Dir = a
+	cmd.Env = append(os.Environ(), "GIT_COMMITTER_DATE=1000000400 +0000", "GIT_AUTHOR_DATE=1000000400 +0000")
+	if out, err := cmd.CombinedOutput(); err != nil {
+		t.Fatalf("git commit: %v: %s", err, out)
+	}
+	hash := gitOutput(t, a, "rev-parse", "--short", "HEAD")
+	wantEmpty := hash + " 2001-09-09 01:53 a      -      empty\n"
+	if got := runLog(t, []string{a}, "-short", "-n", "1"); got != wantEmpty {
+		t.Errorf("-short empty commit:\n%s\nwant:\n%s", got, wantEmpty)
 	}
 }
 
 func TestLogPatch(t *testing.T) {
 	a, b := logTestRepos(t)
-	for _, args := range [][]string{{"-patch"}, {"-patch", "-compact"}, {"-patch", "-short"}} {
+	for _, args := range [][]string{{"-patch"}, {"-patch", "-short"}} {
 		out := runLog(t, []string{a, b}, args...)
 		for _, file := range []string{"a1", "a2", "b1", "b2"} {
 			if !strings.Contains(out, "diff --git a/"+file+" b/"+file+"\n") {
@@ -178,7 +183,7 @@ func TestLogErrors(t *testing.T) {
 		t.Errorf("the other repositories are missing from the log:\n%s", stdout.String())
 	}
 
-	for _, args := range [][]string{{"--oneline"}, {"extra"}, {"-compact", "-short"}, {"-h"}} {
+	for _, args := range [][]string{{"--oneline"}, {"extra"}, {"-compact"}, {"-h"}} {
 		stderr.Reset()
 		d := &Dotfiles{Stdout: &stdout, Stderr: &stderr, repos: []string{a, b}}
 		err := d.LogCommand(args)
