@@ -356,7 +356,7 @@ esac
 
 log "cd to workspace"
 if [ ! "${TERM}" == "dumb" ] && [ "${PWD}" == "${HOME}" ]; then
-  if wsdir-cd >/dev/null || cdd >/dev/null; then
+  if wsdir-cd >/dev/null 2>&1; then
     git status --short --branch 2>/dev/null || true
   fi
   history -n
