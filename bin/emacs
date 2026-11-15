@@ -124,10 +124,28 @@ case $cmd in
     ;;
 esac
 
+has_server=''
+[ -n "$EMACS_SOCKET_NAME" ] || [ -n "$EMACS_SERVER_FILE" ] && has_server=yes
+has_alternate=''
+[ -n "$ALTERNATE_EDITOR" ] && has_alternate=yes
+for arg in "$@"; do
+  case $arg in
+    -s|--socket-name|-s=*|--socket-name=*)
+      has_server=yes
+      ;;
+    -f|--server-file|-f=*|--server-file=*)
+      has_server=yes
+      ;;
+    -a|--alternate-editor|-a=*|--alternate-editor=*)
+      has_alternate=yes
+      ;;
+  esac
+done
+
 if [ -n "$client_bin" ]; then
   run=("$client_bin" -q)
-  [ -n "$server" ] && run+=(-s "$server")
-  [ -n "$alternate" ] && run+=(-a "$alternate")
+  [ -n "$server" ] && [ -z "$has_server" ] && run+=(-s "$server")
+  [ -n "$alternate" ] && [ -z "$has_alternate" ] && run+=(-a "$alternate")
   if [ "$cmd" != emacsclient ]; then
     if [ -n "$gui" ]; then
       run+=("${gui_args[@]}")
