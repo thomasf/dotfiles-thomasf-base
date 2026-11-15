@@ -51,6 +51,8 @@ upgrader-go() {
       github.com/direnv/direnv \
       github.com/go-critic/go-critic/cmd/gocritic \
       github.com/go-delve/delve/cmd/dlv \
+      github.com/go-pa/delemark/cmd/delemark \
+      github.com/go-pa/delemark/cmd/delemark-scan \
       github.com/golangci/golangci-lint/cmd/golangci-lint \
       github.com/golangci/golangci-lint/v2/cmd/golangci-lint \
       github.com/google/gops \
