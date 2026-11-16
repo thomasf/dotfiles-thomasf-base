@@ -36,16 +36,26 @@ upgrader-apt() {
 }
 
 
+# go-install runs go install for each package at its latest version.
+go-install() {
+  local out
+  for l in "$@"; do
+    ts "${green}${l}${reset}"
+    (
+      go install "${l}@latest"
+    ) || echo -e "\n${red}FAILED ${l}\n${yellow}${out}${reset}\n"
+  done
+}
+
 # upgrader-go installs variout things using go get.
 upgrader-go() {
-  local out
   echo UPDATING go-tools
   GOPATH=${HOME}
   export GOPATH;
-  for l in  \
-      github.com/99designs/aws-vault/v7 \
+  go-install \
+      github.com/ByteNess/aws-vault/v7 \
       github.com/boyter/scc \
-      github.com/charmbracelet/glow/v2 \
+      github.com/charmbracelet/glow/v3 \
       github.com/cli/cli/v2/cmd/gh \
       github.com/cuonglm/gocmt \
       github.com/direnv/direnv \
@@ -75,12 +85,12 @@ upgrader-go() {
       golang.org/x/vuln/cmd/govulncheck \
       honnef.co/go/tools/cmd/staticcheck \
       mvdan.cc/gofumpt \
-    ; do
-    ts "${green}${l}${reset}"
-    (
-      go install "${l}@latest"
-    ) || echo -e "\n${red}FAILED ${l}\n${yellow}${out}${reset}\n"
-  done
+    ;
+  if [ "$(uname -s)" = Linux ]; then
+    go-install \
+      github.com/some-programs/pipmix \
+      ;
+  fi
 }
 
 upgrader-pip() {
