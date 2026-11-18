@@ -14,7 +14,7 @@
 #
 # On X the server is named after the workspace prefix, as server-name
 # is in init-packages.el. With WS_LAUNCH set, as xmonad M-o e does, it
-# starts in the workspace directory (ws dir). Wayland has no workspaces
+# starts in the workspace directory (ws dir get). Wayland has no workspaces
 # yet.
 #
 
@@ -75,7 +75,7 @@ elif [ -n "$DISPLAY" ]; then
   # nothing started from emacs sees it.
   launch=$WS_LAUNCH
   unset WS_LAUNCH
-  if [ -n "$launch" ] && dir=$(ws dir 2>/dev/null); then
+  if [ -n "$launch" ] && dir=$(ws dir get 2>/dev/null); then
     cd "$dir" 2>/dev/null
   fi
 elif [[ $OSTYPE == darwin* ]] && [ -z "$SSH_CONNECTION" ]; then

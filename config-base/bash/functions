@@ -129,11 +129,11 @@ rmpyc() {
   fi
 }
 
-# Workspace directory: cd to the directory of the current workspace. See ws dir.
+# Workspace directory: cd to the directory of the current workspace. See ws dir get.
 wsdir-cd() {
   hash ws 2>/dev/null || return 1
   local dir
-  dir=$(ws dir 2>/dev/null) || return 1
+  dir=$(ws dir get 2>/dev/null) || return 1
   cd "$dir"
 }
 
