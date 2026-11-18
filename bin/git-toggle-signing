@@ -1,0 +1,19 @@
+#!/bin/sh
+#
+# Toggle GPG signing of commits and tags for the current repository
+#
+
+set -e
+
+git rev-parse --git-dir >/dev/null
+
+if [ "$(git config --type=bool --get commit.gpgsign || echo false)" = true ]; then
+  new=false
+else
+  new=true
+fi
+
+git config --local commit.gpgsign "$new"
+git config --local tag.gpgsign "$new"
+
+echo "gpg signing: $new"
