@@ -212,13 +212,15 @@ if declare -F _filedir >/dev/null 2>&1 || [ -n "${BASH_COMPLETION_VERSINFO-}" ];
   for file in "${HOME}/.config-base/bash/completion.d/"*; do
     [ -f "${file}" ] || continue
     case "${file}" in
-      */kubectl|*/docker) continue ;;
+      */kubectl|*/docker|*/dotfiles) continue ;;
     esac
     source "${file}"
   done
 
   _lazy_load_completion "${HOME}/.config-base/bash/completion.d/kubectl" __start_kubectl kubectl k
   _lazy_load_completion "${HOME}/.config-base/bash/completion.d/docker" _docker docker docker.exe dockerd dockerd.exe
+  _lazy_load_completion "${HOME}/.config-base/bash/completion.d/dotfiles" _dotfiles dotfiles
+  _lazy_load_completion "${HOME}/.config-base/bash/completion.d/dotfiles" _pathenv pathenv
 
   # fzf must load after bash-completion
   if hash fzf 2>/dev/null; then
