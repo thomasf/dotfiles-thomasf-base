@@ -1,7 +1,7 @@
 public = true
 
 [[ignore]]
-match = ["context.md"]
+match = ["context.md", "bootstrap.sh"]
 
 [default_vars]
 default_terminal_width = "120"
