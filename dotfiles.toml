@@ -11,6 +11,10 @@ src = '''
 bin/home-fix
 '''
 
+[[go]]
+src = 'cmd/opx'
+condition = "os != 'windows'"
+
 [[mount]]
 src = 'config-base/gitu'
 dst = '.config/gitu'

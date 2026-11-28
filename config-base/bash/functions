@@ -607,3 +607,17 @@ moshc() {
 #   export __afs_fs="${newsize}"
 #   export __afs_cw="${cw}"
 # }
+
+
+# 1Password: sign in once per session (see opx), pick an item with fzf.
+# Both take an optional opx profile name.
+op-signin() {
+  eval "$(opx ${1:+-p "$1"} signin)"
+}
+
+op-fzf() {
+  op-signin "$@" || return
+  local item
+  item=$(op item list | fzf --header-lines=1 | awk '{print $1}')
+  [ -n "$item" ] && op item get "$item" --reveal | less
+}

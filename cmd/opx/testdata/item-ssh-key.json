@@ -1,0 +1,42 @@
+{
+  "id": "itemid00000000000000000004",
+  "title": "Item Four",
+  "version": 1,
+  "vault": {
+    "id": "vaultid000000000000000000a",
+    "name": "Vault A"
+  },
+  "category": "SSH_KEY",
+  "last_edited_by": "userid0000000000000000000a",
+  "created_at": "2000-01-01T00:00:00Z",
+  "updated_at": "2000-01-01T00:00:00Z",
+  "fields": [
+    {
+      "id": "notesPlain",
+      "type": "STRING",
+      "purpose": "NOTES",
+      "label": "notesPlain",
+      "reference": "op://vault/item/notesPlain"
+    },
+    {
+      "id": "private_key",
+      "type": "SSHKEY",
+      "label": "private key",
+      "value": "FAKE PRIVATE KEY\n",
+      "reference": "op://vault/item/private_key",
+      "ssh_formats": {
+        "openssh": {
+          "reference": "op://vault/item/private_key?ssh-format=openssh",
+          "value": "FAKE OPENSSH KEY\n"
+        }
+      }
+    },
+    {
+      "id": "public_key",
+      "type": "STRING",
+      "label": "public key",
+      "value": "fake-public-key",
+      "reference": "op://vault/item/public_key"
+    }
+  ]
+}

@@ -1,0 +1,80 @@
+{
+  "id": "itemid00000000000000000005",
+  "title": "Item Five",
+  "version": 1,
+  "vault": {
+    "id": "vaultid000000000000000000b",
+    "name": "Vault B"
+  },
+  "category": "IDENTITY",
+  "last_edited_by": "userid0000000000000000000a",
+  "created_at": "2000-01-01T00:00:00Z",
+  "updated_at": "2000-01-01T00:00:00Z",
+  "sections": [
+    {
+      "id": "sectiona",
+      "label": "Section A"
+    },
+    {
+      "id": "sectionb",
+      "label": "Section B"
+    },
+    {
+      "id": "sectionu"
+    }
+  ],
+  "fields": [
+    {
+      "id": "fieldstr01",
+      "section": {
+        "id": "sectiona",
+        "label": "Section A"
+      },
+      "type": "STRING",
+      "label": "text b",
+      "value": "fake-text-b",
+      "reference": "op://vault/item/fieldstr01"
+    },
+    {
+      "id": "fielddat01",
+      "section": {
+        "id": "sectiona",
+        "label": "Section A"
+      },
+      "type": "DATE",
+      "label": "date b",
+      "reference": "op://vault/item/fielddat01"
+    },
+    {
+      "id": "fieldeml01",
+      "section": {
+        "id": "sectionb",
+        "label": "Section B"
+      },
+      "type": "EMAIL",
+      "label": "email b",
+      "value": "fake@example.invalid",
+      "reference": "op://vault/item/fieldeml01"
+    },
+    {
+      "id": "fieldstr02",
+      "section": {
+        "id": "sectionu"
+      },
+      "type": "STRING",
+      "label": "",
+      "value": "fake-unlabeled",
+      "reference": "op://vault/item/fieldstr02"
+    },
+    {
+      "id": "fieldurl01",
+      "section": {
+        "id": "sectionu"
+      },
+      "type": "URL",
+      "label": "",
+      "value": "https://three.example",
+      "reference": "op://vault/item/fieldurl01"
+    }
+  ]
+}
