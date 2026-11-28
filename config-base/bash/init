@@ -91,15 +91,14 @@ source ~/.config-base/bash/interactive
 
 
 # ------------------------------------------------------------------------------
-# PRIVATE AND LOCAL
+# DROP-INS
 #
-[ -e "${HOME}/.bashrc-private" ] \
-  && source "${HOME}/.bashrc-private" \
-  && log "loaded .bashrc-private"
-
-[ -e "${HOME}/.bashrc-local" ] \
-  && source "${HOME}/.bashrc-local" \
-  && log "loaded .bashrc-local"
+for file in "${HOME}/.config/shell/bashrc.d/"*.sh; do
+  [ -r "${file}" ] \
+    && source "${file}" \
+    && log "loaded ${file}"
+done
+unset file
 
 # The colors of the theme in use on the console, written by dotfiles
 if [ "$TERM" = "linux" ]; then

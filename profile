@@ -175,10 +175,13 @@ MPD_HOST=localhost && export MPD_HOST
 
 
 # ------------------------------------------------------------------------------
-# PRIVATE AND LOCAL
+# DROP-INS
 #
-[ -e "${HOME}/.profile-private" ] && . "${HOME}/.profile-private"
-[ -e "${HOME}/.profile-local" ] && . "${HOME}/.profile-local"
+for _f in "${HOME}/.config/shell/profile.d/"*.sh; do
+  [ -r "${_f}" ] && . "${_f}"
+done
+unset _f
+
 [ -e "$HOME/.cargo/env" ] && . "$HOME/.cargo/env"
 
 # Application configuration
